@@ -1,0 +1,16 @@
+﻿domain,default_tbl,field_name,field_filter
+visits,visit_occurrence,,
+conditions_all,condition_occurrence,,
+conditions_inpatient,condition_occurrence,condition_type_concept_id,"2000000094, 2000000093, 2000000092,2000000098, 2000000099, 2000000010"
+conditions_outpatient,condition_occurrence,condition_type_concept_id,"2000000095, 2000000096, 2000000097, 2000000101,2000000102,2000000103"
+conditions_er,condition_occurrence,condition_type_concept_id,"2000001281, 2000001282, 2000001283, 2000001284, 2000001280, 2000001285"
+meds_rx,drug_exposure,drug_type_concept_id,38000177
+meds_admin,drug_exposure,drug_type_concept_id,38000180
+procedures_all,procedure_occurrence,,
+procedures_billed,procedure_occurrence,procedure_type_concept_id,"44786630, 44786631"
+procedures_ordered,procedure_occurrence,procedure_type_concept_id,"2000001494, 38000275"
+labs,measurement_labs,,
+anthropometrics,measurement_anthro,,
+adt_picu,adt_occurrence,service_concept_id,2000000078
+adt_nicu,adt_occurrence,service_concept_id,2000000080
+immunizations,immunization,,
