@@ -1,0 +1,4 @@
+﻿domain,default_tbl,field_name,field_filter
+conditions_all,condition_occurrence,,
+anthropometrics,measurement_anthro,,
+adt_picu,adt_occurrence,service_concept_id,2000000078
