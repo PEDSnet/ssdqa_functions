@@ -119,7 +119,7 @@ config('retain_intermediates', NA)
 #' during processing of the request.
 #' If it is `NA`, the default value from site_info.R is used.
 #' @md
-config('results_schema', NA)
+config('results_schema', 'ssdqa_output')
 
 #' Request-specific suffix for output
 #'
@@ -128,8 +128,7 @@ config('results_schema', NA)
 #' more readable result.  Keep the tag short, given Oracle limits on
 #' table name length.
 #' @md
-config('results_name_tag',
-       paste0('_',paste0(sample(letters, 5), collapse = '')))
+config('results_name_tag', '_stud_1279')
 config('local_name_tag', '_loc')
 
 #' Execution mode
