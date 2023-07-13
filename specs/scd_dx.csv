@@ -1,0 +1,27 @@
+concept_id,concept_name,concept_code,vocabulary_id,flag
+40485018,Acute sickle cell splenic sequestration crisis,444108000,SNOMED,SCD
+4049095,Double heterozygous sickling disorder,23269001,SNOMED,SCD
+26942,Hemoglobin SS disease with crisis,417425009,SNOMED,SCD
+30683,Hemoglobin SS disease without crisis,416180004,SNOMED,SCD
+4209085,Hemoglobin SS disease with vasoocclusive crisis,440206000,SNOMED,SCD
+4216915,Hemoglobin S sickling disorder with crisis,417279003,SNOMED,SCD
+4166115,Hemoglobin S sickling disorder without crisis,416290001,SNOMED,SCD
+45757146,Sickle cell anemia in mother complicating childbirth,10759351000119103,SNOMED,SCD
+4131914,Sickle cell anemia with coexistent alpha-thalassemia,127045008,SNOMED,SCD
+4121115,Sickle cell anemia with high hemoglobin F,234391009,SNOMED,SCD
+4130068,Sickle cell-beta^0^-thalassemia,127043001,SNOMED,SCD
+4130067,Sickle cell-beta-thalassemia,127041004,SNOMED,SCD
+4131913,Sickle cell-delta beta^0^-thalassemia,127044007,SNOMED,SCD
+4103763,Sickle cell-hemoglobin D disease,25472008,SNOMED,SCD
+4167364,Sickle cell-hemoglobin D disease with crisis,417748003,SNOMED,SCD
+4166099,Sickle cell-hemoglobin D disease without crisis,416214006,SNOMED,SCD
+4264046,Sickle cell-hemoglobin E disease,47024008,SNOMED,SCD
+4219568,Sickle cell-hemoglobin E disease with crisis,416484003,SNOMED,SCD
+4211932,Sickle cell-hemoglobin E disease without crisis,416638004,SNOMED,SCD
+4131126,Sickle cell-hemoglobin Lepore disease,127047000,SNOMED,SCD
+4130190,Sickle cell-Hemoglobin O Arab disease,127048005,SNOMED,SCD
+22281,Sickle cell-hemoglobin SS disease,127040003,SNOMED,SCD
+315523,Sickle cell-thalassemia disease,36472007,SNOMED,SCD
+443738,Sickle cell-thalassemia disease with crisis,416826005,SNOMED,SCD
+321263,Sickle cell-thalassemia disease without crisis,417048006,SNOMED,SCD
+4213628,Sickling disorder due to hemoglobin S,417357006,SNOMED,SCD

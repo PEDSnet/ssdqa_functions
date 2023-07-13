@@ -32,6 +32,88 @@ compute_age_groups <- function(cohort_tbl,
   
 }
 
+#' intake codeset to customize patient labels
+
+cohort_codeset_label <- function(cohort_tbl,
+                                 codeset_meta){
+  
+  codeset <- load_codeset(codeset_meta$file_name)
+  
+  filter_tbl <- select(cdm_tbl(codeset_meta$table),
+                       codeset_meta$column, person_id) %>%
+    rename('concept_id' = codeset_meta$column) %>%
+    inner_join(codeset, by = 'concept_id') %>%
+    select(person_id, flag) %>%
+    distinct() %>%
+    right_join(cohort_tbl, by = 'person_id') %>%
+    mutate(flag = case_when(is.na(flag) ~ 'None',
+                             TRUE ~ flag))
+  
+  
+}
+
+#' prepare for pf function
+#' requirement: fields must have columns: 
+#' `person_id`, `start_date`, `end_date`
+#' 
+#' @param cohort_tbl table with required fields for each member of the cohort
+#' @param age_groups option to read in a CSV with age group designations to allow for stratification
+#'                   by age group in output. defaults to `NULL`. 
+#'                   sample CSV can be found in `specs/age_group_definitions.csv`
+#' @param codeset option to read in a CSV with codeset metadata to allow for labelling of 
+#'                cohort members based on a user-provided codeset. the codeset itself should be
+#'                a CSV file with at least a `concept_id` column and a `flag` column with user-provided
+#'                labels.
+#'                a sample metadata CSV, where the user can provide the correct table and column information,
+#'                can be found in `specs/codeset_metadata.csv`
+#' 
+#' 
+#' @return a tbl with person_id and the following:
+#'          `start_date` the cohort entry date
+#'          `end_date` the last visit
+#'          `fu`: length of follow up
+#'          `site` : patient site
+#'        if age_groups is not NULL: 
+#'          `age_ce`: patient age at cohort entry
+#'          `age_grp`: user-provided age grouping
+#'        if codeset is not NULL:
+#'          `flag`: flag that indiciates patient is a member of a user-specified group in the codeset
+#' 
+
+prepare_pf <- function(cohort_tbl,
+                       age_groups = NULL,
+                       codeset = NULL) {
+  
+  ct <- cohort_tbl
+  
+  stnd <- 
+    ct %>% 
+    mutate(fu = round((end_date - start_date + 1)/365.25,3)) %>% 
+    select(person_id, start_date, end_date, fu) %>% 
+    add_site()
+  
+  if(!is.data.frame(age_groups)){
+    final_age <- stnd
+  }else{
+    final_age <- compute_age_groups(cohort_tbl = stnd,
+                                person_tbl = cdm_tbl('person'),
+                                age_groups = age_groups)}
+  
+  if(!is.data.frame(codeset)){
+    final_cdst <- stnd
+  }else{
+    final_cdst <- cohort_codeset_label(cohort_tbl = stnd,
+                                       codeset_meta = codeset) %>%
+      add_site()}
+  
+  final <- stnd %>%
+    left_join(final_age) %>%
+    left_join(final_cdst)
+  
+  return(final)
+  
+}
+
 #' function to take in domain and compute patient facts
 #' 
 #' @param cohort the cohort for which to iterate 
@@ -103,9 +185,6 @@ compute_pf <- function(cohort,
 #' 
 #' @param cohort_tbl the tbl that comes from `prepare_pf`
 #' @param combine_sites a logical that tells the program to either loop through sites or run it once for all sites
-#' @param age_groups option to read in a CSV with age group designations to allow for stratification
-#'                   by age group in output. defaults to `NULL`. 
-#'                   sample CSV can be found in `specs/age_group_definitions.csv`
 #' @param visit_type_tbl The visit_concept_ids of interest for the analysis. `all` may be used in this field
 #'                      to select every visit type; defaults to `pf_visit_types` in specs folder
 #' @param visit_tbl the cdm visit_occurrence tbl; defaults to `cdm_tbl('visit_occurrence')`
@@ -123,7 +202,6 @@ compute_pf <- function(cohort,
 
 loop_through_visits <- function(cohort_tbl,
                                 combine_sites = TRUE,
-                                age_groups = NULL,
                                 visit_type_tbl=read_codeset('pf_visit_types','ic'),
                                 visit_tbl=cdm_tbl('visit_occurrence'),
                                 site_list=list('stanford',
@@ -132,17 +210,6 @@ loop_through_visits <- function(cohort_tbl,
                                 grouped_list=c('person_id','start_date','end_date',
                                                'fu','site'),
                                 domain_tbl=read_codeset('pf_domains','cccc')) {
-  
-  # apply age groupings if selected
-  if(!is.data.frame(age_groups)){
-    cohort_tbl <- cohort_tbl
-    grouped_list <- grouped_list
-  }else{
-    cohort_tbl <- compute_age_groups(cohort_tbl = cohort_tbl,
-                                         person_tbl = cdm_tbl('person'),
-                                         age_groups = age_groups)
-    grouped_list <- grouped_list %>% append('age_grp')}
-  
   
   # iterates through visits
   visit_output <- list()
