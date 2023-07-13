@@ -51,7 +51,7 @@ config('db_src', {
 #' @details
 #' If `NA`, no schema qualifier is added.
 #' @md
-config('cdm_schema', 'pedsnet')
+config('cdm_schema', paste0('ssdqa_', config('cohort')))
 
 #' Name of the schema, if any, to be prepended to vocabulary tables.
 #'
@@ -90,30 +90,35 @@ config('default_retain_intermediates', FALSE)
 #' must reflect naming conventions in the database.
 #' @md
 config('table_names',
-       list(adt_occurrence = 'adt_occurrence',
-            care_site = 'care_site',
+       list(adt_occurrence = 'cdm_adt_occurrence_stud_1279',
+            care_site = 'cdm_care_site_stud_1279',
+            care_site_spec = 'cdm_care_site_spec_stud_1279',
             condition_era = 'condition_era',
-            condition_occurrence = 'condition_occurrence',
-            death = 'death',
+            condition_occurrence = 'cdm_condition_occurrence_stud_1279',
+            cohort_matched = 'cohort_matched_stud_1279',
+            cohort_pcc = 'cohort_pcc_stud_1279',
+            cohort_glom = 'cohort_glom_stud_1279',
+            death = 'cdm_death_stud_1279',
             device_exposure = 'device_exposure',
             dose_era = 'dose_era',
             drug_era = 'drug_era',
-            drug_exposure = 'drug_exposure',
+            drug_exposure = 'cdm_drug_exposure_stud_1279',
             fact_relationship = 'fact_relationship',
-            immunization = 'immunization',
-            location = 'location',
+            immunization = 'cdm_immunization_stud_1279',
+            location = 'cdm_location_stud_1279',
             measurement = 'measurement',
-            measurement_anthro = 'measurement',
-            measurement_labs = 'measurement',
+            measurement_anthro = 'cdm_measurement_anthro_stud_1279',
+            measurement_labs = 'cdm_measurement_labs_stud_1279',
             measurement_vitals = 'measurement',
             measurement_organism = 'measurement_organism',
             observation = 'observation',
             observation_period = 'observation_period',
-            person = 'person',
-            procedure_occurrence = 'procedure_occurrence',
-            provider = 'provider',
-            visit_occurrence = 'visit_occurrence',
-            visit_payer = 'visit_payer',
+            person = 'cdm_person_stud_1279',
+            procedure_occurrence = 'cdm_procedure_occurrence_stud_1279',
+            provider = 'cdm_provider_stud_1279',
+            provider_spec = 'cdm_provider_spec_stud_1279',
+            visit_occurrence = 'cdm_visit_occurrence_stud_1279',
+            visit_payer = 'cdm_visit_payer_stud_1279',
             concept = 'concept',
             concept_ancestor = 'concept_ancestor',
             concept_relationship = 'concept_relationship'))
