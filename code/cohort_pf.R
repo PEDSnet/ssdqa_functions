@@ -271,3 +271,73 @@ loop_through_visits <- function(cohort_tbl,
   visit_output
   
 }
+
+
+#' combine PF output into one table per study
+#'
+#' @param study_abbr string that corresponds with the study/studies of interest
+#' @param visit_type_list the types of visits in the PF output; defaults to:
+#'                        inpatient, outpatient, other_visit, all
+#'
+#' @return a list of dataframes that contain all sites and all domains for each study
+#'         listed in `study_abbr`. the resulting dataframes will also have an
+#'         age grouping column added.
+#'         
+#' 
+combine_study_facts <- function(study_abbr,
+                                visit_type_list = list('inpatient','outpatient',
+                                                       'other_visit','all')) {
+  final_list <- list()
+  
+  for(i in 1:length(visit_type_list)) {
+    
+    possible_cols <-  read_codeset('pf_domains','cccc') %>% 
+      select(domain) %>% c()
+    
+    tbl_pulled <- 
+      get_results(paste0('pf_',study_abbr,'_',visit_type_list[[i]]))  %>% 
+      select(-any_of('fact_ct_strat')) 
+    
+    tbl_cols <- tbl_pulled %>% colnames()
+    
+    selected_cols <- 
+      intersect(possible_cols[[1]],
+                tbl_cols)
+    
+    long_please <- 
+      tbl_pulled %>% 
+      pivot_longer(cols=all_of(selected_cols),
+                   names_to='var_name',
+                   values_to='var_val') %>%
+      mutate(var_ever=case_when(!is.na(var_val)~1L,
+                                TRUE~0L)) %>% 
+      mutate(var_val=case_when(is.na(var_val) ~ 0,
+                               TRUE ~ var_val)) %>% 
+      mutate(study=study_abbr,
+             visit_type=visit_type_list[[i]],
+             age_ce_grp=case_when(age_ce < 0 ~ '<0',
+                                  age_ce >= 0 & age_ce < 2 ~ '00-01',
+                                  age_ce >= 2 & age_ce < 6 ~ '02-05',
+                                  age_ce >= 6 & age_ce < 12 ~ '06-11',
+                                  age_ce >= 12 & age_ce < 18 ~ '12-17',
+                                  age_ce >= 18 & age_ce < 26 ~ '18-25',
+                                  age_ce >= 26  ~ '26+'))
+    
+    final_list[[i]] <- long_please
+    
+  }
+  
+  final_list_reduce <- reduce(.x=final_list,
+                              .f=dplyr::union)
+  final_list_reduce
+  
+}
+
+
+## Get results_tbl
+
+get_results <- function(tbl_name) {
+  
+  rslt <- results_tbl(tbl_name) %>% collect()
+  
+}
