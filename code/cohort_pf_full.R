@@ -7,8 +7,8 @@ pf_process <- function(cohort,
                        multi_site = FALSE,
                        time = FALSE,
                        time_span = c('2009-01-01', Sys.Date()),
-                       age_groups = FALSE,
-                       codeset = FALSE,
+                       age_groups = NULL,
+                       codeset = NULL,
                        anomaly_detection = FALSE,
                        exploratory = TRUE,
                        lof_domains = list('first' = list('conditions_all', '#a5879e'),
@@ -20,15 +20,8 @@ pf_process <- function(cohort,
   config('cohort', study_name)
   
   ## Step 1: Prepare cohort
-  if(age_groups){
-    age_arg <- read.csv(file.path(base_dir, 'specs', 'age_group_definitions.csv'))
-    }else(age_arg = NULL)
   
-  if(codeset){
-   cs_arg <- read.csv(file.path(base_dir, 'specs', 'codeset_metadata.csv'))
-  }else(cs_arg = NULL)
-  
-  cohort_prep <- prepare_pf(cohort = cohort, age_groups = age_arg, codeset = cs_arg)
+  cohort_prep <- prepare_pf(cohort = cohort, age_groups = age_groups, codeset = codeset)
   
   ## Step 2: Run Function
   grouped_list <- c('site', 'person_id', 'start_date', 'end_date', 'fu')
@@ -53,18 +46,24 @@ pf_process <- function(cohort,
   
   ## Step 3: Summarise (Medians)
   if(exploratory){
-    pf_output <- compute_pf_medians(data_input = pf_final,
+    if(!anomaly_detection){
+      pf_output <- compute_pf_medians(data_input = pf_final,
                                         agegrp = age_groups,
-                                        codeset = codeset)}
-  if(anomaly_detection){
-    if(!multi_site){
-      lof_input <- create_lof_input(data_tbl = pf_final)
-      lof_output <- create_sepsite_output_lof(input_tbls = lof_input,
-                                              var_list_arg = lof_domains)
-      pf_output <- sepsite_lof_reduce(lof_output)}
-    else{
-    "euclidian distance"
+                                        codeset = codeset)
+      }else{"ERROR: Only one of the following may be set to TRUE - exploratory, anomaly_detection"}
     }
+  
+  if(anomaly_detection){
+    if(!exploratory){
+      if(!multi_site){
+        lof_input <- create_lof_input(data_tbl = pf_final)
+        lof_output <- create_sepsite_output_lof(input_tbls = lof_input,
+                                              var_list_arg = lof_domains)
+        pf_output <- sepsite_lof_reduce(lof_output)}
+      else{
+        "euclidian distance"
+      }
+      }else{"ERROR: Only one of the following may be set to TRUE - exploratory, anomaly_detection"}
   }
   
   return(pf_output)
