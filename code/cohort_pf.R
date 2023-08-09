@@ -184,7 +184,8 @@ compute_pf <- function(cohort,
 #' loops through visit types and sites to compute patient facts
 #' 
 #' @param cohort_tbl the tbl that comes from `prepare_pf`
-#' @param combine_sites a logical that tells the program to either loop through sites or run it once for all sites
+#' @param one_site_output a logical that tells the program to either loop through sites or run it once for all sites combined, 
+#' or if it is just one site
 #' @param visit_type_tbl The visit_concept_ids of interest for the analysis. `all` may be used in this field
 #'                      to select every visit type; defaults to `pf_visit_types` in specs folder
 #' @param visit_tbl the cdm visit_occurrence tbl; defaults to `cdm_tbl('visit_occurrence')`
@@ -201,7 +202,9 @@ compute_pf <- function(cohort,
 #' 
 
 loop_through_visits <- function(cohort_tbl,
-                                combine_sites = TRUE,
+                                time=FALSE,
+                                collapse_sites=FALSE,
+                                #combine_sites = TRUE,
                                 visit_type_tbl=read_codeset('pf_visit_types','ic'),
                                 visit_tbl=cdm_tbl('visit_occurrence'),
                                 site_list=list('stanford',
@@ -209,7 +212,7 @@ loop_through_visits <- function(cohort_tbl,
                                 visit_list=c('inpatient','outpatient'),
                                 grouped_list=c('person_id','start_date','end_date',
                                                'fu','site'),
-                                domain_tbl=read_codeset('pf_domains','cccc')) {
+                                domain_tbl=read_codeset('pf_domains_short','cccc')) {
   
   # iterates through visits
   visit_output <- list()
@@ -219,7 +222,7 @@ loop_through_visits <- function(cohort_tbl,
     site_output <- list()
     for(k in 1:length(site_list)) {
       
-      if(combine_sites) {
+      if(collapse_sites) {
         site_list_thisrnd <- unlist(site_list)
       } else {site_list_thisrnd <- site_list[[k]]}
       
@@ -249,14 +252,21 @@ loop_through_visits <- function(cohort_tbl,
                     indexes=list('person_id'))
       
       # calls function `compute_pf` and adds site, with cohort_tbl filtered by site as input
-      domain_compute <- compute_pf(cohort=cohort_site, pf_input_tbl=visits,
-                                   grouped_list=grouped_list,
-                                   domain_tbl=domain_tbl) %>% add_site()
+      if(time) {
+        domain_compute <- compute_pf(cohort=cohort_site, pf_input_tbl=visits,
+                                     grouped_list=grouped_list,
+                                     domain_tbl=domain_tbl) %>% add_site()
+      } else {
+        domain_compute <- compute_pf_for_fot(cohort=cohort_site, pf_input_tbl=visits,
+                                             grouped_list=grouped_list,
+                                             domain_tbl=domain_tbl) %>% add_site()
+      }
+      
       
       
       site_output[[k]] <- domain_compute
-      
-      if(combine_sites) break;
+
+      if(collapse_sites) break;
       
     }
     
@@ -264,7 +274,8 @@ loop_through_visits <- function(cohort_tbl,
     all_site <- reduce(.x=site_output,
                        .f=dplyr::union)
     
-    visit_output[[paste0('pf_',config('cohort'),'_',(visit_list[j]))]] <- all_site
+    #visit_output[[paste0('pf_',config('cohort'),'_',(visit_list[j]))]] <- all_site
+    visit_output[[paste0(visit_list[j])]] <- all_site
     
   }
   
@@ -312,17 +323,17 @@ combine_study_facts <- function(study_abbr,
       mutate(var_ever=case_when(!is.na(var_val)~1L,
                                 TRUE~0L)) %>% 
       mutate(var_val=case_when(is.na(var_val) ~ 0,
-                               TRUE ~ var_val)) %>% 
-      mutate(study=study_abbr,
-             visit_type=visit_type_list[[i]],
-             age_ce_grp=case_when(age_ce < 0 ~ '<0',
-                                  age_ce >= 0 & age_ce < 2 ~ '00-01',
-                                  age_ce >= 2 & age_ce < 6 ~ '02-05',
-                                  age_ce >= 6 & age_ce < 12 ~ '06-11',
-                                  age_ce >= 12 & age_ce < 18 ~ '12-17',
-                                  age_ce >= 18 & age_ce < 26 ~ '18-25',
-                                  age_ce >= 26  ~ '26+'))
-    
+                                TRUE ~ var_val)) %>% 
+       mutate(study=study_abbr,
+              visit_type=visit_type_list[[i]])
+      #        age_ce_grp=case_when(age_ce < 0 ~ '<0',
+      #                             age_ce >= 0 & age_ce < 2 ~ '00-01',
+      #                             age_ce >= 2 & age_ce < 6 ~ '02-05',
+      #                             age_ce >= 6 & age_ce < 12 ~ '06-11',
+      #                             age_ce >= 12 & age_ce < 18 ~ '12-17',
+      #                             age_ce >= 18 & age_ce < 26 ~ '18-25',
+      #                             age_ce >= 26  ~ '26+'))
+      # 
     final_list[[i]] <- long_please
     
   }
@@ -339,5 +350,86 @@ combine_study_facts <- function(study_abbr,
 get_results <- function(tbl_name) {
   
   rslt <- results_tbl(tbl_name) %>% collect()
+  
+}
+
+
+#' output a list of tables to the database 
+#' 
+#' @param output_list list of tables to output
+#' @param append logical to determine if you want to append if the table exists
+#' 
+#' @return tables output to the database; if 
+#' table already exists, it will be appended
+#' 
+
+output_list_to_db <- function(output_list,
+                              append=TRUE) {
+  
+  
+  if(append) {
+    
+    for(i in 1:length(output_list)) {
+      
+      output_tbl_append(data=output_list[[i]],
+                        name=names(output_list[i]))
+      
+    }
+    
+  } else {
+    
+    for(i in 1:length(output_list)) {
+      
+      output_tbl(data=output_list[[i]],
+                 name=names(output_list[i]))
+      
+    }
+    
+  }
+  
+}
+
+#' output table to database if it does not exist, or
+#' append it to an existing table with the same name if it does
+#' 
+#' @param data the data to output
+#' @param name the name of the table to output 
+#' 
+#' Parameters are the same as `output_tbl`
+#' 
+#' @return The table as it exists on the databse, with the new data
+#' appended, if the table already existts.
+#' 
+
+output_tbl_append <- function(data, name = NA, local = FALSE,
+                              file = ifelse(config('execution_mode') !=
+                                              'development', TRUE, FALSE),
+                              db = ifelse(config('execution_mode') !=
+                                            'distribution', TRUE, FALSE),
+                              results_tag = TRUE, ...) {
+  
+  if (is.na(name)) name <- quo_name(enquo(data))
+  
+  if(db_exists_table(config('db_src'),intermed_name(name,temporary=FALSE))) {
+    
+    tmp <- results_tbl(name) %>% collect_new 
+    new_tbl <- 
+      dplyr::union(tmp,
+                   data %>% collect())
+    output_tbl(data=new_tbl,
+               name=name,
+               local=local,
+               file=file,
+               db=db,
+               results_tag = TRUE, ...)
+  } else {
+    output_tbl(data=data,
+               name=name,
+               local=local,
+               file=file,
+               db=db,
+               results_tag = TRUE, ...)
+  }
+  
   
 }

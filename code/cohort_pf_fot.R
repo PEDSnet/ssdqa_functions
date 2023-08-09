@@ -1,47 +1,14 @@
 
 
 
-#' prepare for pf function
-#' requirement: fields must have columns: 
-#' `person_id`, `start_date`, `end_date`
-#' 
-#' @param person_tbl 
-#' @return a tbl with person_id and the following:
-#' `start_date` the cohort entry date
-#' `end_date` the last visit
-#' `fu`: length of follow up
-#' `site` : patient site
-#' 
-
-prepare_pf <- function(cohort_tbl) {
-  
-  # ce <-  
-  #   select(cdm_tbl('cdm_visit_occurrence_stud_1279'), person_id, visit_start_date) %>%
-  #   group_by(person_id) %>%
-  #   summarise(start_date = min(visit_start_date),
-  #             end_date=max(visit_start_date)) %>% 
-  #   ungroup() 
-  
-  ct <- cohort_tbl
-  
-  final <- 
-    ct %>% 
-    mutate(fu_raw = round((end_date - start_date + 1)/365.25,3)) %>% 
-    mutate(fu=case_when(
-      fu_raw < 0.1 ~ fu_raw*100,
-      fu_raw < 1 ~ fu_raw*10,
-      TRUE ~ fu_raw
-    )) %>% 
-    select(person_id, start_date, end_date, fu, fu_raw) %>% 
-    add_site()
-  
-}
-
 
 #' loops through visit types and sites to compute facts over time
 #' 
-#' @param cohort_tbl a cohort tbl with a column for `site` and `person_id`
-#' @param group the variable by which the output should be grouped
+#' @param cohort_tbl a cohort tbl with a column for `site` and `person_id`, and `start_date` and `end_date`
+#' @param age_groups CSV with age groups specified; see `prepare_pf`;
+#' @param codeset CSV for stratifying by a particular codeset
+#' @param group_list the variable by which the output should be grouped; 
+#' defaults to `person_id`, `start_date`, `end_date`, `fu`, `site`; 
 #' @param combine_sites a logical that tells the program to either loop through sites or run it once for all sites
 #' @param visit_type_tbl The visit_concept_ids of interest for the analysis. `all` may be used in this field
 #'                      to select every visit type; defaults to `fot_visit_types` in specs folder
@@ -52,16 +19,22 @@ prepare_pf <- function(cohort_tbl) {
 #' @return a returned list stratified by visit type
 #' 
 
-compute_fot_pf <- function(cohort_tbl,
+
+#### ADD THE DENOMINATOR FOR THE TOTAL NUMBER OF PATIENTS WITH THE VISIT TYPE
+
+compute_fot_pf <- function(cohort,
+                           age_groups=NULL,
+                           codeset=NULL,
                                 grouped_list=c('person_id','start_date','end_date',
                                                'fu','site'),
                                 time_period='year',
-                                time_span= c('2016-01-01','2019-12-31'),
+                                time_span= c('2012-01-01','2022-12-31'),
                                 combine_sites = FALSE,
                                 visit_type_tbl=read_codeset('pf_visit_types_short','ic'),
                                 visit_tbl=cdm_tbl('visit_occurrence'),
                                 site_list=list('stanford',
-                                               'colorado'),
+                                               'colorado',
+                                               'chop'),
                                 visit_list=c('inpatient', 'outpatient'),
                                 domain_tbl=read_codeset('pf_domains_short','cccc')
                                 # grouped_list=c('person_id','start_date','end_date',
@@ -105,17 +78,19 @@ compute_fot_pf <- function(cohort_tbl,
              end_date = as_date(baseline_end_date))
     
     
-    cohort_narrow_prepped <- prepare_pf(cohort_narrowed) %>% 
+    cohort_narrow_prepped <- prepare_pf(cohort_narrowed,
+                                        age_groups = age_groups,
+                                        codeset = codeset) %>% 
       filter(site %in% site_list_v) %>% mutate(time_period=start_date,
                                                time_increment=time_period)
     
-    pf <- loop_through_visits_pf(cohort_tbl = cohort_narrow_prepped,
-                                 combine_sites=combine_sites,
-                                 visit_type_tbl=visit_type_tbl,
-                                 site_list=site_list,
-                                 visit_list=visit_list,
-                                 grouped_list=grouped_list,
-                                 domain_tbl=domain_tbl)
+    pf <- loop_through_visits(cohort_tbl = cohort_narrow_prepped,
+                              combine_sites=combine_sites,
+                              visit_type_tbl=visit_type_tbl,
+                              site_list=site_list,
+                              visit_list=visit_list,
+                              grouped_list=grouped_list,
+                              domain_tbl=domain_tbl)
     
     pf_reduced <- dplyr::bind_rows(pf, .id='visit_type') %>% 
       mutate(time_increment=time_period)
@@ -218,7 +193,8 @@ loop_through_visits_pf <- function(cohort_tbl,
     all_site <- reduce(.x=site_output,
                        .f=dplyr::union)
     
-    visit_output[[paste0('pf_',config('cohort'),'_',(visit_list[j]))]] <- all_site
+    #visit_output[[paste0('pf_',config('cohort'),'_',(visit_list[j]))]] <- all_site
+    visit_output[[paste0(visit_list[j])]] <- all_site
     
   }
   
@@ -281,6 +257,10 @@ compute_pf_for_fot <- function(cohort, pf_input_tbl,
                                person_id)) %>% 
       distinct(person_id) %>% summarise(ct=n()) %>% pull()
     
+    site_visit_ct_num <- 
+      pf_input_tbl %>% summarise(ct=n_distinct(person_id)) %>% 
+      pull()
+    
     pf_final <- 
       pf %>% group_by(
         !!! syms(new_group)
@@ -288,12 +268,13 @@ compute_pf_for_fot <- function(cohort, pf_input_tbl,
         summarise(fact_ct_denom=n(),
                   sum_fact_ct=sum(total_strat_ct),
                   median_fact_ct=median(total_strat_ct)) %>% 
-      relocate(site) %>% ungroup() %>% mutate()
+      relocate(site) %>% ungroup() 
     
     
     finalized <- 
       pf_final %>% 
-      mutate(pt_ct_denom=pf_cohort_final) %>% collect()
+      mutate(pt_ct_denom=pf_cohort_final,
+             site_visit_ct=site_visit_ct_num) %>% collect()
     
     
     domain_results[[domain_name]] <- finalized

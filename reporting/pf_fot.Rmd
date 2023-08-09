@@ -1,0 +1,258 @@
+---
+title: "PF FOT"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	include = TRUE
+)
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+#source(file.path(config('base_dir'),'reporting','measure_2_report_funs.R'))
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(Rlof)
+require(factoextra)
+require(ggcharts)
+require(patchwork)
+require(ggiraph)
+require(timetk)
+#require(htmltools)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+# site_report_config <-
+#   read_csv("../specs/site_config.csv", col_types = "ccc")
+
+fot_tbl_full <- get_results('pf_glom_fot')
+# 
+# visit_domain_colors <- read_codeset('domain_color_config')
+# site_colors <- read_codeset('site_config')
+# 
+# site_colors_deframe <-
+#   site_colors %>%
+#   select(site, site_color) %>%
+#   tibble::deframe()
+
+color_config_file <- 
+  read_codeset('color_config','cc')
+
+```
+
+## Single Site Exploratory
+```{r}
+
+
+fot_site_anon <- 
+  fot_tbl_full %>% 
+  mutate(site=
+           case_when(site=='colorado' ~ 'site 1',
+                     site=='chop' ~ 'site 2',
+                     site=='stanford' ~ 'site 3'))
+
+compute_plot_fot_exp <- function(fot_tbl,
+                                 color_config,
+                                 x_axis='start_date',
+                                 y_axis='median_fact_ct',
+                                 visit_type_nm='inpatient',
+                                 site_nm,
+                            date_breaks_str) {
+  
+  colors_def <- 
+    fot_tbl %>% select(domain) %>% 
+    distinct() %>% left_join(color_config) %>% deframe()
+  
+    t <- ggplot(fot_tbl %>% filter(site==site_nm, visit_type==visit_type_nm),
+           aes(x=!! sym(x_axis), y=!! sym(y_axis), group=domain, fill=domain)) +
+    geom_point(aes(color=domain)) +
+    geom_smooth(method='loess',formula=y~x, size=0.5) +
+    scale_fill_manual(values=colors_def) +
+    scale_color_manual(values=colors_def) + 
+    theme_classic() +
+    scale_x_date(date_breaks=date_breaks_str) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    ggtitle(paste0(site_nm, ', ', visit_type_nm, ': patient facts per domain')) +
+    labs(x='Time Period', y='Median Facts Per Patient')
+    
+ 
+}
+
+ss_exp_glom <- 
+  compute_plot_fot_exp(fot_tbl=fot_site_anon,
+                       color_config=color_config_file,
+                       x_axis='start_date',
+                       y_axis='median_fact_ct',
+                       site_nm='site 1',
+                       visit_type_nm='outpatient',
+                       date_breaks_str = '1 year')
+
+ss_exp_glom
+
+```
+
+## Single Site, Anomaly Detection
+
+```{r, echo=FALSE}
+
+
+ r <- plot_anomaly_diagnostics(.data=fot_site_anon %>%     filter(visit_type=='outpatient',domain=='labs'), 
+                          .facet_vars = site, .date_var = start_date, .value=median_fact_ct, .alpha=0.10, .legend_show = FALSE,
+                          .max_anomalies = 0.5, .title = 'Median Labs Across Time for Outpatient Visits: Anomaly Detection Across Sites',
+                          .facet_ncol = 3, .facet_scales = 'free_x', .facet_collapse = TRUE, .interactive = FALSE)
+# ggsave(
+#   plot = r,
+#   height = 15,
+#   width = 20,
+#   units = c('cm'),
+#   filename = paste0(config('base_dir'),'/results/mc_ssanom_cc.png')
+# )
+
+ # plot_anomaly_diagnostics(.data=pmca_tbl %>% filter(enc_type=='outpatient',grp=='complex_chronic', cohort=='vx'), 
+ #                          .facet_vars = site, .date_var = month_end, .value=prop_grp, .alpha=0.1,
+ #                          .facet_ncol = 2, .facet_collapse = TRUE)
+r
+```
+
+## Multi-Site Exploratory
+
+
+```{r, echo=FALSE}
+
+#' This function calculates the heuristic used in the FOT dq check
+#' The heuristic is:
+#' month / ((month-1)*.25 +
+#'          (month+1)*.25 +
+#'          (month-12)*.5)
+#'In plain words, its the current month divided by the weighted average of the
+#'previous month, the next month, and the value from the current month in the
+#'previous year
+
+
+fot_check_calc <- function(tblx, site_col,time_col, target_col) {
+  tblx %>%
+    #group_by(!! sym(site_col), !!sym(time_col)) %>% 
+    arrange(!! sym(site_col), !! sym(time_col)) %>% 
+    #window_order(!!sym(site_col),!!sym(time_col)) %>%
+    mutate(
+      lag_1 = lag(!!sym(target_col)),
+      lag_1_plus = lead(!!sym(target_col),1),
+      lag_12 = lag(!!sym(target_col),12),
+      # check_denom_stupid = (lag(!!sym(target_col))*.25 +
+      #                         lead(!!sym(target_col),1)*.25 +
+      #                         lag(!!sym(target_col),12)*.5)) %>%
+      check_denom_stupid()) %>% 
+    filter(check_denom_stupid!=0) %>%
+    mutate(check = !!sym(target_col)/check_denom_stupid-1)
+}
+
+
+test <- fot_check_calc(fot_tbl_full,
+                       site_col='site',
+                       time_col='start_date',
+                       target_col='median_fact_ct')
+
+
+#' Main function that does the FOT checks
+fot_check <- function(target_col,
+                      tblx=results_tbl('fot_output'),
+                     # check_col='check_name',
+                     # check_desc='check_desc',
+                      site_col='site',
+                      time_col='month_end') {
+  
+  cols_to_keep <- c(eval(site_col),eval(time_col),'check')
+  
+  rv <- FALSE
+  rv_agg <- FALSE
+  #base tbl to make a network wide version of the check
+  agg_check <- tblx %>% group_by(!!sym(time_col)) %>%
+    summarise(!!sym(target_col) := sum(!!sym(target_col))) %>%
+    ungroup() %>%
+    mutate({{site_col}}:='all')  # I need a cheat sheet of when {{x}}/eval(x)/!!sym(x) will actually work
+  
+  #for (target_check in tblx %>% select(!!sym(check_col)) %>% distinct() %>% pull()) {
+    for (target_site in tblx %>% select(!!sym(site_col)) %>% distinct() %>% pull()) {
+      foo <- fot_check_calc(tblx %>%
+                              filter(site==target_site),
+                            site_col='site',
+                            time_col,
+                            target_col) %>% collect()
+      if(!is.logical(rv)){
+        rv <- union(rv, foo)
+      } else {
+        rv <- foo
+      }
+    }
+    
+  bar <- fot_check_calc(agg_check,
+                        site_col,time_col,target_col) %>%
+    select(cols_to_keep) %>% collect()
+  if(!is.logical(rv_agg)){
+    rv_agg <- union(rv_agg, bar)
+  } else {
+    rv_agg <- bar
+  }
+  
+  rv_summary <- rv %>% group_by(!!sym(site_col)) %>%
+    summarise(std_dev = sd(check,na.rm=TRUE),
+              pct_25 = quantile(check,.25),
+              pct_75 = quantile(check,.75),
+              med = median(check),
+              m = mean(check)) %>% ungroup() %>% collect()
+  
+  rv_summary_allsites <- rv_agg %>%
+    filter(site=='all') %>% group_by(!!sym(site_col)) %>%
+    summarise(std_dev = sd(check,na.rm=TRUE),
+              pct_25 = quantile(check,.25),
+              pct_75 = quantile(check,.75),
+              med = median(check),
+              m = mean(check)) %>% ungroup() %>% collect() %>%
+    mutate(site='all')
+  
+  
+  return(list(fot_heuristic= dplyr::union(rv %>% select(cols_to_keep),
+                                          rv_agg),#%>% output_tbl('fot_heuristic'),
+              fot_heuristic_summary=dplyr::union(rv_summary,
+                                                 rv_summary_allsites))) #%>% output_tbl('fot_heuristic_summary'),
+  #network_check_tbl = rv_agg %>% output_tbl('fot_heuristic_network_wide')))
+}
+
+
+
+```
+
+
