@@ -252,7 +252,7 @@ loop_through_visits <- function(cohort_tbl,
                     indexes=list('person_id'))
       
       # calls function `compute_pf` and adds site, with cohort_tbl filtered by site as input
-      if(time) {
+      if(!time) {
         domain_compute <- compute_pf(cohort=cohort_site, pf_input_tbl=visits,
                                      grouped_list=grouped_list,
                                      domain_tbl=domain_tbl) %>% add_site()
@@ -296,17 +296,18 @@ loop_through_visits <- function(cohort_tbl,
 #'         
 #' 
 combine_study_facts <- function(study_abbr,
+                                time = FALSE,
                                 visit_type_list = list('inpatient','outpatient',
                                                        'other_visit','all')) {
   final_list <- list()
   
   for(i in 1:length(visit_type_list)) {
     
-    possible_cols <-  read_codeset('pf_domains','cccc') %>% 
+    possible_cols <-  read_codeset('pf_domains_short','cccc') %>% 
       select(domain) %>% c()
     
     tbl_pulled <- 
-      get_results(paste0('pf_',study_abbr,'_',visit_type_list[[i]]))  %>% 
+      get_results(paste0(visit_type_list[[i]]))  %>% 
       select(-any_of('fact_ct_strat')) 
     
     tbl_cols <- tbl_pulled %>% colnames()
@@ -315,7 +316,8 @@ combine_study_facts <- function(study_abbr,
       intersect(possible_cols[[1]],
                 tbl_cols)
     
-    long_please <- 
+    if(!time){
+    mutated_tbl <- 
       tbl_pulled %>% 
       pivot_longer(cols=all_of(selected_cols),
                    names_to='var_name',
@@ -326,15 +328,11 @@ combine_study_facts <- function(study_abbr,
                                 TRUE ~ var_val)) %>% 
        mutate(study=study_abbr,
               visit_type=visit_type_list[[i]])
-      #        age_ce_grp=case_when(age_ce < 0 ~ '<0',
-      #                             age_ce >= 0 & age_ce < 2 ~ '00-01',
-      #                             age_ce >= 2 & age_ce < 6 ~ '02-05',
-      #                             age_ce >= 6 & age_ce < 12 ~ '06-11',
-      #                             age_ce >= 12 & age_ce < 18 ~ '12-17',
-      #                             age_ce >= 18 & age_ce < 26 ~ '18-25',
-      #                             age_ce >= 26  ~ '26+'))
-      # 
-    final_list[[i]] <- long_please
+    } else {mutated_tbl <- tbl_pulled %>% mutate(study=study_abbr,
+                                                 visit_type=visit_type_list[[i]])}
+    
+    
+    final_list[[i]] <- mutated_tbl
     
   }
   
