@@ -12,8 +12,8 @@
 #'         study 
 #' 
 compute_pf_medians <- function(data_input,
-                               agegrp=FALSE,
-                               codeset=FALSE) {
+                               agegrp=NULL,
+                               codeset=NULL) {
   
   
   data_input_cols <- data_input %>% colnames()
@@ -23,8 +23,8 @@ compute_pf_medians <- function(data_input,
       data_input %>% group_by(cohort)
   } else {data_input_grp <- data_input}
   
-  if(agegrp) {data_input_grp <- data_input_grp %>% group_by(age_grp,.add=TRUE)}
-  if(codeset) {data_input_grp <- data_input_grp %>% group_by(flag,.add=TRUE)}
+  if(is.data.frame(agegrp)) {data_input_grp <- data_input_grp %>% group_by(age_grp,.add=TRUE)}
+  if(is.data.frame(codeset)) {data_input_grp <- data_input_grp %>% group_by(flag,.add=TRUE)}
   
   site_distance_medians_tbl <- 
     data_input_grp %>% 
@@ -361,15 +361,29 @@ sepsite_lof_reduce <- function(lof_comp_output) {
 
 ############################ K-means prep ######################################
 
-prep_kmeans <- function(dat) {
+prep_kmeans <- function(dat,
+                        age_group = NULL,
+                        codeset = NULL) {
+  
+  ## Selecting necessary columns
+  select_cols <- c('site', 'var_name', 'visit_type',
+                   'median_site_without0s')
+  
+  if(is.data.frame(age_group)){select_cols <- select_cols %>% append('age_grp')}
+  if(is.data.frame(codeset)){select_cols <- select_cols %>% append('flag')}
+  
+  ## Selecting columns for pivot
+  name_cols <- c('var_name', 'visit_type')
+  
+  if(is.data.frame(age_group)){name_cols <- name_cols %>% append('age_grp')}
+  if(is.data.frame(codeset)){name_cols <- name_cols %>% append('flag')}
   
   kmeans_prep <- 
     dat %>% 
     select(
-      site,var_name, visit_type,
-      median_site_without0s
+      all_of(select_cols)
     ) %>% pivot_wider(id_cols = site,
-                      names_from = c(var_name, visit_type),
+                      names_from = all_of(name_cols),
                       values_from = median_site_without0s) 
   
   kmeans_prep <- 
