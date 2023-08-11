@@ -1,0 +1,325 @@
+---
+title: "Development Committee - PF Output"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(ggcharts)
+require(timetk)
+require(factoextra)
+require(ggiraph)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+site_anon <- function(dat) {
+ dat_anon <- 
+   dat %>% 
+   mutate(site=
+           case_when(site=='colorado' ~ 'site 1',
+                     site=='chop' ~ 'site 2',
+                     site=='stanford' ~ 'site 3'))
+}
+
+site_report_config <-
+  read_csv("../specs/site_config.csv", col_types = "ccc")
+
+color_config_file <- 
+  read_codeset('color_config','cc')
+
+domain_config <- 
+  read_csv("../specs/domain_color_config.csv", col_types = "ccc")
+
+```
+
+## Single Site, Exploratory, No Time
+
+```{r ss_exp_nt, echo=FALSE}
+
+ss_exp_nt <- create_list_input_sepsites(data_tbl=results_tbl('ss_exp_nt') %>% filter(visit_type == 'outpatient') 
+                                        %>% site_anon() %>% collect_new(), 
+                                        outcome_var = 'median_site_without0s')
+
+output <- create_sepsite_output(ss_exp_nt,
+                                thresh=TRUE)
+
+
+
+cts <- ceiling(length(output)/2)
+
+
+p1 <- output[1:cts]
+p2 <- output[cts+1:length(output)]
+
+Reduce('+', p1)
+Reduce('+', p2)
+
+
+```
+
+## Single Site, Anomaly, No Time
+
+```{r ss_anom_nt, echo=FALSE}
+
+ggplot(results_tbl('ss_anom_nt') %>% site_anon() %>% collect_new(), 
+       aes(x = prop_outlier_site_fact, y = site)) +
+  geom_col() +
+  facet_wrap(~var_name) +
+  labs(title = 'Proportion of Patients +/- 3 SD away from Mean')
+
+```
+
+## Single Site, Exploratory, Across Time
+
+```{r ss_exp_at, echo=FALSE}
+
+ss_exp_glom <- 
+  compute_plot_fot_exp(fot_tbl=results_tbl('ss_exp_at') %>% site_anon() %>% collect_new,
+                       color_config=color_config_file,
+                       x_axis='start_date',
+                       y_axis='median_fact_ct',
+                       site_nm='chop',
+                       visit_type_nm='outpatient',
+                       date_breaks_str = '1 year')
+
+ss_exp_glom
+
+```
+
+## Single Site, Anomaly, Across Time
+
+```{r ss_anom_at, echo=FALSE}
+
+ r <- plot_anomaly_diagnostics(.data=results_tbl('ss_anom_at') %>% site_anon() %>% collect_new() %>%
+                                 filter(visit_type=='outpatient',domain=='labs', site == 'chop',
+                                        start_date >= '2012-01-01'), 
+                               .facet_vars = site, 
+                               .date_var = start_date, 
+                               .value=median_fact_ct, 
+                               .alpha=0.10, 
+                               .legend_show = FALSE,
+                               .max_anomalies = 0.5, 
+                               .title = 'Median Labs Across Time for Outpatient Visits: Anomaly Detection Across Sites',
+                               .facet_ncol = 3, 
+                               .facet_scales = 'free_x', 
+                               .facet_collapse = TRUE, 
+                               .interactive = FALSE)
+
+r
+
+```
+
+## Multi-Site, Exploratory, No Time
+
+```{r ms_exp_nt, echo=FALSE}
+
+ggplot(results_tbl('ms_exp_nt') %>% site_anon() %>% collect_new(), 
+       aes(x=var_name,y=median_site_without0s, colour=site))+
+  geom_point(size=3)+
+  geom_point(aes(x=var_name, y=median_all_without0s), shape=8, size=3, color="black")+
+  facet_wrap(~visit_type, scales="free_x", ncol=2)+
+  theme_bw()+
+  coord_flip()
+
+```
+
+## Multi-Site, Anomaly, No Time
+
+```{r ms_anom_nt, echo=FALSE}
+
+kmeans_prep <- results_tbl('ms_anom_nt') %>% site_anon() %>% collect_new() %>% column_to_rownames(var = 'site')
+
+set.seed(123)
+ms_anom <- kmeans(kmeans_prep, centers=3, nstart=40)
+fviz_cluster(ms_anom, data=kmeans_prep)
+
+```
+
+## Multi-Site, Exploratory, Across Time
+
+```{r ms_exp_at, echo=FALSE}
+
+prep_fot <- check_fot_multisite(tblx = results_tbl('ms_exp_at') %>% site_anon() %>% 
+                                  filter(visit_type == 'all') %>% collect_new(),
+                                target_col = 'median_fact_ct',
+                                site_col = 'site',
+                                time_col = 'start_date',
+                                facet_list = c('conditions_all', 'labs', 'anthropometrics'))
+  
+output <- create_multisite_exp(multisite_tbl = prep_fot,
+                               date_breaks_str = '1 year',
+                               site_colors_v = color_config_file)
+
+#for(i in output) {print(i)}
+
+htmltools::tagList(output)
+
+```
+
+## Multi-Site, Anomaly, Across Time
+
+```{r ms_anom_at, echo=FALSE}
+
+output_anom <- produce_multisite_mad(multisite_tbl = prep_fot,
+                                     mad_dev=2)
+
+multisite_anom_graph <- 
+  produce_multisite_anom(multisite_anomaly_tbl = output_anom,
+                         color_config=color_config_file,
+                         outcome_var='grp_outlier_prop')
+
+multisite_anom_graph
+
+
+```
+
+## Single Site, Age Group Stratification
+
+```{r ss_age, echo=FALSE}
+
+var_name_list <- list('conditions_all',
+                      'labs',
+                      'anthropometrics')
+
+ss_age <- create_list_input_facet_sepvarname(data_tbl= results_tbl('ss_age') %>% site_anon() %>% 
+                                               filter(age_grp != 'None') %>% collect_new(),
+                                             visit_type_nm='all',
+                                             facet_var_nm='age_grp',
+                                             var_name_list=var_name_list)
+
+output <- create_facet_graphs_byvarname(list_name=ss_age)
+
+cts <- ceiling(length(output)/2)
+
+
+p1 <- output[1:cts]
+p2 <- output[cts+1:length(output)]
+
+print(p1)
+
+#Reduce('+', p1)
+Reduce('+', p2)
+
+
+```
+
+## Multi-Site, Age Group Stratification
+
+```{r ms_age, echo=FALSE}
+
+ggplot(results_tbl('ms_age') %>% site_anon() %>% filter(age_grp != 'None' & visit_type == 'all') %>% collect_new(),
+       aes(x=var_name,y=median_site_without0s, colour=site))+
+  geom_point(size=3)+
+  geom_point(aes(x=var_name, y=median_all_without0s), shape=8, size=3, color="black")+
+  facet_wrap(~age_grp, scales="free_x", ncol=2)+
+  theme_bw()+
+#  theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))+
+  coord_flip()
+
+```
+
+## Single Site, Chronic Disease Stratification
+
+```{r ss_codes, echo=FALSE}
+
+ss_cancer <- create_list_input_facet_sepvarname(data_tbl= results_tbl('ss_cancer') %>% site_anon() 
+                                                %>% collect_new(),
+                                             visit_type_nm='all',
+                                             facet_var_nm='flag',
+                                             var_name_list=var_name_list)
+
+output <- create_facet_graphs_byvarname(list_name=ss_cancer)
+
+cts <- ceiling(length(output)/2)
+
+
+p1 <- output[1:cts]
+p2 <- output[cts+1:length(output)]
+
+print(p1)
+
+#Reduce('+', p1)
+Reduce('+', p2)
+
+```
+
+```{r ss_cardiac, echo=FALSE}
+
+ss_cardiac <- create_list_input_facet_sepvarname(data_tbl= results_tbl('ss_cardiac') %>% site_anon() %>% 
+                                                   collect_new(),
+                                             visit_type_nm='all',
+                                             facet_var_nm='flag',
+                                             var_name_list=var_name_list)
+
+output <- create_facet_graphs_byvarname(list_name=ss_cardiac)
+
+cts <- ceiling(length(output)/2)
+
+
+p1 <- output[1:cts]
+p2 <- output[cts+1:length(output)]
+
+print(p1)
+
+#Reduce('+', p1)
+Reduce('+', p2)
+
+```
+
+## Multi-Site, Chronic Disease Stratification
+
+```{r ms_codes, echo=FALSE}
+
+ggplot(results_tbl('ms_cancer') %>% site_anon() %>% filter(visit_type == 'all') %>% collect_new(),
+       aes(x=var_name,y=median_site_without0s, colour=site))+
+  geom_point(size=3)+
+  geom_point(aes(x=var_name, y=median_all_without0s), shape=8, size=3, color="black")+
+  facet_wrap(~flag, scales="free_x", ncol=2)+
+  theme_bw()+
+#  theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))+
+  coord_flip()
+
+
+ggplot(results_tbl('ms_cardiac') %>% site_anon() %>% filter(visit_type == 'all') %>% collect_new(),
+       aes(x=var_name,y=median_site_without0s, colour=site))+
+  geom_point(size=3)+
+  geom_point(aes(x=var_name, y=median_all_without0s), shape=8, size=3, color="black")+
+  facet_wrap(~flag, scales="free_x", ncol=2)+
+  theme_bw()+
+#  theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))+
+  coord_flip()
+
+```
