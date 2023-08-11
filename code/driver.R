@@ -31,11 +31,15 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   rslt <- list()
   
   visit_list <- c('all', 'outpatient')
+  
+  cohort <- results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')) %>%
+    left_join(results_tbl(in_schema('ssdqa_glom', 'cohort_matched_stud_1279'))) %>%
+    filter(cohort == 1) %>%
+    select(person_id, start_date, end_date, fu, site)
 
   ## Single Site, Exploratory, No Time
-  ss_exp_nt <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+  ss_exp_nt <- pf_process(cohort = cohort,
+                          site_list = c('colorado', 'chop', 'stanford'),
                           time = FALSE,
                           multi_or_single_site = 'single',
                           collapse_sites = FALSE,
@@ -48,9 +52,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   }
   
   ## Single Site, Anomaly, No Time
-  ss_anom_nt <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+  ss_anom_nt <- pf_process(cohort = cohort,
+                           site_list = c('colorado', 'chop', 'stanford'),
                           time = FALSE,
                           multi_or_single_site = 'single',
                           collapse_sites = FALSE,
@@ -63,9 +66,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   }
   
   ## Single Site, Exploratory, Across Time
-  ss_exp_at <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+  ss_exp_at <- pf_process(cohort = cohort,
+                          site_list = c('colorado', 'chop', 'stanford'),
                           time = TRUE,
                           multi_or_single_site = 'single',
                           collapse_sites = FALSE,
@@ -78,9 +80,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   }
   
   ## Single Site, Anomaly, Across Time
-  ss_anom_at <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                           site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                         'colorado', 'nemours', 'nationwide', 'lurie'),
+  ss_anom_at <- pf_process(cohort = cohort,
+                           site_list = c('colorado', 'chop', 'stanford'),
                            time = TRUE,
                            multi_or_single_site = 'single',
                            collapse_sites = FALSE,
@@ -93,9 +94,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   }
   
   ## Multi-Site, Exploratory, No Time
-  ms_exp_nt <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+  ms_exp_nt <- pf_process(cohort = cohort,
+                          site_list = c('colorado', 'chop', 'stanford'),
                           time = FALSE,
                           multi_or_single_site = 'multi',
                           collapse_sites = TRUE,
@@ -108,9 +108,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   }
   
   ## Multi-Site, Anomaly, No Time
-  ms_anom_nt <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                           site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                         'colorado', 'nemours', 'nationwide', 'lurie'),
+  ms_anom_nt <- pf_process(cohort = cohort,
+                           site_list = c('colorado', 'chop', 'stanford'),
                            time = FALSE,
                            multi_or_single_site = 'multi',
                            collapse_sites = TRUE,
@@ -125,9 +124,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   }
   
   ## Multi-Site, Exploratory, Across Time
-  ms_exp_at <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+  ms_exp_at <- pf_process(cohort = cohort,
+                          site_list = c('colorado', 'chop', 'stanford'),
                           time = TRUE,
                           multi_or_single_site = 'multi',
                           collapse_sites = TRUE,
@@ -140,24 +138,22 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   }
   
   ## Multi-Site, Anomaly, Across Time
-  ms_anom_at <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                           site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                         'colorado', 'nemours', 'nationwide', 'lurie'),
+  ms_anom_at <- pf_process(cohort = cohort,
+                           site_list = c('colorado', 'chop', 'stanford'),
                            time = TRUE,
                            multi_or_single_site = 'multi',
                            collapse_sites = TRUE,
                            anomaly_or_exploratory = 'anomaly')
   
-  output_tbl(ms_anom_nt, 'ms_anom_at')
+  output_tbl(ms_anom_at, 'ms_anom_at')
   
   for(i in 1:length(visit_list)){
     db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
   }
   
   ## Single Site, Age Group Stratification
-  ss_age <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+  ss_age <- pf_process(cohort = cohort,
+                       site_list = c('colorado', 'chop', 'stanford'),
                           time = FALSE,
                           multi_or_single_site = 'single',
                           collapse_sites = FALSE,
@@ -171,9 +167,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   }
   
   ## Multi-Site, Age Group Stratification
-  ms_age <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                       site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                     'colorado', 'nemours', 'nationwide', 'lurie'),
+  ms_age <- pf_process(cohort = cohort,
+                       site_list = c('colorado', 'chop', 'stanford'),
                        time = FALSE,
                        multi_or_single_site = 'multi',
                        collapse_sites = TRUE,
@@ -187,9 +182,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   }
   
   ## Single Site, Chronic Disease Stratification
-  ss_cancer <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                       site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                     'colorado', 'nemours', 'nationwide', 'lurie'),
+  ss_cancer <- pf_process(cohort = cohort,
+                          site_list = c('colorado', 'chop', 'stanford'),
                        time = FALSE,
                        multi_or_single_site = 'single',
                        collapse_sites = FALSE,
@@ -202,9 +196,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
     db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
   }
   
-  ss_cardiac <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+  ss_cardiac <- pf_process(cohort = cohort,
+                           site_list = c('colorado', 'chop', 'stanford'),
                           time = FALSE,
                           multi_or_single_site = 'single',
                           collapse_sites = FALSE,
@@ -218,9 +211,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   }
   
   ## Multi-Site, Chronic Disease Stratification
-  ms_cancer <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+  ms_cancer <- pf_process(cohort = cohort,
+                          site_list = c('colorado', 'chop', 'stanford'),
                           time = FALSE,
                           multi_or_single_site = 'multi',
                           collapse_sites = TRUE,
@@ -233,9 +225,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
     db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
   }
   
-  ms_cardiac <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
-                           site_list = c('seattle', 'stanford', 'cchmc', 'chop',
-                                         'colorado', 'nemours', 'nationwide', 'lurie'),
+  ms_cardiac <- pf_process(cohort = cohort,
+                           site_list = c('colorado', 'chop', 'stanford'),
                            time = FALSE,
                            multi_or_single_site = 'multi',
                            collapse_sites = TRUE,
