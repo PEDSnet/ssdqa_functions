@@ -39,8 +39,8 @@ cohort_codeset_label <- function(cohort_tbl,
   
   codeset <- load_codeset(codeset_meta$file_name)
   
-  filter_tbl <- select(cdm_tbl(codeset_meta$table),
-                       codeset_meta$column, person_id) %>%
+  filter_tbl <- select(cdm_tbl('visit_occurrence'), person_id, visit_occurrence_id, provider_id, care_site_id) %>%
+    left_join(cdm_tbl(codeset_meta$table)) %>%
     rename('concept_id' = codeset_meta$column) %>%
     inner_join(codeset, by = 'concept_id') %>%
     select(person_id, flag) %>%
