@@ -23,8 +23,10 @@ compute_pf_medians <- function(data_input,
       data_input %>% group_by(cohort)
   } else {data_input_grp <- data_input}
   
-  if(is.data.frame(agegrp)) {data_input_grp <- data_input_grp %>% group_by(age_grp,.add=TRUE)}
-  if(is.data.frame(codeset)) {data_input_grp <- data_input_grp %>% group_by(flag,.add=TRUE)}
+  if(is.data.frame(agegrp)) {data_input_grp <- data_input_grp %>% group_by(age_grp,.add=TRUE) %>% 
+    mutate(age_grp = ifelse(is.na(age_grp), 'None', age_grp))}
+  if(is.data.frame(codeset)) {data_input_grp <- data_input_grp %>% group_by(flag,.add=TRUE) %>%
+    mutate(flag = ifelse(is.na(flag), 'None', flag))}
   
   site_distance_medians_tbl <- 
     data_input_grp %>% 
@@ -59,6 +61,61 @@ compute_pf_medians <- function(data_input,
   
   site_distance_final
   
+}
+
+
+compute_dist_mean <- function(data_input,
+                              agegrp = NULL,
+                              codeset = NULL) {
+  
+  if(is.data.frame(agegrp)) {data_input <- data_input %>% group_by(age_grp,.add=TRUE) %>% 
+    mutate(age_grp = ifelse(is.na(age_grp), 'None', age_grp))}
+  if(is.data.frame(codeset)) {data_input <- data_input %>% group_by(flag,.add=TRUE) %>%
+    mutate(flag = ifelse(is.na(flag), 'None', flag))}
+  
+  site_dist_means_tbl <- 
+    data_input %>% 
+    group_by(study,
+             visit_type,
+             var_name,
+             .add=TRUE) %>% 
+    mutate(n_fact=n(),
+           mean_fact=mean(var_val),
+           sd_fact=sd(var_val),
+           zscore_fact = ((var_val - mean_fact) / sd_fact),
+           abs_z = abs(zscore_fact),
+           three_sd = case_when(abs_z > 3L ~ 1L,
+                                     TRUE ~ 0L),
+           outlier_fact = sum(three_sd),
+           prop_outlier_fact = round(outlier_fact / n_fact, 3)) %>% 
+    ungroup() %>%
+    select(-c(three_sd, abs_z, mean_fact, sd_fact))
+  
+  
+  site_dist_means_final <- 
+    data_input %>% 
+    left_join(site_dist_means_tbl) %>% 
+    group_by(study,
+             site,
+             visit_type,
+             var_name,
+             .add=TRUE) %>% 
+    mutate(n_site_fact=n(),
+           mean_site_fact=mean(var_val),
+           sd_site_fact=sd(var_val),
+           zscore_site_fact = ((var_val - mean_site_fact) / sd_site_fact),
+           abs_z = abs(zscore_site_fact),
+           three_sd = case_when(abs_z > 3L ~ 1L,
+                                     TRUE ~ 0L),
+           outlier_site_fact = sum(three_sd),
+           prop_outlier_site_fact = round(outlier_site_fact / n_site_fact, 3)) %>% 
+    ungroup() %>%
+    select(-c(three_sd, abs_z, mean_site_fact, sd_site_fact))
+  
+  site_dist_means_final <- 
+    site_dist_means_final %>% replace(is.na(.), 0) 
+  
+  site_dist_means_final
 }
 
 
@@ -737,4 +794,329 @@ create_multisite_output <- function(dat){
     facet_wrap(~visit_type, scales="free_x", ncol=2)+
     theme_bw()+
     coord_flip()
+}
+
+
+compute_plot_fot_exp <- function(fot_tbl,
+                                 color_config,
+                                 x_axis='start_date',
+                                 y_axis='median_fact_ct',
+                                 visit_type_nm='inpatient',
+                                 site_nm,
+                                 date_breaks_str) {
+  
+  colors_def <- 
+    fot_tbl %>% select(domain) %>% 
+    distinct() %>% left_join(color_config) %>% deframe()
+  
+  t <- ggplot(fot_tbl %>% filter(site==site_nm, visit_type==visit_type_nm),
+              aes(x=!! sym(x_axis), y=!! sym(y_axis), group=domain, fill=domain)) +
+    geom_point(aes(color=domain)) +
+    geom_smooth(method='loess',formula=y~x, size=0.5) +
+    scale_fill_manual(values=colors_def) +
+    scale_color_manual(values=colors_def) + 
+    theme_classic() +
+    scale_x_date(date_breaks=date_breaks_str) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    ggtitle(paste0(site_nm, ', ', visit_type_nm, ': patient facts per domain')) +
+    labs(x='Time Period', y='Median Facts Per Patient')
+  
+  
+}
+
+
+fot_check <- function(target_col,
+                      tblx=results_tbl('fot_output'),
+                      # check_col='check_name',
+                      # check_desc='check_desc',
+                      site_col='site',
+                      time_col='month_end') {
+  
+  cols_to_keep <- c(eval(site_col),eval(time_col),'check')
+  
+  rv <- FALSE
+  rv_agg <- FALSE
+  #base tbl to make a network wide version of the check
+  agg_check <- tblx %>% group_by(!!sym(time_col)) %>%
+    summarise(!!sym(target_col) := sum(!!sym(target_col))) %>%
+    ungroup() %>%
+    mutate({{site_col}}:='all')  # I need a cheat sheet of when {{x}}/eval(x)/!!sym(x) will actually work
+  
+  #for (target_check in tblx %>% select(!!sym(check_col)) %>% distinct() %>% pull()) {
+  for (target_site in tblx %>% select(!!sym(site_col)) %>% distinct() %>% pull()) {
+    foo <- fot_check_calc(tblx %>%
+                            filter(site==target_site),
+                          site_col='site',
+                          time_col,
+                          target_col) %>% collect()
+    if(!is.logical(rv)){
+      rv <- union(rv, foo)
+    } else {
+      rv <- foo
+    }
+  }
+  
+  bar <- fot_check_calc(agg_check,
+                        site_col,time_col,target_col) %>%
+    select(cols_to_keep) %>% collect()
+  if(!is.logical(rv_agg)){
+    rv_agg <- union(rv_agg, bar)
+  } else {
+    rv_agg <- bar
+  }
+  
+  rv_summary <- rv %>% group_by(!!sym(site_col)) %>%
+    summarise(std_dev = sd(check,na.rm=TRUE),
+              pct_25 = quantile(check,.25),
+              pct_75 = quantile(check,.75),
+              med = median(check),
+              m = mean(check)) %>% ungroup() %>% collect()
+  
+  rv_summary_allsites <- rv_agg %>%
+    filter(site=='all') %>% group_by(!!sym(site_col)) %>%
+    summarise(std_dev = sd(check,na.rm=TRUE),
+              pct_25 = quantile(check,.25),
+              pct_75 = quantile(check,.75),
+              med = median(check),
+              m = mean(check)) %>% ungroup() %>% collect() %>%
+    mutate(site='all')
+  
+  
+  return(list(fot_heuristic= dplyr::union(rv %>% select(cols_to_keep),
+                                          rv_agg),#%>% output_tbl('fot_heuristic'),
+              fot_heuristic_summary=dplyr::union(rv_summary,
+                                                 rv_summary_allsites))) #%>% output_tbl('fot_heuristic_summary'),
+  #network_check_tbl = rv_agg %>% output_tbl('fot_heuristic_network_wide')))
+}
+
+
+fot_check_calc <- function(tblx, site_col,time_col, target_col) {
+  tblx %>%
+    #group_by(!! sym(site_col), !!sym(time_col)) %>% 
+    arrange(!! sym(site_col), !! sym(time_col)) %>% 
+    #window_order(!!sym(site_col),!!sym(time_col)) %>%
+    mutate(
+      lag_1 = lag(!!sym(target_col)),
+      lag_1_plus = lead(!!sym(target_col),1),
+      lag_12 = lag(!!sym(target_col),12),
+      check_denom_stupid = (lag(!!sym(target_col))*.25 +
+                              lead(!!sym(target_col),1)*.25 +
+                              lag(!!sym(target_col),12)*.5)) %>%
+    # check_denom_stupid()) %>% 
+    filter(check_denom_stupid!=0) %>%
+    mutate(check = !!sym(target_col)/check_denom_stupid-1)
+}
+
+
+#' fot table computing distance from "all" check
+#'
+#' @param fot_check_output first element of list output from `fot_check`
+#'
+#' @return tbl with the following columns:
+#' domain | check_name | month_end | centroid | site | check | distance
+#'
+#' The `distance` column measures, for each site/domain/check/month combination,
+#' the distance between the site's normalized `check` output compared to
+#' all sites combined.
+#'
+
+check_fot_all_dist <- function(fot_check_output) {
+  
+  just_all <-
+    fot_check_output %>%
+    filter(site=='all') %>%
+    rename(centroid=check) %>%
+    select(-c(site))
+  
+  combined <-
+    just_all %>%
+    inner_join(
+      fot_check_output,
+      by=c('start_date')
+    ) %>% mutate(
+      distance=round(check,3)-round(centroid,3)
+    )
+}
+
+#' Do all FOT checks; 
+#' REQUIRES a column in `tblx` to be called `grp`
+#' 
+#' @param target_col
+#' @param tblx
+#' @param  site_col defaults to `site`
+#' @param time_col defaults to  `month_end`
+#' 
+
+check_fot_multisite <- function(tblx,
+                                target_col,
+                                site_col,
+                                time_col, 
+                                facet_list) {
+  
+  final_all <- list()
+  
+  for(i in 1:length(facet_list)) {
+    
+    tblx_input <- tblx %>% filter(domain == facet_list[[i]])
+    
+    fot_output <- fot_check(tblx=tblx_input,
+                            target_col=target_col,
+                            site_col=site_col,
+                            time_col=time_col)
+    
+    fot_distance <- check_fot_all_dist(fot_output$fot_heuristic) %>% 
+      mutate(grp_check=facet_list[[i]])
+    
+    final_all[[i]] <- fot_distance
+    
+  }
+  
+  letsreduce <- reduce(.x=final_all,
+                       .f=dplyr::union)
+  
+}
+
+
+#' loops through each medical complexity group
+#' and produces interactive graph 
+#' using `girafe` package
+#' 
+#' 
+#' @param multisite_tbl a tbl with all sites and a `grp_check` column,
+#' as well as a `month_end`, `distance`, `site` columns; output from 
+#' the `check_for_multisite` function
+#' 
+#' @param date_breaks_str the window length for each unit of time
+#' on the x-axis
+#' 
+
+create_multisite_exp <- function(multisite_tbl,
+                                 date_breaks_str,
+                                 site_colors_v=site_colors) {
+  
+  grp_list <- 
+    multisite_tbl %>% 
+    select(grp_check) %>% distinct() %>% pull() %>% as.list()
+  
+  grp_output <- list()
+  
+  for(i in grp_list) {
+    
+    multisite_plot_exp <-  
+      ggplot(multisite_tbl %>% filter(grp_check==i,start_date < '2022-12-01',start_date > '2010-03-01'), 
+             aes(x=start_date,y=distance,group=site,color=site), size=1) +
+      #geom_line() +
+      geom_line_interactive(aes(tooltip=site, data_id=site)) +
+      #scale_color_manual(values=site_colors_v)+
+      scale_x_date(date_breaks=date_breaks_str) +
+      theme_bw() +
+      ggtitle(paste0('Multisite Exploratory: ',i)) +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    
+    multi_girafe <- 
+      girafe(ggobj = multisite_plot_exp,
+             width_svg = 8,
+             height_svg = 4) %>% 
+      girafe_options(opts_tooltip(use_fill=TRUE, css='color:black;', offx=20),
+                     opts_hover(css='fill:blue;stroke-width:2;'),
+                     opts_hover_inv(css='opacity:0.3'))
+    
+    
+    grp_output[[i]] <- multi_girafe
+    #ggplotly(multisite_plot_exp)
+  }
+  
+  grp_output
+}
+
+#' output of `check_for_multisite` to look for points where
+#' a site is +/- 2 MAD from the median/centoid
+#' 
+#' 
+#' 
+
+produce_multisite_mad <- function(multisite_tbl,
+                                  mad_dev) {
+  
+  mad_computation <- 
+    multisite_tbl %>% 
+    group_by(start_date,
+             grp_check,
+             centroid) %>% 
+    summarise(mad_pt=mad(check, center=centroid)) %>% 
+    ungroup() %>% 
+    mutate(lower_mad = mad_pt - (abs(mad_pt*mad_dev)),
+           upper_mad = mad_pt + (abs(mad_pt*mad_dev)))
+  
+  full_tbl_outliers <- 
+    multisite_tbl %>% ungroup() %>% 
+    inner_join(mad_computation) %>% 
+    mutate(
+      outlier=case_when((distance < lower_mad) | (distance > upper_mad) ~ 1,
+                        TRUE ~ 0)
+    ) %>% filter(! site=='all')
+  
+  sites_grp_outliers <- 
+    full_tbl_outliers %>% 
+    group_by(site,
+             grp_check) %>% 
+    filter(outlier==1) %>% 
+    summarise(grp_outlier_num=n()) %>%  ungroup() 
+  
+  sites_grp_ct_total <- 
+    full_tbl_outliers %>% 
+    group_by(site,
+             grp_check) %>% 
+    summarise(grp_total_num=n()) %>% ungroup()
+  
+  sites_grp_total <- 
+    sites_grp_ct_total %>% 
+    left_join(sites_grp_outliers) %>% 
+    mutate(grp_outlier_prop = round(grp_outlier_num/grp_total_num,2))
+  
+  sites_total <- 
+    sites_grp_total %>% ungroup() %>% 
+    group_by(site) %>% 
+    mutate(site_total_num=sum(grp_total_num),
+           site_total_outlier=sum(grp_outlier_num)) %>% 
+    mutate(site_outlier_prop=round(site_total_outlier/site_total_num,2)) %>% 
+    rename(grp=grp_check)
+  
+}
+
+#' produce graphs from output
+#' 
+#' @param multisite_anomaly_tbl
+#' 
+
+produce_multisite_anom <- function(multisite_anomaly_tbl,
+                                   color_config,
+                                   outcome_var) {
+  
+  
+  
+  colors_def <- 
+    multisite_anomaly_tbl %>% ungroup() %>% select(grp) %>% distinct() %>% deframe()
+    #left_join(color_config) %>% deframe()
+  
+  t <- 
+    ggplot(multisite_anomaly_tbl,
+           aes(x=site, y=!!sym(outcome_var), group=grp, fill=grp)) +
+    #geom_bar(position='stack',stat='identity') + 
+    geom_bar_interactive(aes(tooltip=!!sym(outcome_var), data_id=grp), position='stack', stat='identity') +
+    #scale_fill_manual(values=colors_def) +
+    theme_classic() +
+    #theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1)) +
+    coord_flip() +
+    ylab('Proportion')
+  
+  multi_girafe <- 
+    girafe(ggobj = t,
+           height_svg=3,
+           width_svg = 6) %>% 
+    girafe_options(opts_tooltip(use_fill=FALSE, css='color:black;', offx=20),
+                   opts_hover(css='stroke-width:2;'),
+                   opts_hover_inv(css='opacity:0.3'))
+  
+  
 }
