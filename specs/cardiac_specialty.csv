@@ -1,0 +1,22 @@
+concept_id,concept_name,domain_id,vocabulary_id,concept_class_id,flag
+45756805,Pediatric Cardiology,Provider,ABMS,Physician Specialty,Cardiac Specialty
+45756765,Congenital Cardiac Surgery,Provider,ABMS,Physician Specialty,Cardiac Specialty
+45756754,Cardiovascular Disease,Provider,ABMS,Physician Specialty,Cardiac Specialty
+45756830,Thoracic and Cardiac Surgery,Provider,ABMS,Physician Specialty,Cardiac Specialty
+44777676,Cardiothoracic transplantation (recognised specialist services only - includes 'outreach' facilities),Provider,HES Specialty,Physician Specialty,Cardiac Specialty
+44777760,Paediatric Cardiac Surgery,Provider,HES Specialty,Physician Specialty,Cardiac Specialty
+903274,Clinical Cardiac Electrophysiology,Provider,Medicare Specialty,Physician Specialty,Cardiac Specialty
+38004451,Cardiology,Provider,Medicare Specialty,Physician Specialty,Cardiac Specialty
+38004497,Cardiac Surgery,Provider,Medicare Specialty,Physician Specialty,Cardiac Specialty
+903276,Interventional Cardiology,Provider,Medicare Specialty,Physician Specialty,Cardiac Specialty
+903279,Advanced Heart Failure and Transplant Cardiology,Provider,Medicare Specialty,Physician Specialty,Cardiac Specialty
+38003725,Registered Cardiac Rehabilitation Nurse,Provider,NUCC,Provider,Cardiac Specialty
+38003895,Nuclear Cardiology,Provider,NUCC,Physician Specialty,Cardiac Specialty
+38004023,Thoracic Surgery (Cardiothoracic Vascular Surgery),Provider,NUCC,Physician Specialty,Cardiac Specialty
+38004052,Physical Cardiopulmonary Therapist,Provider,NUCC,Provider,Cardiac Specialty
+38004146,Cardiology Technician,Provider,NUCC,Provider,Cardiac Specialty
+38004147,Cardiovascular Technician,Provider,NUCC,Provider,Cardiac Specialty
+38004148,Cardiovascular Invasive Specialist,Provider,NUCC,Provider,Cardiac Specialty
+38004150,Cardiovascular Sonography Technologist,Provider,NUCC,Provider,Cardiac Specialty
+38004173,Cardiovascular-Interventional Technologist,Provider,NUCC,Provider,Cardiac Specialty
+38004174,Cardiac-Interventional Technologist,Provider,NUCC,Provider,Cardiac Specialty
