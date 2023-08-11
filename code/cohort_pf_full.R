@@ -53,10 +53,13 @@ pf_process <- function(cohort,
   if(!time){
     if(anomaly_or_exploratory=='anomaly') {
       if(multi_or_single_site=='single') {
-        lof_input <- create_lof_input(data_tbl=pf_final)
-        lof_output <- create_sepsite_output_lof(input_tbls=lof_input,
-                                                var_list_arg=lof_domains)
-        pf_output <- sepsite_lof_reduce(lof_output)
+        # lof_input <- create_lof_input(data_tbl=pf_final)
+        # lof_output <- create_sepsite_output_lof(input_tbls=lof_input,
+        #                                         var_list_arg=lof_domains)
+        # pf_output <- sepsite_lof_reduce(lof_output)
+        pf_output <- compute_dist_mean(pf_final,
+                                       agegrp = age_groups,
+                                       codeset = codeset)
       } else {
         medians_prep <- compute_pf_medians(data_input = pf_final,
                            agegrp = age_groups,
@@ -116,3 +119,36 @@ pf_output_gen <- function(pf_output,
   }
   
 }
+
+
+# if(time){
+#   if(single_or_multi == 'single'){
+#     if(anomaly_or_exploratory == 'anomaly'){
+#       output <- ss_anom_at
+#     } else {
+#       output <- ss_exp_at
+#     }
+#   } else {
+#     if(anomaly_or_exploratory == 'anomaly'){
+#       output <- ms_anom_at
+#     } else {
+#       output <- ms_exp_at
+#     }
+#   }
+# } else {
+#   if(single_or_multi == 'single'){
+#     if(anomaly_or_exploratory == 'anomaly'){
+#       output <- ss_anom_nt
+#     } else {
+#       if('age_grp' %in% colnames()){Output <- ss_facet_age}else{output <- ss_exp_nt}
+#       if('flag' %in% colnames()){Output <- ss_facet_code}else{output <- ss_exp_nt}
+#     }
+#   } else {
+#     if(anomaly_or_exploratory == 'anomaly'){
+#       output <- ms_anom_nt
+#     } else{
+#       if('age_grp' %in% colnames()){Output <- ms_facet_age} else {output <- ms_exp_nt}
+#       if('flag' %in% colnames()){Output <- ms_facet_code} else {output <- ms_exp_nt}
+#     }
+#   }
+# }
