@@ -69,8 +69,7 @@ domain_config <-
 
 ```{r ss_exp_nt, echo=FALSE}
 
-ss_exp_nt <- create_list_input_sepsites(data_tbl=results_tbl('ss_exp_nt') %>% filter(visit_type == 'outpatient') 
-                                        %>% site_anon() %>% collect_new(), 
+ss_exp_nt <- create_list_input_sepsites(data_tbl= results_tbl('ss_exp_nt') %>% site_anon() %>% collect_new(), 
                                         outcome_var = 'median_site_without0s')
 
 output <- create_sepsite_output(ss_exp_nt,
@@ -84,7 +83,8 @@ cts <- ceiling(length(output)/2)
 p1 <- output[1:cts]
 p2 <- output[cts+1:length(output)]
 
-Reduce('+', p1)
+print(p1)
+#Reduce('+', p1)
 Reduce('+', p2)
 
 
@@ -93,9 +93,10 @@ Reduce('+', p2)
 ## Single Site, Anomaly, No Time
 
 ```{r ss_anom_nt, echo=FALSE}
-
-ggplot(results_tbl('ss_anom_nt') %>% site_anon() %>% collect_new(), 
-       aes(x = prop_outlier_site_fact, y = site)) +
+results_tbl('ss_anom_nt') %>% site_anon() %>% collect_new() %>% 
+  select(site, var_name, prop_outlier_site_fact) %>% 
+  distinct() %>%
+ggplot(aes(x = prop_outlier_site_fact, y = site)) +
   geom_col() +
   facet_wrap(~var_name) +
   labs(title = 'Proportion of Patients +/- 3 SD away from Mean')
@@ -106,12 +107,18 @@ ggplot(results_tbl('ss_anom_nt') %>% site_anon() %>% collect_new(),
 
 ```{r ss_exp_at, echo=FALSE}
 
+exp_at_cohort <- results_tbl('ss_exp_at') %>% site_anon() %>% collect_new() %>% 
+  mutate(start_year = year(start_date)) %>%
+  filter(start_year >= '2012') %>% 
+  select(site, start_date, start_year, median_fact_ct, visit_type, domain) %>%
+  distinct()
+
 ss_exp_glom <- 
-  compute_plot_fot_exp(fot_tbl=results_tbl('ss_exp_at') %>% site_anon() %>% collect_new,
+  compute_plot_fot_exp(fot_tbl=exp_at_cohort,
                        color_config=color_config_file,
                        x_axis='start_date',
                        y_axis='median_fact_ct',
-                       site_nm='chop',
+                       site_nm='site 1',
                        visit_type_nm='outpatient',
                        date_breaks_str = '1 year')
 
@@ -124,7 +131,7 @@ ss_exp_glom
 ```{r ss_anom_at, echo=FALSE}
 
  r <- plot_anomaly_diagnostics(.data=results_tbl('ss_anom_at') %>% site_anon() %>% collect_new() %>%
-                                 filter(visit_type=='outpatient',domain=='labs', site == 'chop',
+                                 filter(visit_type=='outpatient',domain=='labs', site == 'site 2',
                                         start_date >= '2012-01-01'), 
                                .facet_vars = site, 
                                .date_var = start_date, 
@@ -132,7 +139,8 @@ ss_exp_glom
                                .alpha=0.10, 
                                .legend_show = FALSE,
                                .max_anomalies = 0.5, 
-                               .title = 'Median Labs Across Time for Outpatient Visits: Anomaly Detection Across Sites',
+                               .title = 'Median Labs Across Time for Outpatient Visits: 
+                               Anomaly Detection Across Sites',
                                .facet_ncol = 3, 
                                .facet_scales = 'free_x', 
                                .facet_collapse = TRUE, 
@@ -163,7 +171,7 @@ ggplot(results_tbl('ms_exp_nt') %>% site_anon() %>% collect_new(),
 kmeans_prep <- results_tbl('ms_anom_nt') %>% site_anon() %>% collect_new() %>% column_to_rownames(var = 'site')
 
 set.seed(123)
-ms_anom <- kmeans(kmeans_prep, centers=3, nstart=40)
+ms_anom <- kmeans(kmeans_prep, centers=2)
 fviz_cluster(ms_anom, data=kmeans_prep)
 
 ```

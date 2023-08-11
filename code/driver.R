@@ -35,7 +35,7 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   cohort <- results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')) %>%
     left_join(results_tbl(in_schema('ssdqa_glom', 'cohort_matched_stud_1279'))) %>%
     filter(cohort == 1) %>%
-    select(person_id, start_date, end_date, fu, site)
+    select(person_id, start_date, end_date, fu, site) %>% compute_new()
 
   ## Single Site, Exploratory, No Time
   ss_exp_nt <- pf_process(cohort = cohort,
