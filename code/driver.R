@@ -29,36 +29,224 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   # By convention, accumulate execution results in a list rather than as
   # independent variables, in order to make returning the entire set easier
   rslt <- list()
+  
+  visit_list <- c('all', 'outpatient')
 
-  message('Insert message here')
-  rslt$starter <- first_function(config('db_src')) %>%
-    # If final table, output here.  If you need a temp or raw table, use
-    # compute_new(), and see below for ID replacement
-    output_tbl(name = 'first_tbl', indexes = list('person_id'))
-
-  # counts the number of persons for this part of the query
-  append_sum(cohort = 'Name of first computation or cohort',
-             persons = distinct_ct(rslt$starter))
-
-
-  rslt$next_cohort <- function_call_for_study(rslt$starter) %>%
-    .other_functions_if_applicable('') %>% # if applicable
-    output_tbl(name = 'next_tbl', indexes = list('person_id', 'visit_occurrence_id'))
-  append_sum(cohort = 'Name of second computation or cohort',
-             persons = distinct_ct(rslt$next_cohort))
-
-
-  more_functions_as_needed()
-
-
-  # If needed, replace person_ids and write output
-  pers_xwalk <- gen_xwalk(rslt$starter, 'person_id')
-  output_tbl(new_id(rslt$starter, 'person_id', pers_xwalk, replace = TRUE),
-             name = 'base_cohort')
-  output_tbl(new_id(rslt$next_cohort, 'person_id', pers_xwalk, replace = TRUE),
-             name = 'next_cohort')
-  # Don't forget to save the crosswalk
-  output_tbl(pers_xwalk, name = 'person_xwalk', local = TRUE)
+  ## Single Site, Exploratory, No Time
+  ss_exp_nt <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+                          time = FALSE,
+                          multi_or_single_site = 'single',
+                          collapse_sites = FALSE,
+                          anomaly_or_exploratory = 'exploratory')
+  
+  output_tbl(ss_exp_nt, 'ss_exp_nt')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ## Single Site, Anomaly, No Time
+  ss_anom_nt <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+                          time = FALSE,
+                          multi_or_single_site = 'single',
+                          collapse_sites = FALSE,
+                          anomaly_or_exploratory = 'anomaly')
+  
+  output_tbl(ss_anom_nt, 'ss_anom_nt')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ## Single Site, Exploratory, Across Time
+  ss_exp_at <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+                          time = TRUE,
+                          multi_or_single_site = 'single',
+                          collapse_sites = FALSE,
+                          anomaly_or_exploratory = 'exploratory')
+  
+  output_tbl(ss_exp_at, 'ss_exp_at')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ## Single Site, Anomaly, Across Time
+  ss_anom_at <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                           site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                         'colorado', 'nemours', 'nationwide', 'lurie'),
+                           time = TRUE,
+                           multi_or_single_site = 'single',
+                           collapse_sites = FALSE,
+                           anomaly_or_exploratory = 'anomaly')
+  
+  output_tbl(ss_anom_at, 'ss_anom_at')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ## Multi-Site, Exploratory, No Time
+  ms_exp_nt <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+                          time = FALSE,
+                          multi_or_single_site = 'multi',
+                          collapse_sites = TRUE,
+                          anomaly_or_exploratory = 'exploratory')
+  
+  output_tbl(ms_exp_nt, 'ms_exp_nt')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ## Multi-Site, Anomaly, No Time
+  ms_anom_nt <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                           site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                         'colorado', 'nemours', 'nationwide', 'lurie'),
+                           time = FALSE,
+                           multi_or_single_site = 'multi',
+                           collapse_sites = TRUE,
+                           anomaly_or_exploratory = 'anomaly') %>% 
+    as.data.frame() %>%
+    rownames_to_column(var = 'site')
+  
+  output_tbl(ms_anom_nt, 'ms_anom_nt')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ## Multi-Site, Exploratory, Across Time
+  ms_exp_at <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+                          time = TRUE,
+                          multi_or_single_site = 'multi',
+                          collapse_sites = TRUE,
+                          anomaly_or_exploratory = 'exploratory')
+  
+  output_tbl(ms_exp_at, 'ms_exp_at')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ## Multi-Site, Anomaly, Across Time
+  ms_anom_at <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                           site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                         'colorado', 'nemours', 'nationwide', 'lurie'),
+                           time = TRUE,
+                           multi_or_single_site = 'multi',
+                           collapse_sites = TRUE,
+                           anomaly_or_exploratory = 'anomaly')
+  
+  output_tbl(ms_anom_nt, 'ms_anom_at')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ## Single Site, Age Group Stratification
+  ss_age <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+                          time = FALSE,
+                          multi_or_single_site = 'single',
+                          collapse_sites = FALSE,
+                          anomaly_or_exploratory = 'exploratory',
+                          age_groups = read.csv(file.path(base_dir, 'specs', 'age_group_definitions.csv')))
+  
+  output_tbl(ss_age, 'ss_age')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ## Multi-Site, Age Group Stratification
+  ms_age <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                       site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                     'colorado', 'nemours', 'nationwide', 'lurie'),
+                       time = FALSE,
+                       multi_or_single_site = 'multi',
+                       collapse_sites = TRUE,
+                       anomaly_or_exploratory = 'exploratory',
+                       age_groups = read.csv(file.path(base_dir, 'specs', 'age_group_definitions.csv')))
+  
+  output_tbl(ms_age, 'ms_age')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ## Single Site, Chronic Disease Stratification
+  ss_cancer <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                       site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                     'colorado', 'nemours', 'nationwide', 'lurie'),
+                       time = FALSE,
+                       multi_or_single_site = 'single',
+                       collapse_sites = FALSE,
+                       anomaly_or_exploratory = 'exploratory',
+                       codeset = read.csv(file.path(base_dir, 'specs', 'codeset_cancer_metadata.csv')))
+  
+  output_tbl(ss_cancer, 'ss_cancer')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ss_cardiac <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+                          time = FALSE,
+                          multi_or_single_site = 'single',
+                          collapse_sites = FALSE,
+                          anomaly_or_exploratory = 'exploratory',
+                          codeset = read.csv(file.path(base_dir, 'specs', 'codeset_cardiac_metadata.csv')))
+  
+  output_tbl(ss_cardiac, 'ss_cardiac')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ## Multi-Site, Chronic Disease Stratification
+  ms_cancer <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                          site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                        'colorado', 'nemours', 'nationwide', 'lurie'),
+                          time = FALSE,
+                          multi_or_single_site = 'multi',
+                          collapse_sites = TRUE,
+                          anomaly_or_exploratory = 'exploratory',
+                          codeset = read.csv(file.path(base_dir, 'specs', 'codeset_cancer_metadata.csv')))
+  
+  output_tbl(ms_cancer, 'ms_cancer')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
+  
+  ms_cardiac <- pf_process(cohort = results_tbl(in_schema('ssdqa_output', 'cohort_glom_stud_1279')),
+                           site_list = c('seattle', 'stanford', 'cchmc', 'chop',
+                                         'colorado', 'nemours', 'nationwide', 'lurie'),
+                           time = FALSE,
+                           multi_or_single_site = 'multi',
+                           collapse_sites = TRUE,
+                           anomaly_or_exploratory = 'exploratory',
+                           codeset = read.csv(file.path(base_dir, 'specs', 'codeset_cardiac_metadata.csv')))
+  
+  output_tbl(ms_cardiac, 'ms_cardiac')
+  
+  for(i in 1:length(visit_list)){
+    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
+  }
 
   # Write step summary log to CSV and/or database,
   # as determined by configuration
