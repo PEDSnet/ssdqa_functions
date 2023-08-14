@@ -6,9 +6,11 @@ pf_process <- function(cohort,
                        visit_types = c('all', 'outpatient'),
                        multi_or_single_site = 'single',
                        collapse_sites = FALSE,
+                       grouped_list = c('site', 'person_id', 'start_date', 
+                                        'end_date', 'fu'),
                        #multi_site = FALSE,
                        time = FALSE,
-                       time_span = c('2009-01-01', Sys.Date()),
+                       time_span = c('2012-01-01', '2023-01-01'),
                        age_groups = NULL,
                        codeset = NULL,
                        anomaly_or_exploratory='exploratory',
@@ -28,26 +30,42 @@ pf_process <- function(cohort,
   cohort_prep <- prepare_pf(cohort = cohort, age_groups = age_groups, codeset = codeset)
   
   ## Step 2: Run Function
-  grouped_list <- c('site', 'person_id', 'start_date', 'end_date', 'fu')
+  grouped_list <- grouped_list
   
   if(is.data.frame(age_groups)){grouped_list <- grouped_list %>% append('age_grp')}
   if(is.data.frame(codeset)){grouped_list <- grouped_list %>% append('flag')}
   
+  if(time){
+    pf_tbl <- compute_fot_pf(cohort = cohort_prep,
+                             grouped_list=grouped_list,
+                             time_period='year',
+                             time_span= time_span,
+                             collapse_sites = collapse_sites,
+                             visit_type_tbl=visit_type_table,
+                             site_list=site_list,
+                             visit_list=visit_types,
+                             domain_tbl=domain_tbl)
+    
+    output_tbl(pf_tbl, 'pf_fot')
+    
+    pf_final <- pf_tbl
+    
+  } else {
     pf_tbl <- loop_through_visits(
       cohort_tbl=cohort_prep,
-      time = time,
+      time = FALSE,
       collapse_sites=collapse_sites,
       site_list=site_list,
       visit_list=visit_types,
       visit_type_tbl=visit_type_table,
       grouped_list=grouped_list,
       domain_tbl = domain_tbl
-     )
-  
-  
-  output_list_to_db(pf_tbl)
-  
-  pf_final <- combine_study_facts(study_abbr = study_name, time = time, visit_type_list = visit_types)
+    )
+    
+    output_list_to_db(pf_tbl)
+    
+    pf_final <- combine_study_facts(study_abbr = study_name, time = time, visit_type_list = visit_types)
+  }
   
   ## Step 3: Summarise (Medians, LOF)
   if(!time){
