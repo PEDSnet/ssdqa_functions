@@ -29,7 +29,7 @@ compute_fot_pf <- function(cohort,
                                                'fu','site'),
                                 time_period='year',
                                 time_span= c('2012-01-01','2022-12-31'),
-                                combine_sites = FALSE,
+                                collapse_sites = FALSE,
                                 visit_type_tbl=read_codeset('pf_visit_types_short','ic'),
                                 visit_tbl=cdm_tbl('visit_occurrence'),
                                 site_list=list('stanford',
@@ -73,19 +73,21 @@ compute_fot_pf <- function(cohort,
     baseline_end_date <- ceiling_date(target, time_period) - 1
     
     cohort_narrowed <-
-      cohort_tbl %>% #collect() %>% 
+      cohort %>% #collect() %>% 
       mutate(start_date = as_date(baseline_start_date),
              end_date = as_date(baseline_end_date))
     
     
-    cohort_narrow_prepped <- prepare_pf(cohort_narrowed,
-                                        age_groups = age_groups,
-                                        codeset = codeset) %>% 
+    cohort_narrow_prepped <- cohort_narrowed %>%
+      # prepare_pf(cohort_narrowed,
+      #            age_groups = age_groups,
+      #            codeset = codeset) %>% 
       filter(site %in% site_list_v) %>% mutate(time_period=start_date,
                                                time_increment=time_period)
     
     pf <- loop_through_visits(cohort_tbl = cohort_narrow_prepped,
-                              combine_sites=combine_sites,
+                              collapse_sites=collapse_sites,
+                              time = TRUE,
                               visit_type_tbl=visit_type_tbl,
                               site_list=site_list,
                               visit_list=visit_list,
