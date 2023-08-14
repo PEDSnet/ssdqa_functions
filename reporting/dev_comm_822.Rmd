@@ -87,6 +87,14 @@ print(p1)
 #Reduce('+', p1)
 Reduce('+', p2)
 
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ss_exp_nt.png')
+)
+
 
 ```
 
@@ -96,10 +104,19 @@ Reduce('+', p2)
 results_tbl('ss_anom_nt') %>% site_anon() %>% collect_new() %>% 
   select(site, var_name, prop_outlier_site_fact) %>% 
   distinct() %>%
-ggplot(aes(x = prop_outlier_site_fact, y = site)) +
+ggplot(aes(x = prop_outlier_site_fact, y = site, fill = site)) +
   geom_col() +
   facet_wrap(~var_name) +
-  labs(title = 'Proportion of Patients +/- 3 SD away from Mean')
+  labs(title = 'Proportion of Patients +/- 3 SD away from Mean') +
+  theme_classic()
+
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ss_anom_nt.png')
+)
 
 ```
 
@@ -107,11 +124,7 @@ ggplot(aes(x = prop_outlier_site_fact, y = site)) +
 
 ```{r ss_exp_at, echo=FALSE}
 
-exp_at_cohort <- results_tbl('ss_exp_at') %>% site_anon() %>% collect_new() %>% 
-  mutate(start_year = year(start_date)) %>%
-  filter(start_year >= '2012') %>% 
-  select(site, start_date, start_year, median_fact_ct, visit_type, domain) %>%
-  distinct()
+exp_at_cohort <- results_tbl('ss_exp_at') %>% site_anon() %>% collect_new()
 
 ss_exp_glom <- 
   compute_plot_fot_exp(fot_tbl=exp_at_cohort,
@@ -124,6 +137,14 @@ ss_exp_glom <-
 
 ss_exp_glom
 
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ss_exp_at.png')
+)
+
 ```
 
 ## Single Site, Anomaly, Across Time
@@ -131,8 +152,7 @@ ss_exp_glom
 ```{r ss_anom_at, echo=FALSE}
 
  r <- plot_anomaly_diagnostics(.data=results_tbl('ss_anom_at') %>% site_anon() %>% collect_new() %>%
-                                 filter(visit_type=='outpatient',domain=='labs', site == 'site 2',
-                                        start_date >= '2012-01-01'), 
+                                 filter(visit_type=='outpatient',domain=='labs', site == 'site 2'), 
                                .facet_vars = site, 
                                .date_var = start_date, 
                                .value=median_fact_ct, 
@@ -148,6 +168,14 @@ ss_exp_glom
 
 r
 
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ss_anom_at.png')
+)
+
 ```
 
 ## Multi-Site, Exploratory, No Time
@@ -160,7 +188,16 @@ ggplot(results_tbl('ms_exp_nt') %>% site_anon() %>% collect_new(),
   geom_point(aes(x=var_name, y=median_all_without0s), shape=8, size=3, color="black")+
   facet_wrap(~visit_type, scales="free_x", ncol=2)+
   theme_bw()+
+  labs(title = 'Multi-Site Exploratory Analysis') +
   coord_flip()
+
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ms_exp_nt.png')
+)
 
 ```
 
@@ -173,6 +210,14 @@ kmeans_prep <- results_tbl('ms_anom_nt') %>% site_anon() %>% collect_new() %>% c
 set.seed(123)
 ms_anom <- kmeans(kmeans_prep, centers=2)
 fviz_cluster(ms_anom, data=kmeans_prep)
+
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ms_anom_nt.png')
+)
 
 ```
 
@@ -195,6 +240,14 @@ output <- create_multisite_exp(multisite_tbl = prep_fot,
 
 htmltools::tagList(output)
 
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ms_exp_at.png')
+)
+
 ```
 
 ## Multi-Site, Anomaly, Across Time
@@ -207,9 +260,17 @@ output_anom <- produce_multisite_mad(multisite_tbl = prep_fot,
 multisite_anom_graph <- 
   produce_multisite_anom(multisite_anomaly_tbl = output_anom,
                          color_config=color_config_file,
-                         outcome_var='grp_outlier_prop')
+                         outcome_var='grp_outlier_prop') %>%
 
 multisite_anom_graph
+
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ms_anom_at.png')
+)
 
 
 ```
@@ -241,6 +302,14 @@ print(p1)
 #Reduce('+', p1)
 Reduce('+', p2)
 
+ggsave(
+  plot = p1[[1]],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ss_age.png')
+)
+
 
 ```
 
@@ -256,6 +325,14 @@ ggplot(results_tbl('ms_age') %>% site_anon() %>% filter(age_grp != 'None' & visi
   theme_bw()+
 #  theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))+
   coord_flip()
+
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ms_age.png')
+)
 
 ```
 
@@ -282,6 +359,32 @@ print(p1)
 #Reduce('+', p1)
 Reduce('+', p2)
 
+ggsave(
+  plot = p1[[2]],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ss_cancer_bar.png')
+)
+
+
+pyramid_chart(data = results_tbl('ss_cancer') %>% site_anon() %>% 
+                filter(site == 'site 3' & visit_type == 'all') %>% collect(),
+              x = var_name,
+              y = median_site_without0s,
+              group = flag,
+              sort = 'ascending',
+              title='site 3, all visits: median facts by presence of cancer dx',
+              bar_colors = c('#6fa8dc','#93c47d'))
+
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ss_cancer_pyr.png')
+)
+
 ```
 
 ```{r ss_cardiac, echo=FALSE}
@@ -305,6 +408,32 @@ print(p1)
 #Reduce('+', p1)
 Reduce('+', p2)
 
+
+ggsave(
+  plot = p1[[1]],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ss_cardiac_bar.png')
+)
+
+pyramid_chart(data = results_tbl('ss_cardiac') %>% site_anon() %>% 
+                filter(site == 'site 3' & visit_type == 'all') %>% collect(),
+              x = var_name,
+              y = median_site_without0s,
+              group = flag,
+              sort = 'ascending',
+              title='site 3, all visits: median facts by presence of cardiac specialty visit',
+              bar_colors = c('#6fa8dc','#93c47d'))
+
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ss_cardiac_pyr.png')
+)
+
 ```
 
 ## Multi-Site, Chronic Disease Stratification
@@ -317,8 +446,17 @@ ggplot(results_tbl('ms_cancer') %>% site_anon() %>% filter(visit_type == 'all') 
   geom_point(aes(x=var_name, y=median_all_without0s), shape=8, size=3, color="black")+
   facet_wrap(~flag, scales="free_x", ncol=2)+
   theme_bw()+
+  labs(title = 'Multi-Site, All Visits: Cancer Diagnoses') +
 #  theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))+
   coord_flip()
+
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ms_cancer.png')
+)
 
 
 ggplot(results_tbl('ms_cardiac') %>% site_anon() %>% filter(visit_type == 'all') %>% collect_new(),
@@ -327,7 +465,16 @@ ggplot(results_tbl('ms_cardiac') %>% site_anon() %>% filter(visit_type == 'all')
   geom_point(aes(x=var_name, y=median_all_without0s), shape=8, size=3, color="black")+
   facet_wrap(~flag, scales="free_x", ncol=2)+
   theme_bw()+
+  labs(title = 'Multi-Site, All Visits: Cardiac Specialty Visits') +
 #  theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))+
   coord_flip()
+
+ggsave(
+  #plot = output[3],
+  height = 15,
+  width = 20,
+  units = c('cm'),
+  filename = paste0(config('base_dir'),'/results/ms_cardiac.png')
+)
 
 ```
