@@ -71,13 +71,13 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
                           time = TRUE,
                           multi_or_single_site = 'single',
                           collapse_sites = FALSE,
-                          anomaly_or_exploratory = 'exploratory')
+                          anomaly_or_exploratory = 'exploratory',
+                          grouped_list = c('person_id','start_date','end_date',
+                                          'site'))
   
   output_tbl(ss_exp_at, 'ss_exp_at')
   
-  for(i in 1:length(visit_list)){
-    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
-  }
+  db_remove_table(name = in_schema(config('results_schema'), paste0('pf_fot_stud_1279')))
   
   ## Single Site, Anomaly, Across Time
   ss_anom_at <- pf_process(cohort = cohort,
@@ -85,17 +85,18 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
                            time = TRUE,
                            multi_or_single_site = 'single',
                            collapse_sites = FALSE,
-                           anomaly_or_exploratory = 'anomaly')
+                           anomaly_or_exploratory = 'anomaly',
+                           grouped_list = c('person_id','start_date','end_date',
+                                            'site'))
   
   output_tbl(ss_anom_at, 'ss_anom_at')
   
-  for(i in 1:length(visit_list)){
-    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
-  }
+  db_remove_table(name = in_schema(config('results_schema'), paste0('pf_fot_stud_1279')))
   
   ## Multi-Site, Exploratory, No Time
   ms_exp_nt <- pf_process(cohort = cohort,
-                          site_list = c('colorado', 'chop', 'stanford'),
+                          site_list = c('colorado', 'chop', 'stanford',
+                                        'nemours', 'seattle'),
                           time = FALSE,
                           multi_or_single_site = 'multi',
                           collapse_sites = TRUE,
@@ -109,7 +110,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   
   ## Multi-Site, Anomaly, No Time
   ms_anom_nt <- pf_process(cohort = cohort,
-                           site_list = c('colorado', 'chop', 'stanford'),
+                           site_list = c('colorado', 'chop', 'stanford',
+                                         'nemours', 'seattle'),
                            time = FALSE,
                            multi_or_single_site = 'multi',
                            collapse_sites = TRUE,
@@ -125,31 +127,33 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   
   ## Multi-Site, Exploratory, Across Time
   ms_exp_at <- pf_process(cohort = cohort,
-                          site_list = c('colorado', 'chop', 'stanford'),
+                          site_list = c('colorado', 'chop', 'stanford',
+                                        'nemours', 'seattle'),
                           time = TRUE,
                           multi_or_single_site = 'multi',
                           collapse_sites = TRUE,
-                          anomaly_or_exploratory = 'exploratory')
+                          anomaly_or_exploratory = 'exploratory',
+                          grouped_list = c('person_id','start_date','end_date',
+                                           'site'))
   
   output_tbl(ms_exp_at, 'ms_exp_at')
   
-  for(i in 1:length(visit_list)){
-    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
-  }
+  db_remove_table(name = in_schema(config('results_schema'), paste0('pf_fot_stud_1279')))
   
   ## Multi-Site, Anomaly, Across Time
   ms_anom_at <- pf_process(cohort = cohort,
-                           site_list = c('colorado', 'chop', 'stanford'),
+                           site_list = c('colorado', 'chop', 'stanford',
+                                         'nemours', 'seattle'),
                            time = TRUE,
                            multi_or_single_site = 'multi',
                            collapse_sites = TRUE,
-                           anomaly_or_exploratory = 'anomaly')
+                           anomaly_or_exploratory = 'anomaly',
+                           grouped_list = c('person_id','start_date','end_date',
+                                            'site'))
   
   output_tbl(ms_anom_at, 'ms_anom_at')
   
-  for(i in 1:length(visit_list)){
-    db_remove_table(name = in_schema(config('results_schema'), paste0(visit_list[i], '_stud_1279')))
-  }
+  db_remove_table(name = in_schema(config('results_schema'), paste0('pf_fot_stud_1279')))
   
   ## Single Site, Age Group Stratification
   ss_age <- pf_process(cohort = cohort,
@@ -168,7 +172,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   
   ## Multi-Site, Age Group Stratification
   ms_age <- pf_process(cohort = cohort,
-                       site_list = c('colorado', 'chop', 'stanford'),
+                       site_list = c('colorado', 'chop', 'stanford',
+                                     'nemours', 'seattle'),
                        time = FALSE,
                        multi_or_single_site = 'multi',
                        collapse_sites = TRUE,
@@ -212,7 +217,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   
   ## Multi-Site, Chronic Disease Stratification
   ms_cancer <- pf_process(cohort = cohort,
-                          site_list = c('colorado', 'chop', 'stanford'),
+                          site_list = c('colorado', 'chop', 'stanford',
+                                        'nemours', 'seattle'),
                           time = FALSE,
                           multi_or_single_site = 'multi',
                           collapse_sites = TRUE,
@@ -226,7 +232,8 @@ config_append('extra_packages', c('lubridate','tidyr','Rlof','ggplot2'))
   }
   
   ms_cardiac <- pf_process(cohort = cohort,
-                           site_list = c('colorado', 'chop', 'stanford'),
+                           site_list = c('colorado', 'chop', 'stanford',
+                                         'nemours', 'seattle'),
                            time = FALSE,
                            multi_or_single_site = 'multi',
                            collapse_sites = TRUE,
