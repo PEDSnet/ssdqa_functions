@@ -97,7 +97,7 @@ compute_dist_mean <- function(data_input,
            sd_fact=sd(var_val),
            zscore_fact = ((var_val - mean_fact) / sd_fact),
            abs_z = abs(zscore_fact),
-           three_sd = case_when(abs_z > 3L ~ 1L,
+           three_sd = case_when(abs_z > 2L ~ 1L,
                                      TRUE ~ 0L),
            outlier_fact = sum(three_sd),
            prop_outlier_fact = round(outlier_fact / n_fact, 3)) %>% 
@@ -118,7 +118,7 @@ compute_dist_mean <- function(data_input,
            sd_site_fact=sd(var_val),
            zscore_site_fact = ((var_val - mean_site_fact) / sd_site_fact),
            abs_z = abs(zscore_site_fact),
-           three_sd = case_when(abs_z > 3L ~ 1L,
+           three_sd = case_when(abs_z > 2L ~ 1L,
                                      TRUE ~ 0L),
            outlier_site_fact = sum(three_sd),
            prop_outlier_site_fact = round(outlier_site_fact / n_site_fact, 3)) %>% 
@@ -1134,22 +1134,14 @@ produce_multisite_anom <- function(multisite_anomaly_tbl,
   
   t <- 
     ggplot(multisite_anomaly_tbl,
-           aes(x=site, y=!!sym(outcome_var), group=grp, fill=grp)) +
-    #geom_bar(position='stack',stat='identity') + 
-    geom_bar_interactive(aes(tooltip=!!sym(outcome_var), data_id=grp), position='stack', stat='identity') +
+           aes(x=site, y=grp, fill=!!sym(outcome_var))) +
+    geom_tile() +
     #scale_fill_manual(values=colors_def) +
     theme_classic() +
-    #theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1)) +
     coord_flip() +
-    ylab('Proportion')
-  
-  multi_girafe <- 
-    girafe(ggobj = t,
-           height_svg=3,
-           width_svg = 6) %>% 
-    girafe_options(opts_tooltip(use_fill=FALSE, css='color:black;', offx=20),
-                   opts_hover(css='stroke-width:2;'),
-                   opts_hover_inv(css='opacity:0.3'))
+    labs(fill = 'Proportion',
+         y = 'Domain',
+         title = 'MAD Across Sites over Time: Multi-Site Anomaly Detection')
   
   
 }
