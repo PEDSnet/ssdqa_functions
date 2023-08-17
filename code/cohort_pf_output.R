@@ -151,11 +151,8 @@ create_list_input_sepsites <- function(data_tbl,
   
   final_list <- list()
   
-  thresholds <- read_codeset('thresholds', col_types='ccd')
-  
   for(i in 1:length(site_list)) {
-    elem1 <- data_tbl %>% filter(site==site_list[[i]])%>%
-      left_join(thresholds, by = c('visit_type', 'var_name'='domain'))
+    elem1 <- data_tbl %>% filter(site==site_list[[i]])
     elem2 <- outcome_var
     
     args_list <- 
@@ -213,7 +210,6 @@ create_list_input_sepvisittype <- function(data_tbl,
 #'         facet_var as strings
 #' 
 create_list_input_facet_sepvarname <- function(data_tbl,
-                                               visit_type_nm,
                                                facet_var_nm,
                                                var_name_list) {
   
@@ -223,7 +219,7 @@ create_list_input_facet_sepvarname <- function(data_tbl,
   final_list <- list()
   
   for(i in 1:length(domain_list)) {
-    elem1 <- data_tbl %>% filter(visit_type==visit_type_nm)
+    elem1 <- data_tbl
     elem2 <- domain_list[[i]]
     
     args_list <- 
@@ -450,29 +446,24 @@ sepsite_lof_reduce <- function(lof_comp_output) {
 #' @return a matrix with one median value per site and per stratification in select_cols
 #' 
 prep_kmeans <- function(dat,
-                        age_group = NULL,
-                        codeset = NULL) {
+                        facet_var) {
   
-  ## Selecting necessary columns
-  select_cols <- c('site', 'var_name', 'visit_type',
-                   'median_site_without0s')
+  kmeans_list <- list()
   
-  if(is.data.frame(age_group)){select_cols <- select_cols %>% append('age_grp')}
-  if(is.data.frame(codeset)){select_cols <- select_cols %>% append('flag')}
+if(!is.null(facet_var)){
+  select_cols <- c('site', 'var_name', 'median_site_without0s', facet_var)
   
-  ## Selecting columns for pivot
-  name_cols <- c('var_name', 'visit_type')
+  facet_list <- dat %>% select(!!sym(facet_var)) %>% distinct() %>% pull()
   
-  if(is.data.frame(age_group)){name_cols <- name_cols %>% append('age_grp')}
-  if(is.data.frame(codeset)){name_cols <- name_cols %>% append('flag')}
+  for(i in 1:length(facet_list)){
   
   kmeans_prep <- 
     dat %>% 
-    select(
-      all_of(select_cols)
-    ) %>% pivot_wider(id_cols = site,
-                      names_from = all_of(name_cols),
-                      values_from = median_site_without0s) 
+    select(!!!syms(select_cols)) %>%
+    filter(!!sym(facet_var) == facet_list[[i]]) %>% 
+    pivot_wider(id_cols = site,
+                names_from = var_name,
+                values_from = median_site_without0s) 
   
   kmeans_prep <- 
     kmeans_prep %>% replace(is.na(.), 0) %>% 
@@ -485,6 +476,74 @@ prep_kmeans <- function(dat,
   kmeans_scaled <- scale(kmeans_mat) 
   
   kmeans_scaled[, !colSums(!is.finite(kmeans_scaled))]
+  
+  kmeans_list[[i]] <- list(kmeans_scaled,
+                           facet_list[[i]])
+  }
+  
+  }else{
+    
+    select_cols <- c('site', 'var_name', 'median_site_without0s')
+      
+      kmeans_prep <- 
+        dat %>% 
+        select(all_of(select_cols)) %>%
+        pivot_wider(id_cols = site,
+                    names_from = var_name,
+                    values_from = median_site_without0s) 
+      
+      kmeans_prep <- 
+        kmeans_prep %>% replace(is.na(.), 0) %>% 
+        mutate(across(everything(), ~ replace(.x, is.nan(.x),0)))
+      
+      kmeans_mat <- 
+        kmeans_prep %>% 
+        column_to_rownames(., var='site')
+      
+      kmeans_scaled <- scale(kmeans_mat) 
+      
+      kmeans_scaled[, !colSums(!is.finite(kmeans_scaled))]
+      
+      kmeans_list <- list(kmeans_scaled,
+                          'Multi-Site Non-Stratified')
+    
+  }
+  
+  kmeans_list
+  
+  }
+
+
+produce_kmeans_output <- function(kmeans_list,
+                                  centers,
+                                  facet = TRUE){
+  
+  output_list <- list()
+  
+  if(facet){
+  
+  for(i in 1:length(kmeans_list)){
+    
+    set.seed(123)
+    k <- kmeans(kmeans_list[[i]][[1]], centers=centers)
+    output <- fviz_cluster(k, data=kmeans_list[[i]][[1]], 
+                 main = paste0('K-Means Cluster Analysis: ', kmeans_list[[i]][[2]]))
+    
+    output_list[[paste0(kmeans_list[[i]][[2]])]] <- output
+    
+  }
+  }else{
+    
+    set.seed(123)
+    k <- kmeans(kmeans_list[[1]], centers=centers)
+    output <- fviz_cluster(k, data=kmeans_list[[1]], 
+                           main = paste0('K-Means Cluster Analysis: ', kmeans_list[[2]]))
+    
+    output_list[[paste0(kmeans_list[[2]])]] <- output
+      
+    }
+  
+  output_list
   
 }
 
@@ -499,16 +558,14 @@ prep_kmeans <- function(dat,
 #' @param thresh boolean indicator of whether to include thresholds on plot
 #' 
 
-create_sepsite_output <- function(list_name,
-                                  thresh=FALSE) {
+create_sepsite_output <- function(list_name) {
   
   output_sepsites <- list()
   
   for(i in 1:length(list_name)) {
     
     final <- prod_bar_sepsites(data_tbl=list_name[[i]][[1]],
-                               outcome=list_name[[i]][[2]],
-                               incl_thresh = thresh)
+                               outcome=list_name[[i]][[2]])
     
     output_sepsites[[i]] <- final
   }
@@ -533,27 +590,15 @@ create_sepsite_output <- function(list_name,
 
 prod_bar_sepsites <- function(data_tbl,
                               outcome,
-                              incl_thresh) {
+                              facet_var) {
   
   site_nm <- data_tbl %>% select(site) %>% distinct() %>% pull()
   
-  color <- site_report_config %>% 
-    filter(site == site_nm) %>% 
-    select(site_color) %>% pull()
-  if(incl_thresh&str_detect(outcome,"prop")){
-    bar_chart(data_tbl, x=var_name,y=!! sym(outcome),facet=visit_type, bar_color=color) +
-      ggtitle(paste0(site_nm))+
-      geom_point(aes(x=var_name,y=threshold_prop))
-  }
-  else if(incl_thresh&str_detect(outcome,"med")){
-    bar_chart(data_tbl, x=var_name,y=!! sym(outcome),facet=visit_type, bar_color=color) +
-      ggtitle(paste0(site_nm))+
-      geom_point(aes(x=var_name,y=threshold_med))
-  }
-  else{
-    bar_chart(data_tbl, x=var_name,y=!! sym(outcome),facet=visit_type, bar_color=color) +
+  color <- as.data.frame(site_colors) %>% rownames_to_column('site') %>%
+    filter(site == site_nm) %>% select(site_colors) %>% pull()
+
+    bar_chart(data_tbl, x=var_name,y=!! sym(outcome), bar_color=color) +
       ggtitle(paste0(site_nm))
-  }
 }
 
 
@@ -662,9 +707,10 @@ prod_bar_facet <- function(data_tbl,
                            var_name_label,
                            facet_var_nm) {
   
-  color <- domain_config %>% 
-    filter(domain == var_name_label) %>% 
-    select(domain_color) %>% pull()
+  color <- as.data.frame(domain_colors) %>%
+    rownames_to_column('domain') %>%
+    filter(domain == var_name_label) %>%
+    select(domain_colors) %>% pull()
   
   bar_chart(data_tbl %>% filter(var_name==var_name_label), 
             facet=!! sym(facet_var_nm), x=site,y=median_site_without0s,bar_color=color) +
@@ -864,14 +910,22 @@ fot_check <- function(target_col,
                       # check_col='check_name',
                       # check_desc='check_desc',
                       site_col='site',
-                      time_col='month_end') {
-  
-  cols_to_keep <- c(eval(site_col),eval(time_col),'check')
+                      time_col='month_end',
+                      facet_var) {
+  if(is.null(facet_var)){
+    cols_to_keep <- c(eval(site_col),eval(time_col),'check')
+    groupedlist1 <- c(time_col)
+    groupedlist2 <- c(site_col)
+  }else{
+    cols_to_keep <- c(eval(site_col),eval(time_col),eval(facet_var),'check')
+    groupedlist1 <- c(time_col, facet_var)
+    groupedlist2 <- c(site_col, facet_var)
+  }
   
   rv <- FALSE
   rv_agg <- FALSE
   #base tbl to make a network wide version of the check
-  agg_check <- tblx %>% group_by(!!sym(time_col)) %>%
+  agg_check <- tblx %>% group_by(!!!syms(groupedlist1)) %>%
     summarise(!!sym(target_col) := sum(!!sym(target_col))) %>%
     ungroup() %>%
     mutate({{site_col}}:='all')  # I need a cheat sheet of when {{x}}/eval(x)/!!sym(x) will actually work
@@ -899,7 +953,7 @@ fot_check <- function(target_col,
     rv_agg <- bar
   }
   
-  rv_summary <- rv %>% group_by(!!sym(site_col)) %>%
+  rv_summary <- rv %>% group_by(!!!syms(groupedlist2)) %>%
     summarise(std_dev = sd(check,na.rm=TRUE),
               pct_25 = quantile(check,.25),
               pct_75 = quantile(check,.75),
@@ -907,7 +961,7 @@ fot_check <- function(target_col,
               m = mean(check)) %>% ungroup() %>% collect()
   
   rv_summary_allsites <- rv_agg %>%
-    filter(site=='all') %>% group_by(!!sym(site_col)) %>%
+    filter(site=='all') %>% group_by(!!!syms(groupedlist2)) %>%
     summarise(std_dev = sd(check,na.rm=TRUE),
               pct_25 = quantile(check,.25),
               pct_75 = quantile(check,.75),
@@ -964,8 +1018,7 @@ check_fot_all_dist <- function(fot_check_output) {
   combined <-
     just_all %>%
     inner_join(
-      fot_check_output,
-      by=c('start_date')
+      fot_check_output
     ) %>% mutate(
       distance=round(check,3)-round(centroid,3)
     )
@@ -984,21 +1037,23 @@ check_fot_multisite <- function(tblx,
                                 target_col,
                                 site_col,
                                 time_col, 
-                                facet_list) {
+                                domain_list,
+                                facet_var = NULL) {
   
   final_all <- list()
   
-  for(i in 1:length(facet_list)) {
+  for(i in 1:length(domain_list)) {
     
-    tblx_input <- tblx %>% filter(domain == facet_list[[i]])
+    tblx_input <- tblx %>% filter(domain == domain_list[[i]])
     
     fot_output <- fot_check(tblx=tblx_input,
                             target_col=target_col,
                             site_col=site_col,
-                            time_col=time_col)
+                            time_col=time_col,
+                            facet_var=facet_var)
     
     fot_distance <- check_fot_all_dist(fot_output$fot_heuristic) %>% 
-      mutate(grp_check=facet_list[[i]])
+      mutate(grp_check=domain_list[[i]])
     
     final_all[[i]] <- fot_distance
     
@@ -1025,6 +1080,7 @@ check_fot_multisite <- function(tblx,
 
 create_multisite_exp <- function(multisite_tbl,
                                  date_breaks_str,
+                                 facet_var = NULL,
                                  site_colors_v=site_colors) {
   
   grp_list <- 
@@ -1035,16 +1091,30 @@ create_multisite_exp <- function(multisite_tbl,
   
   for(i in grp_list) {
     
-    multisite_plot_exp <-  
-      ggplot(multisite_tbl %>% filter(grp_check==i,start_date < '2022-12-01',start_date > '2010-03-01'), 
-             aes(x=start_date,y=distance,group=site,color=site), size=1) +
-      #geom_line() +
-      geom_line_interactive(aes(tooltip=site, data_id=site)) +
-      #scale_color_manual(values=site_colors_v)+
-      scale_x_date(date_breaks=date_breaks_str) +
-      theme_bw() +
-      ggtitle(paste0('Multisite Exploratory: ',i)) +
-      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    if(is.null(facet_var)){
+      multisite_plot_exp <- 
+        ggplot(multisite_tbl %>% 
+                 filter(grp_check==i,start_date < '2022-12-01',start_date > '2010-03-01'),
+               aes(x=start_date,y=distance,group=site,color=site), size=1) +
+        geom_line_interactive(aes(tooltip=site, data_id=site)) +
+        scale_color_manual(values=site_colors_v)+
+        scale_x_date(date_breaks=date_breaks_str) +
+        theme_bw() +
+        ggtitle(paste0('Multisite Exploratory: ',i)) +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    }else{
+      multisite_plot_exp <- 
+        ggplot(multisite_tbl %>% 
+                 filter(grp_check==i,start_date < '2022-12-01',start_date > '2010-03-01'),
+               aes(x=start_date,y=distance,group=site,color=site), size=1) +
+        geom_line_interactive(aes(tooltip=site, data_id=site)) +
+        facet_wrap(facets = eval(facet_var))+
+        scale_color_manual(values=site_colors_v)+
+        scale_x_date(date_breaks=date_breaks_str) +
+        theme_bw() +
+        ggtitle(paste0('Multisite Exploratory: ',i)) +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    }
     
     multi_girafe <- 
       girafe(ggobj = multisite_plot_exp,
@@ -1069,13 +1139,19 @@ create_multisite_exp <- function(multisite_tbl,
 #' 
 
 produce_multisite_mad <- function(multisite_tbl,
+                                  facet_var = NULL,
                                   mad_dev) {
+  if(is.null(facet_var)){
+    grp1 <- c('start_date', 'grp_check', 'centroid')
+    grp2 <- c('site', 'grp_check')
+  }else{
+    grp1 <- c('start_date', 'grp_check', 'centroid', facet_var)
+    grp2 <- c('site', 'grp_check', facet_var)
+  }
   
   mad_computation <- 
     multisite_tbl %>% 
-    group_by(start_date,
-             grp_check,
-             centroid) %>% 
+    group_by(!!!syms(grp1)) %>% 
     summarise(mad_pt=mad(check, center=centroid)) %>% 
     ungroup() %>% 
     mutate(lower_mad = mad_pt - (abs(mad_pt*mad_dev)),
@@ -1091,15 +1167,13 @@ produce_multisite_mad <- function(multisite_tbl,
   
   sites_grp_outliers <- 
     full_tbl_outliers %>% 
-    group_by(site,
-             grp_check) %>% 
+    group_by(!!!syms(grp2)) %>% 
     filter(outlier==1) %>% 
     summarise(grp_outlier_num=n()) %>%  ungroup() 
   
   sites_grp_ct_total <- 
     full_tbl_outliers %>% 
-    group_by(site,
-             grp_check) %>% 
+    group_by(!!!syms(grp2)) %>% 
     summarise(grp_total_num=n()) %>% ungroup()
   
   sites_grp_total <- 
