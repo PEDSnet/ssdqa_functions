@@ -71,19 +71,16 @@ pf_process <- function(cohort,
   if(!time){
     if(anomaly_or_exploratory=='anomaly') {
       if(multi_or_single_site=='single') {
-        # lof_input <- create_lof_input(data_tbl=pf_final)
-        # lof_output <- create_sepsite_output_lof(input_tbls=lof_input,
-        #                                         var_list_arg=lof_domains)
-        # pf_output <- sepsite_lof_reduce(lof_output)
         pf_output <- compute_dist_mean(pf_final,
                                        agegrp = age_groups,
                                        codeset = codeset)
       } else {
-        medians_prep <- compute_pf_medians(data_input = pf_final,
-                           agegrp = age_groups,
-                           codeset = codeset)
+        pf_output <- compute_pf_medians(data_input = pf_final,
+                                        agegrp = age_groups,
+                                        codeset = codeset)
           
-        pf_output <- prep_kmeans(dat=medians_prep, age_group = age_groups, codeset = codeset)}
+        #pf_output <- prep_kmeans(dat=medians_prep, age_group = age_groups, codeset = codeset)
+        }
       } else {
         pf_output <- compute_pf_medians(data_input = pf_final,
                                         agegrp = age_groups,
@@ -101,72 +98,165 @@ pf_process <- function(cohort,
 
 pf_output_gen <- function(pf_output,
                           site_list,
-                          study_name = 'study',
                           visit_types = c('all'),
-                          multi_site = FALSE,
+                          single_or_multi = 'single',
                           time = FALSE,
-                          time_span = c('2009-01-01', Sys.Date()),
+                          time_span = c('2012-01-01', '2023-01-01'),
                           age_groups = FALSE,
                           codeset = FALSE,
-                          anomaly_detection = FALSE,
-                          exploratory = FALSE){
+                          anomaly_or_exploratory = 'exploratory',
+                          domain_tbl=read_codeset('pf_domains_short','cccc')){
   
-  ## Create empty list to store graphical output
-  graph_output <- list()
+  ## Create Brewer color palettes for sites and domains
+  site_names <- site_list
+  site_palette_base <- colorRampPalette(brewer.pal(8, "Dark2"))
+  site_colors <- setNames(site_palette_base(length(site_names)), site_names)
+  
+  domain_names <- domain_tbl %>% select(domain) %>% pull()
+  domain_palette_base <- colorRampPalette(brewer.pal(8, "Paired"))
+  domain_colors <- setNames(domain_palette_base(length(domain_names)), domain_names)
   
   ## Generate appropriate output based on selections
-  if(!multi_site){
-    
-    if(exploratory){
-    ss_med_list <- create_list_input_sepsites(data_tbl = pf_output,
-                                              outcome_var = 'median_site_without0s')
-    graph_output$ss_med_bar <- create_sepsite_output(ss_med_list)}
-    
-    if(anomaly_detection){
-      create_sepsite_output_lof(pf_output)
+  if(time){
+    if(single_or_multi == 'single'){
+      if(anomaly_or_exploratory == 'anomaly'){
+        if(age_groups){
+          output <- pf_ss_anom_at(data_tbl = pf_output,
+                                  domain_list = domain_tbl,
+                                  age_groups = TRUE)
+        }else if(codeset){
+          output <- pf_ss_anom_at(data_tbl = pf_output,
+                                  domain_list = domain_tbl,
+                                  codeset = TRUE)
+        }else if(length(visit_types) > 1){
+          output <- pf_ss_anom_at(data_tbl = pf_output,
+                                  domain_list = domain_tbl,
+                                  visit_types = TRUE)
+        }else{
+          output <- pf_ss_anom_at(data_tbl = pf_output,
+                                  domain_list = domain_tbl)
+      }
+        } else {
+        if(age_groups){
+          output <- pf_ss_exp_at(data_tbl = pf_output,
+                                 site_list = site_list,
+                                 age_groups = TRUE)
+        }else if(codeset){
+          output <- pf_ss_exp_at(data_tbl = pf_output,
+                                 site_list = site_list,
+                                 codeset = TRUE)
+        }else if(length(visit_types) > 1){
+          output <- pf_ss_exp_at(data_tbl = pf_output,
+                                 site_list = site_list,
+                                 visit_types = TRUE)
+        }else{
+          output <- pf_ss_exp_at(data_tbl = pf_output,
+                                 site_list = site_list)
     }
-    
-  }else{
-    
-    if(exploratory){
-    graph_output$ms_exp <- create_multisite_output(pf_output)}
-    
-    if(anomaly_detection){
-      "euclidian distance output"
+          }
+      } else {
+      if(anomaly_or_exploratory == 'anomaly'){
+        if(age_groups){
+          output <- pf_ms_anom_at(data_tbl = pf_output,
+                                  domain_list = domain_tbl,
+                                  age_groups = TRUE)
+        }else if(codeset){
+          output <- pf_ms_anom_at(data_tbl = pf_output,
+                                  domain_list = domain_tbl,
+                                  codeset = TRUE)
+        }else if(length(visit_types) > 1){
+          output <- pf_ms_anom_at(data_tbl = pf_output,
+                                  domain_list = domain_tbl,
+                                  visit_types = TRUE)
+        }else{
+          output <- pf_ms_anom_at(data_tbl = pf_output,
+                                  domain_list = domain_tbl)
+        }
+      } else {
+        if(age_groups){
+          output <- pf_ms_exp_at(data_tbl = ms_cardiac_at_test,
+                                 domain_list = domain_tbl,
+                                 age_groups = TRUE)
+        }else if(codeset){
+          output <- pf_ms_exp_at(data_tbl = ms_cardiac_at_test,
+                                 domain_list = domain_tbl,
+                                 codeset = TRUE)
+        }else if(length(visit_types) > 1){
+          output <- pf_ms_exp_at(data_tbl = ms_cardiac_at_test,
+                                 domain_list = domain_tbl,
+                                 visit_types = TRUE)
+        }else{
+          output <- pf_ms_exp_at(data_tbl = ms_cardiac_at_test,
+                                 domain_list = domain_tbl)
+        }
+      }
+    }
+  } else {
+    if(single_or_multi == 'single'){
+      if(anomaly_or_exploratory == 'anomaly'){
+        if(age_groups){
+          output <- pf_ss_anom_nt(data_tbl = pf_output,
+                                  domain_list = domain_tbl,
+                                  age_groups = TRUE)
+        }else if(codeset){
+          output <- pf_ss_anom_nt(data_tbl = pf_output,
+                                  domain_list = domain_tbl,
+                                  codeset = TRUE)
+        }else if(length(visit_types) > 1){
+          output <- pf_ss_anom_nt(data_tbl = pf_output,
+                                  domain_list = domain_tbl,
+                                  visit_types = TRUE)
+        }else{
+          output <- pf_ss_anom_nt(data_tbl = pf_output,
+                                  domain_list = domain_tbl)
+        }
+      } else {
+        if(age_groups){
+          output <- pf_ss_exp_nt(data_tbl = pf_output,
+                                 domain_list = domain_tbl,
+                                 age_groups = TRUE)
+        }else if(codeset){
+          output <- pf_ss_exp_nt(data_tbl = pf_output,
+                                 domain_list = domain_tbl,
+                                 codeset = TRUE)
+        }else if(length(visit_types) > 1){
+          output <- pf_ss_exp_nt(data_tbl = pf_output,
+                                 domain_list = domain_tbl,
+                                 visit_types = TRUE)
+        }else{
+          output <- pf_ss_exp_nt(data_tbl = pf_output,
+                                 domain_list = domain_tbl)
+        }
+      }
+    } else {
+      if(anomaly_or_exploratory == 'anomaly'){
+        if(age_groups){
+          output <- pf_ms_anom_nt(data_tbl = pf_output,
+                                  age_groups = TRUE)
+        }else if(codeset){
+          output <- pf_ms_anom_nt(data_tbl = pf_output,
+                                  codeset = TRUE)
+        }else if(length(visit_types) > 1){
+          output <- pf_ms_anom_nt(data_tbl = pf_output,
+                                  visit_types = TRUE)
+        }else{
+          output <- pf_ms_anom_nt(data_tbl = pf_output)
+        }
+      } else{
+        if(age_groups){
+          output <- pf_ms_exp_nt(data_tbl = pf_output,
+                                 age_groups = TRUE)
+        }else if(codeset){
+          output <- pf_ms_exp_nt(data_tbl = pf_output,
+                                 codeset = TRUE)
+        }else if(length(visit_types) > 1){
+          output <- pf_ms_exp_nt(data_tbl = pf_output,
+                                 visit_types = TRUE)
+        }else{
+          output <- pf_ms_exp_nt(data_tbl = pf_output)
+        }
+      }
     }
   }
-  
 }
-
-
-# if(time){
-#   if(single_or_multi == 'single'){
-#     if(anomaly_or_exploratory == 'anomaly'){
-#       output <- ss_anom_at
-#     } else {
-#       output <- ss_exp_at
-#     }
-#   } else {
-#     if(anomaly_or_exploratory == 'anomaly'){
-#       output <- ms_anom_at
-#     } else {
-#       output <- ms_exp_at
-#     }
-#   }
-# } else {
-#   if(single_or_multi == 'single'){
-#     if(anomaly_or_exploratory == 'anomaly'){
-#       output <- ss_anom_nt
-#     } else {
-#       if('age_grp' %in% colnames()){Output <- ss_facet_age}else{output <- ss_exp_nt}
-#       if('flag' %in% colnames()){Output <- ss_facet_code}else{output <- ss_exp_nt}
-#     }
-#   } else {
-#     if(anomaly_or_exploratory == 'anomaly'){
-#       output <- ms_anom_nt
-#     } else{
-#       if('age_grp' %in% colnames()){Output <- ms_facet_age} else {output <- ms_exp_nt}
-#       if('flag' %in% colnames()){Output <- ms_facet_code} else {output <- ms_exp_nt}
-#     }
-#   }
-# }
+  
