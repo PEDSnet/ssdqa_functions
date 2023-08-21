@@ -1,73 +1,73 @@
 
 #' **Single Site, Anomaly, Over Time**
 pf_ss_anom_at <- function(data_tbl,
-                          domain_list,
+                          site_list,
                           age_groups = FALSE,
                           codeset = FALSE,
-                          visit_type = FALSE){
+                          visit_types = FALSE){
   
-  domain_list <- domain_list %>% select(domain) %>% pull()
+  site_list <- site_list
   
   output_list <- list()
   
-  for(i in 1:length(domain_list)){
+  for(i in 1:length(site_list)){
     
-    data_filter <- data_tbl %>% filter(domain == domain_list[[i]])
+    data_filter <- data_tbl %>% filter(site == site_list[[i]])
     
     if(age_groups){
-      r <- plot_anomaly_diagnostics(.data=data_filter %>% filter(visit_type == 'all'), 
-                                    .facet_vars = c(site, age_grp), 
+      r <- plot_anomaly_diagnostics(.data=data_filter %>% filter(visit_type == 'all' & !is.na(age_grp) & fact_ct_denom > 5), 
+                                    .facet_vars = c(domain, age_grp), 
                                     .date_var = start_date, 
                                     .value=median_fact_ct, 
                                     .alpha=0.10, 
                                     .legend_show = FALSE,
                                     .max_anomalies = 0.5, 
-                                    .title = paste0('Median ', domain_list[[i]], ' Across Time: 
+                                    .title = paste0(site_list[[i]], ' Median Facts Across Time: 
                                Anomaly Detection Across Sites'),
                                     .facet_ncol = 3, 
-                                    .facet_scales = 'free_x', 
+                                    .facet_scales = 'free_y', 
                                     .facet_collapse = TRUE, 
                                     .interactive = FALSE)
     }else if(codeset){
-      r <- plot_anomaly_diagnostics(.data=data_filter %>% filter(visit_type == 'all'), 
-                                    .facet_vars = c(site, flag), 
+      r <- plot_anomaly_diagnostics(.data=data_filter %>% filter(visit_type == 'all' & fact_ct_denom > 5), 
+                                    .facet_vars = c(domain, flag), 
                                     .date_var = start_date, 
                                     .value=median_fact_ct, 
                                     .alpha=0.10, 
                                     .legend_show = FALSE,
                                     .max_anomalies = 0.5, 
-                                    .title = paste0('Median ', domain_list[[i]], ' Across Time: 
+                                    .title = paste0(site_list[[i]], ' Median Facts Across Time: 
                                Anomaly Detection Across Sites'),
                                     .facet_ncol = 3, 
-                                    .facet_scales = 'free_x', 
+                                    .facet_scales = 'free', 
                                     .facet_collapse = TRUE, 
                                     .interactive = FALSE)
-    }else if(visit_type){
-      r <- plot_anomaly_diagnostics(.data=data_filter, 
-                                    .facet_vars = c(site, visit_type), 
+    }else if(visit_types){
+      r <- plot_anomaly_diagnostics(.data=data_filter %>% filter(fact_ct_denom > 5), 
+                                    .facet_vars = c(domain, visit_type), 
                                     .date_var = start_date, 
                                     .value=median_fact_ct, 
                                     .alpha=0.10, 
                                     .legend_show = FALSE,
                                     .max_anomalies = 0.5, 
-                                    .title = paste0('Median ', domain_list[[i]], ' Across Time: 
+                                    .title = paste0(site_list[[i]], ' Median Facts Across Time: 
                                Anomaly Detection Across Sites'),
                                     .facet_ncol = 3, 
-                                    .facet_scales = 'free_x', 
+                                    .facet_scales = 'free_y', 
                                     .facet_collapse = TRUE, 
                                     .interactive = FALSE)
     }else{
-      r <- plot_anomaly_diagnostics(.data=data_filter %>% filter(visit_type == 'all'), 
-                                    .facet_vars = c(site), 
+      r <- plot_anomaly_diagnostics(.data=data_filter %>% filter(visit_type == 'all' & fact_ct_denom > 5), 
+                                    .facet_vars = c(domain), 
                                     .date_var = start_date, 
                                     .value=median_fact_ct, 
                                     .alpha=0.10, 
                                     .legend_show = FALSE,
                                     .max_anomalies = 0.5, 
-                                    .title = paste0('Median ', domain_list[[i]], ' Across Time: 
+                                    .title = paste0(site_list[[i]], ' Median Facts Across Time: 
                                Anomaly Detection Across Sites'),
                                     .facet_ncol = 3, 
-                                    .facet_scales = 'free_x', 
+                                    .facet_scales = 'free_y', 
                                     .facet_collapse = TRUE, 
                                     .interactive = FALSE)
     }
@@ -85,6 +85,7 @@ pf_ss_anom_at <- function(data_tbl,
 
 pf_ss_exp_at <- function(data_tbl,
                          site_list,
+                         domain_colors,
                          age_groups = FALSE,
                          codeset = FALSE,
                          visit_types = FALSE,
@@ -101,7 +102,7 @@ pf_ss_exp_at <- function(data_tbl,
     data_filter <- data_tbl %>% filter(site == site_list[[i]])
     
     if(age_groups){
-      r <- ggplot(data_filter %>% filter(visit_type == 'all'), 
+      r <- ggplot(data_filter %>% filter(visit_type == 'all' & !is.na(age_grp)), 
                   aes(x=!! sym(x_axis), y=!! sym(y_axis), group=domain, fill=domain)) +
         geom_point(aes(color=domain)) +
         geom_smooth(method='loess',formula=y~x, size=0.5) +
@@ -172,7 +173,7 @@ pf_ms_anom_at <- function(data_tbl,
   
   if(age_groups){
     
-    prep_fot <- check_fot_multisite(tblx = data_tbl,
+    prep_fot <- check_fot_multisite(tblx = data_tbl %>% filter(visit_type == 'all' & !is.na(age_grp)),
                                     target_col = 'median_fact_ct',
                                     site_col = 'site',
                                     time_col = 'start_date',
@@ -186,12 +187,12 @@ pf_ms_anom_at <- function(data_tbl,
       facet_wrap(~age_grp) +
       theme_classic() +
       coord_flip() +
-      labs(fill = 'Proportion of Anomalous Measures',
+      labs(fill = 'Proportion of \nAnomalous Measures',
            y = 'Domain',
            title = 'MAD Across Sites over Time: Multi-Site Anomaly Detection')
     
   }else if(codeset){
-    prep_fot <- check_fot_multisite(tblx = data_tbl,
+    prep_fot <- check_fot_multisite(tblx = data_tbl %>% filter(visit_type == 'all'),
                                     target_col = 'median_fact_ct',
                                     site_col = 'site',
                                     time_col = 'start_date',
@@ -205,7 +206,7 @@ pf_ms_anom_at <- function(data_tbl,
       facet_wrap(~flag) +
       theme_classic() +
       coord_flip() +
-      labs(fill = 'Proportion of Anomalous Measures',
+      labs(fill = 'Proportion of \nAnomalous Measures',
            y = 'Domain',
            title = 'MAD Across Sites over Time: Multi-Site Anomaly Detection')
   }else if(visit_types){
@@ -223,11 +224,11 @@ pf_ms_anom_at <- function(data_tbl,
       facet_wrap(~visit_type) +
       theme_classic() +
       coord_flip() +
-      labs(fill = 'Proportion of Anomalous Measures',
+      labs(fill = 'Proportion of \nAnomalous Measures',
            y = 'Domain',
            title = 'MAD Across Sites over Time: Multi-Site Anomaly Detection')
   }else{
-    prep_fot <- check_fot_multisite(tblx = data_tbl,
+    prep_fot <- check_fot_multisite(tblx = data_tbl %>% filter(visit_type == 'all'),
                                     target_col = 'median_fact_ct',
                                     site_col = 'site',
                                     time_col = 'start_date',
@@ -240,7 +241,7 @@ pf_ms_anom_at <- function(data_tbl,
       geom_tile() +
       theme_classic() +
       coord_flip() +
-      labs(fill = 'Proportion of Anomalous Measures',
+      labs(fill = 'Proportion of \nAnomalous Measures',
            y = 'Domain',
            title = 'MAD Across Sites over Time: Multi-Site Anomaly Detection')
   }
@@ -252,6 +253,7 @@ pf_ms_anom_at <- function(data_tbl,
 
 pf_ms_exp_at <- function(data_tbl,
                          domain_list,
+                         site_colors,
                          time_span,
                          age_groups = FALSE,
                          codeset = FALSE,
@@ -260,7 +262,7 @@ pf_ms_exp_at <- function(data_tbl,
   domain_list <- domain_list %>% select(domain) %>% pull()
   
   if(age_groups){
-    prep_fot <- check_fot_multisite(tblx = data_tbl,
+    prep_fot <- check_fot_multisite(tblx = data_tbl %>% filter(visit_type == 'all' & !is.na(age_grp)),
                                     target_col = 'median_fact_ct',
                                     site_col = 'site',
                                     time_col = 'start_date',
@@ -269,9 +271,10 @@ pf_ms_exp_at <- function(data_tbl,
     output <- create_multisite_exp(multisite_tbl = prep_fot,
                                    date_breaks_str = '1 year',
                                    time_span = time_span,
+                                   site_colors_v = site_colors,
                                    facet_var = 'age_grp')
   }else if(codeset){
-    prep_fot <- check_fot_multisite(tblx = data_tbl,
+    prep_fot <- check_fot_multisite(tblx = data_tbl %>% filter(visit_type == 'all'),
                                     target_col = 'median_fact_ct',
                                     site_col = 'site',
                                     time_col = 'start_date',
@@ -280,6 +283,7 @@ pf_ms_exp_at <- function(data_tbl,
     output <- create_multisite_exp(multisite_tbl = prep_fot,
                                    date_breaks_str = '1 year',
                                    time_span = time_span,
+                                   site_colors_v = site_colors,
                                    facet_var = 'flag')
   }else if(visit_types){
     prep_fot <- check_fot_multisite(tblx = data_tbl,
@@ -291,9 +295,10 @@ pf_ms_exp_at <- function(data_tbl,
     output <- create_multisite_exp(multisite_tbl = prep_fot,
                                    date_breaks_str = '1 year',
                                    time_span = time_span,
+                                   site_colors_v = site_colors,
                                    facet_var = 'visit_type')
   }else{
-    prep_fot <- check_fot_multisite(tblx = data_tbl,
+    prep_fot <- check_fot_multisite(tblx = data_tbl %>% filter(visit_type == 'all'),
                                     target_col = 'median_fact_ct',
                                     site_col = 'site',
                                     time_col = 'start_date',
@@ -302,6 +307,7 @@ pf_ms_exp_at <- function(data_tbl,
     output <- create_multisite_exp(multisite_tbl = prep_fot,
                                    date_breaks_str = '1 year',
                                    time_span = time_span,
+                                   site_colors_v = site_colors,
                                    facet_var = NULL)
   }
   
@@ -313,6 +319,7 @@ pf_ms_exp_at <- function(data_tbl,
 
 pf_ss_anom_nt <- function(data_tbl,
                           site_list,
+                          domain_colors,
                           age_groups = FALSE,
                           codeset = FALSE,
                           visit_types = FALSE){
@@ -326,8 +333,8 @@ pf_ss_anom_nt <- function(data_tbl,
     data_filter <- data_tbl %>% filter(site == site_list[[i]])
     
     if(age_groups){
-      r <- ggplot(data_filter %>% filter(visit_type == 'all') %>% 
-                    select(site, age_group, var_name, prop_outlier_site_fact) %>% 
+      r <- ggplot(data_filter %>% filter(visit_type == 'all' & age_grp != 'None') %>% 
+                    select(site, age_grp, var_name, prop_outlier_site_fact) %>% 
                     distinct(),
                   aes(x = prop_outlier_site_fact, y = var_name, fill = var_name)) +
         geom_col() +
@@ -378,18 +385,20 @@ pf_ss_anom_nt <- function(data_tbl,
 
 pf_ss_exp_nt <- function(data_tbl,
                          site_list,
+                         site_colors,
                          age_groups = FALSE,
                          codeset = FALSE,
                          visit_types = FALSE){
   
   pf_format <- data_tbl %>%
     mutate(n_w_fact = format(n_w_fact, big.mark = ',', scientific = FALSE),
-           var_name = paste0(var_name, '\n(N = ', n_w_fact, ')'))
+           var_name = paste0(var_name, '\n(N = # of patients)'))
   
   if(age_groups){
     
-    output_prep <- create_list_input_facet_sepvarname(data_tbl= pf_format %>% filter(visit_type == 'all'),
+    output_prep <- create_list_input_facet_sepvarname(data_tbl= pf_format %>% filter(visit_type == 'all' & age_grp != 'None'),
                                                       facet_var_nm='age_grp',
+                                                      site_colors = site_colors,
                                                       site_name_list=site_list)
     
     output <- create_facet_graphs_byvarname(list_name=output_prep)
@@ -398,6 +407,7 @@ pf_ss_exp_nt <- function(data_tbl,
     
     output_prep <- create_list_input_facet_sepvarname(data_tbl= pf_format %>% filter(visit_type == 'all'),
                                                       facet_var_nm='flag',
+                                                      site_colors = site_colors,
                                                       site_name_list=site_list)
     
     output <- create_facet_graphs_byvarname(list_name=output_prep)
@@ -406,6 +416,7 @@ pf_ss_exp_nt <- function(data_tbl,
     
     output_prep <- create_list_input_facet_sepvarname(data_tbl= pf_format,
                                                       facet_var_nm='visit_type',
+                                                      site_colors = site_colors,
                                                       site_name_list=site_list)
     
     output <- create_facet_graphs_byvarname(list_name=output_prep)
@@ -414,9 +425,10 @@ pf_ss_exp_nt <- function(data_tbl,
     
     pf_format <- data_tbl %>%
       mutate(n_w_fact = format(n_w_fact, big.mark = ',', scientific = FALSE),
-             var_name_lab = paste0(var_name, '\n(N = ', n_w_fact, ')'))
+             var_name_lab = paste0(var_name, '\n(N = # of patients)'))
     
     output_prep <- create_list_input_sepsites(data_tbl= pf_format %>% filter(visit_type == 'all'),
+                                              site_colors = site_colors,
                                               outcome_var = 'median_site_without0s')
     
     output <- create_sepsite_output(output_prep)
@@ -465,9 +477,9 @@ pf_ms_exp_nt <- function(data_tbl,
                          visit_types = FALSE){
   
   if(age_groups){
-    data_format <- data_tbl %>% filter(visit_type == 'all') %>%
+    data_format <- data_tbl %>% filter(visit_type == 'all' & age_grp != 'None') %>%
       mutate(n_w_fact = format(n_w_fact, big.mark = ',', scientific = FALSE),
-             site_lab = paste0(site, ' (N = ', n_w_fact, ')'))
+             site_lab = paste0(site, ' (N = # of patients)'))
     
     r <- ggplot(data_format, aes(x=var_name,y=median_site_without0s, colour=site))+
       geom_point_interactive(aes(data_id=site_lab, tooltip = site_lab), size=3)+
@@ -477,11 +489,11 @@ pf_ms_exp_nt <- function(data_tbl,
       labs(title = 'Median Facts per Patient Across Sites: \nAge Group Stratification') +
       coord_flip()
     
-    g <- girafe(r)
+    g <- girafe(ggobj = r)
   }else if(codeset){
     data_format <- data_tbl %>% filter(visit_type == 'all') %>%
       mutate(n_w_fact = format(n_w_fact, big.mark = ',', scientific = FALSE),
-             site_lab = paste0(site, ' (N = ', n_w_fact, ')'))
+             site_lab = paste0(site, ' (N = # of patients)'))
     
     r <- ggplot(data_format, aes(x=var_name,y=median_site_without0s, colour=site))+
       geom_point_interactive(aes(data_id=site_lab, tooltip = site_lab), size=3)+
@@ -491,11 +503,11 @@ pf_ms_exp_nt <- function(data_tbl,
       labs(title = 'Median Facts per Patient Across Sites: \nCodeset Utilization') +
       coord_flip()
     
-    g <- girafe(r)
+    g <- girafe(ggobj = r)
   }else if(visit_types){
     data_format <- data_tbl %>% 
       mutate(n_w_fact = format(n_w_fact, big.mark = ',', scientific = FALSE),
-             site_lab = paste0(site, ' (N = ', n_w_fact, ')'))
+             site_lab = paste0(site, ' (N = # of patients)'))
     
     r <- ggplot(data_format, aes(x=var_name,y=median_site_without0s, colour=site))+
       geom_point_interactive(aes(data_id=site_lab, tooltip = site_lab), size=3)+
@@ -505,11 +517,11 @@ pf_ms_exp_nt <- function(data_tbl,
       labs(title = 'Median Facts per Patient Across Sites: \nVisit Type Stratification') +
       coord_flip()
     
-    g <- girafe(r)
+    g <- girafe(ggobj = r)
   }else{
     data_format <- data_tbl %>% filter(visit_type == 'all') %>%
       mutate(n_w_fact = format(n_w_fact, big.mark = ',', scientific = FALSE),
-             site_lab = paste0(site, ' (N = ', n_w_fact, ')'))
+             site_lab = paste0(site, ' (N = # of patients)'))
     
     r <- ggplot(data_format, aes(x=var_name,y=median_site_without0s, colour=site))+
       geom_point_interactive(aes(data_id=site_lab, tooltip = site_lab), size=3)+
@@ -518,7 +530,7 @@ pf_ms_exp_nt <- function(data_tbl,
       labs(title = 'Median Facts per Patient Across Sites') +
       coord_flip()
     
-    g <- girafe(r)
+    g <- girafe(ggobj = r)
   }
   
   return(g)
