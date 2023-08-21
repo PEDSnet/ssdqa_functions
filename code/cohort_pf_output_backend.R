@@ -144,6 +144,7 @@ compute_dist_mean <- function(data_input,
 #' @return a list of tables, one for each site in data_tbl, plus the relevant outcome variable as a string
 #'
 create_list_input_sepsites <- function(data_tbl,
+                                       site_colors,
                                        outcome_var) {
   
   site_list <- 
@@ -152,7 +153,13 @@ create_list_input_sepsites <- function(data_tbl,
   final_list <- list()
   
   for(i in 1:length(site_list)) {
-    elem1 <- data_tbl %>% filter(site==site_list[[i]])
+    
+    data_tbl_c <- as.data.frame(site_colors) %>%
+      rownames_to_column('site') %>%
+      filter(site == site_list[[i]]) %>%
+      left_join(data_tbl)
+    
+    elem1 <- data_tbl_c %>% filter(site==site_list[[i]])
     elem2 <- outcome_var
     
     args_list <- 
@@ -177,15 +184,22 @@ create_list_input_sepsites <- function(data_tbl,
 #' 
 create_list_input_facet_sepvarname <- function(data_tbl,
                                                facet_var_nm,
+                                               site_colors,
                                                site_name_list) {
   
   site_list <- 
-    site_list
+    site_name_list
   
   final_list <- list()
   
   for(i in 1:length(site_list)) {
-    elem1 <- data_tbl
+    
+    data_tbl_c <- as.data.frame(site_colors) %>%
+      rownames_to_column('site') %>%
+      filter(site == site_list[[i]]) %>%
+      left_join(data_tbl)
+    
+    elem1 <- data_tbl_c
     elem2 <- site_list[[i]]
     
     args_list <- 
@@ -362,13 +376,12 @@ create_sepsite_output <- function(list_name) {
 #' 
 
 prod_bar_sepsites <- function(data_tbl,
-                              outcome,
-                              facet_var) {
+                              outcome) {
   
   site_nm <- data_tbl %>% select(site) %>% distinct() %>% pull()
   
-  color <- as.data.frame(site_colors) %>% rownames_to_column('site') %>%
-    filter(site == site_nm) %>% select(site_colors) %>% pull()
+  color <- data_tbl %>% filter(site == site_nm) %>% select(site_colors) %>% 
+    distinct() %>% pull()
 
     bar_chart(data_tbl %>% filter(site == site_nm), x=var_name_lab,y=!! sym(outcome), bar_color=color) +
       ggtitle(paste0(site_nm, ' : Median Facts per Patient'))
@@ -414,10 +427,8 @@ prod_bar_facet <- function(data_tbl,
                            site_name_label,
                            facet_var_nm) {
   
-  color <- as.data.frame(site_colors) %>%
-    rownames_to_column('site') %>%
-    filter(site == site_name_label) %>%
-    select(site_colors) %>% pull()
+  color <- data_tbl %>% filter(site == site_name_label) %>% select(site_colors) %>% 
+    distinct() %>% pull()
   
   bar_chart(data_tbl %>% filter(site==site_name_label), 
             facet=!! sym(facet_var_nm), x=var_name,y=median_site_without0s,bar_color=color) +
@@ -619,7 +630,7 @@ create_multisite_exp <- function(multisite_tbl,
                                  date_breaks_str,
                                  time_span,
                                  facet_var = NULL,
-                                 site_colors_v=site_colors) {
+                                 site_colors_v) {
   
   grp_list <- 
     multisite_tbl %>% 
@@ -646,7 +657,7 @@ create_multisite_exp <- function(multisite_tbl,
                  filter(grp_check==i,start_date < time_span[2],start_date > time_span[1]),
                aes(x=start_date,y=distance,group=site,color=site), size=1) +
         geom_line_interactive(aes(tooltip=site, data_id=site)) +
-        facet_wrap(facets = eval(facet_var))+
+        facet_wrap(facets = eval(facet_var), scales = 'free_y')+
         scale_color_manual(values=site_colors_v)+
         scale_x_date(date_breaks=date_breaks_str) +
         theme_bw() +
