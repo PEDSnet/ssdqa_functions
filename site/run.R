@@ -120,6 +120,7 @@ config('retain_intermediates', NA)
 #' If it is `NA`, the default value from site_info.R is used.
 #' @md
 config('results_schema', 'ssdqa_output')
+config('cohort','glom')
 
 #' Request-specific suffix for output
 #'

@@ -1,16 +1,16 @@
 
 
 pf_process <- function(cohort,
-                       site_list,
-                       study_name = 'study',
-                       visit_types = c('all'),
+                       site_list = c('seattle','cchmc'),
+                       study_name = 'glom',
+                       visit_types = c('outpatient','inpatient'),
                        multi_or_single_site = 'single',
                        collapse_sites = FALSE,
-                       grouped_list = c('site', 'person_id', 'start_date', 
-                                        'end_date', 'fu'),
+                       #grouped_list = c('site', 'person_id', 'start_date', 
+                                        #'end_date', 'fu'),
                        time = FALSE,
-                       time_span = c('2012-01-01', '2023-01-01'),
-                       age_groups = NULL,
+                       time_span = c('2015-01-01', '2023-01-01'),
+                       age_groups = read_codeset('age_group_definitions','iic'),
                        codeset = NULL,
                        anomaly_or_exploratory='exploratory',
                        domain_tbl=read_codeset('pf_domains_short','cccc'),
@@ -24,7 +24,10 @@ pf_process <- function(cohort,
   cohort_prep <- prepare_pf(cohort = cohort, age_groups = age_groups, codeset = codeset)
   
   ## Step 2: Run Function
-  grouped_list <- grouped_list
+  #### NEED TO FIGURE OUT WHETHER WE WANT TO REQUIRE A SITE COLUMN
+  #grouped_list <- c('site', 'person_id','person_id','start_date','end_date','fu')
+  
+  grouped_list <- c('site','person_id','start_date','end_date','fu')
   
   if(is.data.frame(age_groups)){grouped_list <- grouped_list %>% append('age_grp')}
   if(is.data.frame(codeset)){grouped_list <- grouped_list %>% append('flag')}
@@ -56,34 +59,54 @@ pf_process <- function(cohort,
       domain_tbl = domain_tbl
     )
     
+    ### NEED DOCUMENTATION SAYING THAT THE VISIT LABEL WILL ALSO BE THE OUTPUT OF THE TABLE HERE
+    ### SHOULD WE MAKE ALL THESE TABLES TEMPORARY? PROVIDE AN OPTION TO USERS? WHY ARE WE EVEN OUTPUTTING THIS TABLE? 
+    ### SHOULD THE OUTPUT OF THE TABLE BE AN OPTION?
     output_list_to_db(pf_tbl)
     
-    pf_final <- combine_study_facts(study_abbr = study_name, time = time, visit_type_list = visit_types)
+    
+    ### NEED TO MAKE SURE THAT CREATING LONG TABLE IS A GOOD DECISION FOR REPRODUCIBILITY 
+    pf_final <- combine_study_facts(pf_tbl=pf_tbl,
+                                    domain_list = domain_tbl,
+                                    study_abbr = study_name, 
+                                    time = time, visit_type_list = visit_types) %>% collect()
   }
   
-  ## Step 3: Summarise (Medians, SD)
-  if(!time){
-    if(anomaly_or_exploratory=='anomaly') {
-      if(multi_or_single_site=='single') {
-        pf_output <- compute_dist_mean(pf_final,
-                                       agegrp = age_groups,
-                                       codeset = codeset)
-      } else {
-        pf_output <- compute_pf_medians(data_input = pf_final,
-                                        agegrp = age_groups,
-                                        codeset = codeset)
-          
-        #pf_output <- prep_kmeans(dat=medians_prep, age_group = age_groups, codeset = codeset)
-        }
-      } else {
-        pf_output <- compute_pf_medians(data_input = pf_final,
-                                        agegrp = age_groups,
-                                        codeset = codeset)
-      }
-    } else {pf_output <- pf_final}
-  
-  
-  return(pf_output)
+  ## Step 3: Summarise (Medians, SD) --- KALEIGH TO CHECK TO MAKE SURE THE CODE BELOW COVERS THIS
+#   if(!time){
+#     if(anomaly_or_exploratory=='anomaly') {
+#       if(multi_or_single_site=='single') {
+#         pf_output <- compute_dist_mean(pf_final,
+#                                        agegrp = age_groups,
+#                                        codeset = codeset)
+#       } else {
+#         pf_output <- compute_pf_medians(data_input = pf_final,
+#                                         agegrp = age_groups,
+#                                         codeset = codeset)
+#           
+#         #pf_output <- prep_kmeans(dat=medians_prep, age_group = age_groups, codeset = codeset)
+#         }
+#       } else {
+#         pf_output <- compute_pf_medians(data_input = pf_final,
+#                                         agegrp = age_groups,
+#                                         codeset = codeset)
+#       }
+#   } else {pf_output <- pf_final}
+#   
+#   return(pf_output)
+#   
+# }
+
+  if(!time) {
+    if(anomaly_or_exploratory=='anomaly' && multi_or_single_site=='single') {
+      pf_output <- compute_dist_mean(pf_final,
+                                     agegrp= age_groups,
+                                     codeset = codeset)
+    } else {pf_output <- compute_pf_medians(data_input=pf_final,
+                                            agegrp = age_groups,
+                                            codeset=codeset)}
+    
+  }
   
 }
 

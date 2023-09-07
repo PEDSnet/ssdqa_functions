@@ -275,7 +275,7 @@ loop_through_visits <- function(cohort_tbl,
                        .f=dplyr::union)
     
     #visit_output[[paste0('pf_',config('cohort'),'_',(visit_list[j]))]] <- all_site
-    visit_output[[paste0(visit_list[j])]] <- all_site
+    visit_output[[paste0('pf_',visit_list[j])]] <- all_site
     
   }
   
@@ -295,22 +295,35 @@ loop_through_visits <- function(cohort_tbl,
 #'         age grouping column added.
 #'         
 #' 
-combine_study_facts <- function(study_abbr,
+combine_study_facts <- function(pf_tbl,
+                                study_abbr,
+                                domain_list,
                                 time = FALSE,
                                 visit_type_list = list('inpatient','outpatient',
                                                        'other_visit','all')) {
   final_list <- list()
   
+  pf_visits <- 
+    str_remove(names(pf_tbl),'(pf_)')
+  
+  names(pf_tbl) <- str_remove(names(pf_tbl), '(pf_)')
+  
   for(i in 1:length(visit_type_list)) {
     
-    possible_cols <-  read_codeset('pf_domains_short','cccc') %>% 
+    possible_cols <-  domain_list %>% 
       select(domain) %>% c()
     
-    tbl_pulled <- 
-      get_results(paste0(visit_type_list[[i]]))  %>% 
-      select(-any_of('fact_ct_strat')) 
+    visit_type_pulled <- 
+      paste0(visit_type_list[[i]])
     
-    tbl_cols <- tbl_pulled %>% colnames()
+    pf_tbl_visittype <- 
+      pf_tbl[[visit_type_pulled]]
+    
+    # visit_type_pulled <- 
+    #   get_results(paste0(visit_type_list[[i]]))  %>% 
+    #   select(-any_of('fact_ct_strat')) 
+    
+    tbl_cols <- pf_tbl_visittype %>% colnames()
     
     selected_cols <- 
       intersect(possible_cols[[1]],
@@ -318,7 +331,7 @@ combine_study_facts <- function(study_abbr,
     
     if(!time){
     mutated_tbl <- 
-      tbl_pulled %>% 
+      pf_tbl_visittype %>% 
       pivot_longer(cols=all_of(selected_cols),
                    names_to='var_name',
                    values_to='var_val') %>%
@@ -327,9 +340,9 @@ combine_study_facts <- function(study_abbr,
       mutate(var_val=case_when(is.na(var_val) ~ 0,
                                 TRUE ~ var_val)) %>% 
        mutate(study=study_abbr,
-              visit_type=visit_type_list[[i]])
-    } else {mutated_tbl <- tbl_pulled %>% mutate(study=study_abbr,
-                                                 visit_type=visit_type_list[[i]])}
+              visit_type=visit_type_pulled)
+    } else {mutated_tbl <- pf_tbl_visittype %>% mutate(study=study_abbr,
+                                                 visit_type=visit_type_pulled)}
     
     
     final_list[[i]] <- mutated_tbl
@@ -362,7 +375,7 @@ get_results <- function(tbl_name) {
 #' 
 
 output_list_to_db <- function(output_list,
-                              append=TRUE) {
+                              append=FALSE) {
   
   
   if(append) {

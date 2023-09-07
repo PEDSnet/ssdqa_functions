@@ -155,7 +155,7 @@ create_list_input_sepsites <- function(data_tbl,
   for(i in 1:length(site_list)) {
     
     data_tbl_c <- as.data.frame(site_colors) %>%
-      rownames_to_column('site') %>%
+      rownames_to_column('site') %>% as_tibble() %>% 
       filter(site == site_list[[i]]) %>%
       left_join(data_tbl)
     
@@ -345,14 +345,16 @@ produce_kmeans_output <- function(kmeans_list,
 #' @param thresh boolean indicator of whether to include thresholds on plot
 #' 
 
-create_sepsite_output <- function(list_name) {
+create_sepsite_output <- function(list_name,
+                                  facet_vars) {
   
   output_sepsites <- list()
   
   for(i in 1:length(list_name)) {
     
     final <- prod_bar_sepsites(data_tbl=list_name[[i]][[1]],
-                               outcome=list_name[[i]][[2]])
+                               outcome=list_name[[i]][[2]],
+                               facet_vars=facet_vars)
     
     output_sepsites[[i]] <- final
   }
@@ -376,14 +378,15 @@ create_sepsite_output <- function(list_name) {
 #' 
 
 prod_bar_sepsites <- function(data_tbl,
-                              outcome) {
+                              outcome,
+                              facet_vars) {
   
   site_nm <- data_tbl %>% select(site) %>% distinct() %>% pull()
   
   color <- data_tbl %>% filter(site == site_nm) %>% select(site_colors) %>% 
     distinct() %>% pull()
 
-    bar_chart(data_tbl %>% filter(site == site_nm), x=var_name_lab,y=!! sym(outcome), bar_color=color) +
+    bar_chart(data_tbl %>% filter(site == site_nm), x=var_name_lab,y=!! sym(outcome), facet = facet_vars, bar_color=color) +
       ggtitle(paste0(site_nm, ' : Median Facts per Patient'))
 }
 

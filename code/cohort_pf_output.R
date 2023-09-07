@@ -427,7 +427,13 @@ pf_ss_exp_nt <- function(data_tbl,
       mutate(n_w_fact = format(n_w_fact, big.mark = ',', scientific = FALSE),
              var_name_lab = paste0(var_name, '\n(N = # of patients)'))
     
-    output_prep <- create_list_input_sepsites(data_tbl= pf_format %>% filter(visit_type == 'all'),
+    
+    grps <- c('var_name')
+    
+    if('age_grp' %in% pf_output) {grps <- append(grps, 'age_grp')}
+    if('flag' %in% pf_output) {grps <- append(grps, 'flag')}
+    
+    output_prep <- create_list_input_sepsites(data_tbl= pf_format,
                                               site_colors = site_colors,
                                               outcome_var = 'median_site_without0s')
     
@@ -436,6 +442,59 @@ pf_ss_exp_nt <- function(data_tbl,
   
   return(output)
 }
+
+
+
+#' **Single-Site, Exploratory, No Time**
+#' 
+#' This chart will produce output for each domain. The data frame 
+#' that is listed as a parameter of the function should contain a single 
+#' output for each domain. User can facet by site, age category, 
+#' or other stratifications. Multiple graphs can also be produced (e.g., 
+#' one graph faceting by site, or creaeting separate output for each site)
+#' 
+#' @param data_tbl output from previous function; 
+#' requires input for one site, one visit type; can create multiple graphs
+#' for different grouped variables
+#' @param output desired output - have 3 options:
+#' 1) `median_site_with0s`: specific site median, including patients with no evidence of patient fact
+#' (e.g., if domain = labs, includes in the median all patients with and without any labs)
+#' 2) `median_site_without0s`: specific site median, not including patients without evidence of patient fact
+#' (e.g., if domain = labs, only includes median for patients with evidence of a lab)
+#' 3) `prop_all_w_fact`: proportion of patients with the patient fact (e.g., proportion of patients with lab)
+#' @param facet variables to facet (e.g., `var_name`); vector of strings
+#' 
+#' 
+
+pf_ss_exp_nt <- function(data_tbl,
+                         output,
+                         facet) {
+  
+  if(output=='median_site_with0s') {y_title='Median for All Patients'}
+  if(output=='median_site_without0s') {y_title='Median for Patients with Fact'}
+  if(output=='prop_all_w_fact') {y_title='Proportion of Patients with Fact'}
+  
+  domain_deframe <- 
+    data_tbl %>% rename(domain=var_name) %>% distinct(domain) %>% 
+    inner_join(read_codeset('domain_color_config','cc')) %>% 
+    deframe()
+  
+  var_name_setup <- 
+    data_tbl %>% rename(domain=var_name)
+  
+  ggplot(var_name_setup,
+         aes(x=domain, y=!! sym(output), fill=domain)) +
+    geom_bar(stat='identity') + 
+    facet_wrap((facet)) + 
+    labs(y=y_title,
+         x='Domain') +
+    scale_fill_manual(values=domain_deframe) +
+    coord_flip() 
+  
+  
+}
+
+
 
 #' **Multi-Site, Anomaly Detection, No Time**
 
