@@ -112,8 +112,11 @@ compute_dist_mean <- function(data_input,
              site,
              visit_type,
              var_name,
+             n_fact,
+             outlier_fact,
+             prop_outlier_fact,
              .add=TRUE) %>% 
-    mutate(n_site_fact=n(),
+    summarise(n_site_fact=n(),
            mean_site_fact=mean(var_val),
            sd_site_fact=sd(var_val),
            zscore_site_fact = ((var_val - mean_site_fact) / sd_site_fact),
@@ -123,7 +126,7 @@ compute_dist_mean <- function(data_input,
            outlier_site_fact = sum(three_sd),
            prop_outlier_site_fact = round(outlier_site_fact / n_site_fact, 3)) %>% 
     ungroup() %>%
-    select(-c(three_sd, abs_z, mean_site_fact, sd_site_fact))
+    select(-c(three_sd, abs_z, mean_site_fact, sd_site_fact, zscore_site_fact)) %>% distinct()
   
   site_dist_means_final <- 
     site_dist_means_final %>% replace(is.na(.), 0) 
@@ -225,36 +228,45 @@ create_list_input_facet_sepvarname <- function(data_tbl,
 #' @return a matrix with one median value per site and per stratification in select_cols
 #' 
 prep_kmeans <- function(dat,
-                        facet_var) {
+                        output,
+                        facet_vars) {
   
   kmeans_list <- list()
   
-if(!is.null(facet_var)){
-  select_cols <- c('site', 'var_name', 'median_site_without0s', facet_var)
+if(!is.null(facet_vars)){
+  select_cols <- c('site', 'var_name', output, facet_vars)
   
-  facet_list <- dat %>% select(!!sym(facet_var)) %>% distinct() %>% pull()
-  
-  for(i in 1:length(facet_list)){
+  #facet_list <- dat %>% select(!!sym(facet_var)) %>% distinct() %>% pull()
   
   kmeans_prep <- 
     dat %>% 
     select(!!!syms(select_cols)) %>%
-    filter(!!sym(facet_var) == facet_list[[i]]) %>% 
+    #filter(!!sym(facet_var) == facet_list[[i]]) %>% 
     pivot_wider(id_cols = site,
-                names_from = var_name,
-                values_from = median_site_without0s) 
+                names_from = c(var_name, !!!syms(facet_vars)),
+                values_from = !!sym(output)) 
   
   kmeans_prep <- 
     kmeans_prep %>% replace(is.na(.), 0) %>% 
     mutate(across(everything(), ~ replace(.x, is.nan(.x),0)))
   
+  cols <- kmeans_prep %>% select(-site) %>% colnames()
+  
+  facet_list <- lapply(cols, function(x){sub("^[^_]*_", "", x)}) %>% unique()
+  
+  for(i in 1:length(facet_list)){
+  
   kmeans_mat <- 
     kmeans_prep %>% 
     column_to_rownames(., var='site')
   
-  kmeans_scaled <- scale(kmeans_mat) 
+  facet_kmeans <- kmeans_mat[, grepl(facet_list[[i]], names(kmeans_mat))]
+  
+  kmeans_scaled <- scale(facet_kmeans) 
   
   kmeans_scaled[, !colSums(!is.finite(kmeans_scaled))]
+  
+  kmeans_final <- kmeans_scaled
   
   kmeans_list[[i]] <- list(kmeans_scaled,
                            facet_list[[i]])
@@ -262,14 +274,14 @@ if(!is.null(facet_var)){
   
   }else{
     
-    select_cols <- c('site', 'var_name', 'median_site_without0s')
+    select_cols <- c('site', 'var_name', output)
       
       kmeans_prep <- 
         dat %>% 
         select(all_of(select_cols)) %>%
         pivot_wider(id_cols = site,
                     names_from = var_name,
-                    values_from = median_site_without0s) 
+                    values_from = !!sym(output)) 
       
       kmeans_prep <- 
         kmeans_prep %>% replace(is.na(.), 0) %>% 
@@ -283,8 +295,8 @@ if(!is.null(facet_var)){
       
       kmeans_scaled[, !colSums(!is.finite(kmeans_scaled))]
       
-      kmeans_list <- list(kmeans_scaled,
-                          'Multi-Site Non-Stratified')
+      kmeans_final <- list(kmeans_scaled,
+                           "K-Means Cluster Analysis")
     
   }
   
@@ -301,37 +313,24 @@ if(!is.null(facet_var)){
 #'
 #' @return
 #' 
-produce_kmeans_output <- function(kmeans_list,
-                                  centers,
-                                  facet = TRUE){
+produce_kmeans_output <- function(kmeans_list
+                                  #centers,
+                                  #facet = TRUE
+                                  ){
   
   output_list <- list()
-  
-  if(facet){
-  
+
   for(i in 1:length(kmeans_list)){
     
-    set.seed(123)
-    k <- kmeans(kmeans_list[[i]][[1]], centers=centers)
-    output <- fviz_cluster(k, data=kmeans_list[[i]][[1]], 
-                 main = paste0('K-Means Cluster Analysis: ', kmeans_list[[i]][[2]]))
-    
-    output_list[[paste0(kmeans_list[[i]][[2]])]] <- output
-    
-  }
-  }else{
+    if(ncol(kmeans_list[[i]][[1]]) == 0){next}
     
     set.seed(123)
-    k <- kmeans(kmeans_list[[1]], centers=centers)
-    output <- fviz_cluster(k, data=kmeans_list[[1]], 
-                           main = paste0('K-Means Cluster Analysis: ', kmeans_list[[2]]))
-    
-    output_list[[paste0(kmeans_list[[2]])]] <- output
-      
+    k <- kmeans(kmeans_list[[i]][[1]], centers=2)
+    output_list[[i]] <- fviz_cluster(k, data=kmeans_list[[i]][[1]],
+                 main = paste0(paste0('K-Means Cluster Analysis: ', kmeans_list[[i]][[2]])),
+                 palette = 'Dark2')
     }
-  
   output_list
-  
 }
 
 
@@ -736,8 +735,8 @@ produce_multisite_mad <- function(multisite_tbl,
   sites_total <- 
     sites_grp_total %>% ungroup() %>% 
     group_by(site) %>% 
-    mutate(site_total_num=sum(grp_total_num),
-           site_total_outlier=sum(grp_outlier_num)) %>% 
+    mutate(site_total_num=sum(grp_total_num, na.rm = TRUE),
+           site_total_outlier=sum(grp_outlier_num, na.rm = TRUE)) %>% 
     mutate(site_outlier_prop=round(site_total_outlier/site_total_num,2)) %>% 
     rename(grp=grp_check)
   
