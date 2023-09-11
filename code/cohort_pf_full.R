@@ -113,7 +113,7 @@ pf_output_gen <- function(pf_process,
                           file_path = NULL){
   
   ## Create Brewer color palettes for sites and domains
-  if(colors = 'auto'){
+  if(colors == 'auto'){
     site_names <- site_list
     site_palette_base <- colorRampPalette(brewer.pal(8, "Dark2"))
     site_color <- setNames(site_palette_base(length(site_names)), site_names)
