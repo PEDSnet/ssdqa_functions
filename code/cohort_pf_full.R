@@ -1,6 +1,6 @@
 
 
-pf_process <- function(cohort,
+pf_process <- function(cohort = cohort,
                        site_list = c('seattle','cchmc'),
                        study_name = 'glom',
                        visit_types = c('outpatient','inpatient'),
@@ -27,13 +27,20 @@ pf_process <- function(cohort,
   #### NEED TO FIGURE OUT WHETHER WE WANT TO REQUIRE A SITE COLUMN
   #grouped_list <- c('site', 'person_id','person_id','start_date','end_date','fu')
   
+  cols <- colnames(cohort)
+  
+  if(! 'site' %in% cols){cohort <- cohort %>% mutate(site = 'all')}
+  
   grouped_list <- c('site','person_id','start_date','end_date','fu')
   
   if(is.data.frame(age_groups)){grouped_list <- grouped_list %>% append('age_grp')}
   if(is.data.frame(codeset)){grouped_list <- grouped_list %>% append('flag')}
   
   if(time){
-    pf_tbl <- compute_fot_pf(cohort = cohort_prep,
+    
+    grouped_list <- grouped_list[! grouped_list %in% 'fu']
+    
+    pf_final <- compute_fot_pf(cohort = cohort_prep,
                              grouped_list=grouped_list,
                              time_period='year',
                              time_span= time_span,
@@ -43,9 +50,9 @@ pf_process <- function(cohort,
                              visit_list=visit_types,
                              domain_tbl=domain_tbl)
     
-    output_tbl(pf_tbl, 'pf_fot')
+    #output_tbl(pf_tbl, 'pf_fot')
     
-    pf_final <- pf_tbl
+    #pf_final <- pf_tbl
     
   } else {
     pf_tbl <- loop_through_visits(
@@ -62,40 +69,18 @@ pf_process <- function(cohort,
     ### NEED DOCUMENTATION SAYING THAT THE VISIT LABEL WILL ALSO BE THE OUTPUT OF THE TABLE HERE
     ### SHOULD WE MAKE ALL THESE TABLES TEMPORARY? PROVIDE AN OPTION TO USERS? WHY ARE WE EVEN OUTPUTTING THIS TABLE? 
     ### SHOULD THE OUTPUT OF THE TABLE BE AN OPTION?
-    output_list_to_db(pf_tbl)
+    #output_list_to_db(pf_tbl)
     
     
     ### NEED TO MAKE SURE THAT CREATING LONG TABLE IS A GOOD DECISION FOR REPRODUCIBILITY 
     pf_final <- combine_study_facts(pf_tbl=pf_tbl,
                                     domain_list = domain_tbl,
                                     study_abbr = study_name, 
-                                    time = time, visit_type_list = visit_types) %>% collect()
+                                    time = time, 
+                                    visit_type_list = visit_types) %>% collect()
   }
   
   ## Step 3: Summarise (Medians, SD) --- KALEIGH TO CHECK TO MAKE SURE THE CODE BELOW COVERS THIS
-#   if(!time){
-#     if(anomaly_or_exploratory=='anomaly') {
-#       if(multi_or_single_site=='single') {
-#         pf_output <- compute_dist_mean(pf_final,
-#                                        agegrp = age_groups,
-#                                        codeset = codeset)
-#       } else {
-#         pf_output <- compute_pf_medians(data_input = pf_final,
-#                                         agegrp = age_groups,
-#                                         codeset = codeset)
-#           
-#         #pf_output <- prep_kmeans(dat=medians_prep, age_group = age_groups, codeset = codeset)
-#         }
-#       } else {
-#         pf_output <- compute_pf_medians(data_input = pf_final,
-#                                         agegrp = age_groups,
-#                                         codeset = codeset)
-#       }
-#   } else {pf_output <- pf_final}
-#   
-#   return(pf_output)
-#   
-# }
 
   if(!time) {
     if(anomaly_or_exploratory=='anomaly' && multi_or_single_site=='single') {
@@ -106,7 +91,7 @@ pf_process <- function(cohort,
                                             agegrp = age_groups,
                                             codeset=codeset)}
     
-  }
+  }else{pf_output <- pf_final}
   
 }
 
@@ -115,6 +100,7 @@ pf_process <- function(cohort,
 
 pf_output_gen <- function(pf_process,
                           site_list,
+                          colors = 'auto',
                           visit_types = c('all'),
                           multi_or_single_site = 'single',
                           time = FALSE,
@@ -127,13 +113,25 @@ pf_output_gen <- function(pf_process,
                           file_path = NULL){
   
   ## Create Brewer color palettes for sites and domains
-  site_names <- site_list
-  site_palette_base <- colorRampPalette(brewer.pal(8, "Dark2"))
-  site_colors <- setNames(site_palette_base(length(site_names)), site_names)
-  
-  domain_names <- domain_tbl %>% select(domain) %>% pull()
-  domain_palette_base <- colorRampPalette(brewer.pal(8, "Paired"))
-  domain_colors <- setNames(domain_palette_base(length(domain_names)), domain_names)
+  if(colors = 'auto'){
+    site_names <- site_list
+    site_palette_base <- colorRampPalette(brewer.pal(8, "Dark2"))
+    site_color <- setNames(site_palette_base(length(site_names)), site_names)
+    as.data.frame(site_color) %>% rownames_to_column('site') %>%
+      write.csv(file.path(base_dir, 'specs/site_color_config.csv'), row.names = FALSE)
+    
+    domain_names <- domain_tbl %>% select(domain) %>% pull()
+    domain_palette_base <- colorRampPalette(brewer.pal(8, "Dark2"))
+    domain_color <- setNames(domain_palette_base(length(domain_names)), domain_names)
+    as.data.frame(domain_color) %>% rownames_to_column('site') %>%
+      write.csv(file.path(base_dir, 'specs/domain_color_config.csv'), row.names = FALSE)
+  }else{
+    site_color <- read_codeset('site_color_custom', 'cc')
+    write.csv(site_color, file.path(base_dir, 'specs/site_color_config.csv'), row.names = FALSE)
+    
+    domain_color <- read_codeset('domain_color_custom', 'cc')
+    write.csv(domain_color, file.path(base_dir, 'specs/domain_color_config.csv'), row.names = FALSE)
+  }
   
   ## Generate appropriate output based on selections
   if(time){
