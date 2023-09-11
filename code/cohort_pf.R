@@ -26,7 +26,10 @@ compute_age_groups <- function(cohort_tbl,
     mutate(age_grp = case_when(age_ce >= min_age & age_ce <= max_age ~ group,
                                TRUE ~ as.character(NA))) %>%
     filter(!is.na(age_grp)) %>%
-    select(-c(birth_date, min_age, max_age, group))
+    right_join(cohorts) %>%
+    select(-c(birth_date, min_age, max_age, group)) %>%
+    mutate(age_grp = case_when(is.na(age_grp) ~ 'No Group',
+                               TRUE ~ age_grp))
   
   copy_to_new(df = cohorts_grpd)
   
