@@ -32,7 +32,7 @@ compute_pf_medians <- function(data_input,
     data_input_grp %>% 
     group_by(study,
              visit_type,
-             var_name,
+             domain,
              .add=TRUE) %>% 
     mutate(median_all_with0s=median(var_val),
            median_all_without0s=median(var_val[var_val!=0])) %>% 
@@ -44,7 +44,7 @@ compute_pf_medians <- function(data_input,
     group_by(study,
              site,
              visit_type,
-             var_name,
+             domain,
              median_all_with0s,
              median_all_without0s,
              .add=TRUE) %>% 
@@ -73,7 +73,7 @@ compute_pf_medians <- function(data_input,
 #' @return a dataframe that summarises the number of patients with fact counts that fall +/- 3 SD away from the mean
 #'         both at fact and site + fact levels
 #'         
-#'         contains columns: person_id, start_date, end_date, fu, site, var_name, var_val, var_ever, study,
+#'         contains columns: person_id, start_date, end_date, fu, site, domain, var_val, var_ever, study,
 #'                           visit_type, n_fact, zscore_fact, outlier_fact, prop_outlier_fact, n_site_fact,
 #'                           zscore_site_fact, outlier_site_fact, prop_outlier_site_fact
 #' 
@@ -90,7 +90,7 @@ compute_dist_mean <- function(data_input,
     data_input %>% 
     group_by(study,
              visit_type,
-             var_name,
+             domain,
              .add=TRUE) %>% 
     mutate(n_fact=n(),
            mean_fact=mean(var_val),
@@ -111,7 +111,7 @@ compute_dist_mean <- function(data_input,
     group_by(study,
              site,
              visit_type,
-             var_name,
+             domain,
              n_fact,
              outlier_fact,
              prop_outlier_fact,
@@ -177,12 +177,12 @@ create_list_input_sepsites <- function(data_tbl,
 }
 
 
-### One table per visit_type & var_name_list element, w/ argument for facet_var_nm
+### One table per visit_type & domain_list element, w/ argument for facet_var_nm
 
 #' @param data_tbl --- the data tbl that will be used for the `prod_bar_facet` function
 #' @param visit_type_nm --- the visit type to produce output for
 #' 
-#' @return a list of tables, one for each domain in a provided list, plus the provided var_name_label and
+#' @return a list of tables, one for each domain in a provided list, plus the provided domain_label and
 #'         facet_var as strings
 #' 
 create_list_input_facet_sepvarname <- function(data_tbl,
@@ -234,7 +234,7 @@ prep_kmeans <- function(dat,
   kmeans_list <- list()
   
 if(!is.null(facet_vars)){
-  select_cols <- c('site', 'var_name', output, facet_vars)
+  select_cols <- c('site', 'domain', output, facet_vars)
   
   #facet_list <- dat %>% select(!!sym(facet_var)) %>% distinct() %>% pull()
   
@@ -243,7 +243,7 @@ if(!is.null(facet_vars)){
     select(!!!syms(select_cols)) %>%
     #filter(!!sym(facet_var) == facet_list[[i]]) %>% 
     pivot_wider(id_cols = site,
-                names_from = c(var_name, !!!syms(facet_vars)),
+                names_from = c(domain, !!!syms(facet_vars)),
                 values_from = !!sym(output)) 
   
   kmeans_prep <- 
@@ -274,13 +274,13 @@ if(!is.null(facet_vars)){
   
   }else{
     
-    select_cols <- c('site', 'var_name', output)
+    select_cols <- c('site', 'domain', output)
       
       kmeans_prep <- 
         dat %>% 
         select(all_of(select_cols)) %>%
         pivot_wider(id_cols = site,
-                    names_from = var_name,
+                    names_from = domain,
                     values_from = !!sym(output)) 
       
       kmeans_prep <- 
@@ -364,7 +364,7 @@ create_sepsite_output <- function(list_name,
 
 #' produces output for a given outcome (proportion of visits, median number, etc)
 #' for a given data output, faceted by visit type. Side bar plots, with each bar
-#' the pf_domain, or var_name. 
+#' the pf_domain, or domain. 
 #' 
 #' This function relies on one of the filters being BY SITE. This is a site-specific
 #' output measure.
@@ -385,7 +385,7 @@ prod_bar_sepsites <- function(data_tbl,
   color <- data_tbl %>% filter(site == site_nm) %>% select(site_colors) %>% 
     distinct() %>% pull()
 
-    bar_chart(data_tbl %>% filter(site == site_nm), x=var_name_lab,y=!! sym(outcome), facet = facet_vars, bar_color=color) +
+    bar_chart(data_tbl %>% filter(site == site_nm), x=domain_lab,y=!! sym(outcome), facet = facet_vars, bar_color=color) +
       ggtitle(paste0(site_nm, ' : Median Facts per Patient'))
 }
 
@@ -418,7 +418,7 @@ create_facet_graphs_byvarname <- function(list_name) {
 #' 
 #' 
 #' @param data_tbl the data tbl
-#' @param var_name_label the outcome, as a string; must be the column name in `data_tbl`
+#' @param domain_label the outcome, as a string; must be the column name in `data_tbl`
 #' @param facet_var the variable to facet by (in our use case, `age_ce_grp`)
 #' 
 #' @return 
@@ -433,7 +433,7 @@ prod_bar_facet <- function(data_tbl,
     distinct() %>% pull()
   
   bar_chart(data_tbl %>% filter(site==site_name_label), 
-            facet=!! sym(facet_var_nm), x=var_name,y=median_site_without0s,bar_color=color) +
+            facet=!! sym(facet_var_nm), x=domain,y=median_site_without0s,bar_color=color) +
     ggtitle(paste0(site_name_label, ', ', facet_var_nm, ' : Median Facts per Patient'))
   
 }

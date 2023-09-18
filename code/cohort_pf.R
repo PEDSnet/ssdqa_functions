@@ -278,7 +278,7 @@ loop_through_visits <- function(cohort_tbl,
                        .f=dplyr::union)
     
     #visit_output[[paste0('pf_',config('cohort'),'_',(visit_list[j]))]] <- all_site
-    visit_output[[paste0('pf_',visit_list[j])]] <- all_site
+    visit_output[[visit_list[j]]] <- all_site
     
   }
   
@@ -336,7 +336,8 @@ combine_study_facts <- function(pf_tbl,
     mutated_tbl <- 
       pf_tbl_visittype %>% 
       pivot_longer(cols=all_of(selected_cols),
-                   names_to='var_name',
+                   names_to='domain',
+                   #names_to='var_name',
                    values_to='var_val') %>%
       mutate(var_ever=case_when(!is.na(var_val)~1L,
                                 TRUE~0L)) %>% 

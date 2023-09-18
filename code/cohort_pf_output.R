@@ -18,7 +18,7 @@
 #' 1) `median_fact_ct`: the median number of facts for each domain during the specified time period
 #' 2) `sum_fact_ct`: the sum of facts for each domain during the specified time period
 #' 
-#' @param facet variables to facet (e.g., `var_name`); vector of strings
+#' @param facet variables to facet (e.g., `domain`); vector of strings
 
 pf_ss_anom_at <- function(data_tbl,
                           output,
@@ -62,7 +62,7 @@ pf_ss_anom_at <- function(data_tbl,
 #' 1) `median_fact_ct`: the median number of facts for each domain during the specified time period
 #' 2) `sum_fact_ct`: the sum of facts for each domain during the specified time period
 #' 
-#' @param facet variables to facet (e.g., `var_name`); vector of strings
+#' @param facet variables to facet (e.g., `domain`); vector of strings
 #' 
 #' @param date_breaks_str string to denote how time should be broken up in the chart (e.g. year, month)
 
@@ -110,7 +110,7 @@ pf_ss_exp_at <- function(data_tbl,
 #' 2) `grp_outlier_prop`: the proportion of patients in a group (site + domain + facets) that 
 #'                        are 2 MAD away from the median
 #' 
-#' @param facet variables to facet (e.g., `var_name`); vector of strings
+#' @param facet variables to facet (e.g., `domain`); vector of strings
 
 pf_ms_anom_at <- function(data_tbl,
                           output,
@@ -154,7 +154,7 @@ pf_ms_anom_at <- function(data_tbl,
 #' 1) `median_fact_ct`: the median number of facts for each domain during the specified time period
 #' 2) `sum_fact_ct`: the sum of facts for each domain during the specified time period
 #' 
-#' @param facet variables to facet (e.g., `var_name`); vector of strings
+#' @param facet variables to facet (e.g., `domain`); vector of strings
 #' 
 #' @param time_span the desired time span to be examined in the output; can be the same as the 
 #'                  previous function or can be changed to a subset of the time_span from the
@@ -203,11 +203,11 @@ pf_ms_exp_at <- function(data_tbl,
 #' 3) `outlier_site_fact`: the number of facts per site that fall 2 SD away from the mean
 #' 4) `prop_outlier_site_fact`: the proportion of facts per site that fall 2 SD away from the mean
 #' 
-#' @param facet variables to facet (e.g., `var_name`); vector of strings
+#' @param facet variables to facet (e.g., `domain`); vector of strings
 
 pf_ss_anom_nt <- function(data_tbl,
                           output,
-                          facet){
+                          facet=c('domain')){
   
   if(output=='outlier_fact'){y_title = 'Number of Overall Patients +/- 2 SD Away from Mean'}
   if(output=='prop_outlier_fact'){y_title = 'Proportion of Overall Patients +/- 2 SD Away from Mean'}
@@ -215,18 +215,20 @@ pf_ss_anom_nt <- function(data_tbl,
   if(output=='prop_outlier_site_fact'){y_title = 'Proportion of Site Patients +/- 2 SD Away from Mean'}
   
   domain_deframe <- 
-    data_tbl %>% rename(domain=var_name) %>% distinct(domain) %>% 
+    data_tbl %>% rename(domain=domain) %>% distinct(domain) %>% 
     inner_join(read_codeset('domain_color_config','cc')) %>% 
     deframe()
   
   ggplot(data_tbl,
-         aes(x = !!sym(output), y = var_name, fill = var_name)) +
+         aes(x = !!sym(output), y = domain, fill = domain)) +
     geom_col() +
     facet_wrap((facet)) +
     scale_fill_manual(values = domain_deframe) +
     labs(title = y_title,
          y = 'Domain') +
-    theme_classic()
+    theme_classic() +
+    theme(panel.grid.major = element_line(size=0.4, linetype = 'solid'),
+          panel.grid.minor = element_line(size=0.2, linetype = 'dashed'))
   
 }
 
@@ -250,34 +252,37 @@ pf_ss_anom_nt <- function(data_tbl,
 #' (e.g., if domain = labs, only includes median for patients with evidence of a lab)
 #' 3) `prop_all_w_fact`: proportion of patients with the patient fact (e.g., proportion of patients with lab)
 #' 
-#' @param facet variables to facet (e.g., `var_name`); vector of strings
+#' @param facet variables to facet (e.g., `domain`); vector of strings
 #' 
 #' 
 
 pf_ss_exp_nt <- function(data_tbl,
                          output,
-                         facet) {
+                         facet=c('domain')) {
   
   if(output=='median_site_with0s') {y_title='Median for All Patients'}
   if(output=='median_site_without0s') {y_title='Median for Patients with Fact'}
   if(output=='prop_all_w_fact') {y_title='Proportion of Patients with Fact'}
   
   domain_deframe <- 
-    data_tbl %>% rename(domain=var_name) %>% distinct(domain) %>% 
+    data_tbl %>% distinct(domain) %>% 
     inner_join(read_codeset('domain_color_config','cc')) %>% 
     deframe()
   
-  var_name_setup <- 
-    data_tbl %>% rename(domain=var_name)
+  # domain_setup <- 
+  #   data_tbl %>% rename(domain=domain)
   
-  ggplot(var_name_setup,
+  ggplot(data_tbl,
          aes(x=domain, y=!! sym(output), fill=domain)) +
     geom_bar(stat='identity') + 
     facet_wrap((facet)) + 
     labs(y=y_title,
          x='Domain') +
     scale_fill_manual(values=domain_deframe) +
-    coord_flip() 
+    coord_flip() +
+    theme_classic() +
+    theme(panel.grid.major = element_line(size=0.4, linetype = 'solid'),
+          panel.grid.minor = element_line(size=0.2, linetype = 'dashed'))
   
   
 }
@@ -302,7 +307,7 @@ pf_ss_exp_nt <- function(data_tbl,
 #' (e.g., if domain = labs, only includes median for patients with evidence of a lab)
 #' 3) `prop_all_w_fact`: proportion of patients with the patient fact (e.g., proportion of patients with lab)
 #' 
-#' @param facet variables to facet (e.g., `var_name`); vector of strings
+#' @param facet variables to facet (e.g., `domain`); vector of strings
 #' 
 #' 
 
@@ -335,7 +340,7 @@ pf_ms_anom_nt <- function(data_tbl,
 #' 2) `median_site_without0s`: specific site median, not including patients without evidence of patient fact
 #' (e.g., if domain = labs, only includes median for patients with evidence of a lab)
 #' 
-#' @param facet variables to facet (e.g., `var_name`); vector of strings
+#' @param facet variables to facet (e.g., `domain`); vector of strings
 #' 
 
 pf_ms_exp_nt <- function(data_tbl,
@@ -358,9 +363,9 @@ pf_ms_exp_nt <- function(data_tbl,
            site_lab = paste0(site, ' (N = ', n_w_fact, ')'))
   
   r <- ggplot(data_format, 
-              aes(x=var_name,y=!! sym(output), colour=site))+
+              aes(x=domain,y=!! sym(output), colour=site))+
     geom_point_interactive(aes(data_id=site_lab, tooltip = site_lab), size=3)+
-    geom_point(aes(x=var_name, y=!! sym(comp_var)), shape=8, size=3, color="black")+
+    geom_point(aes(x=domain, y=!! sym(comp_var)), shape=8, size=3, color="black")+
     scale_color_manual(values=site_deframe)+
     facet_wrap((facet), scales="free_x", ncol=2)+
     theme_bw()+

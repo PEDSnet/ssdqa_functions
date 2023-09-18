@@ -1,18 +1,20 @@
 
 
+### CHANGE OUTPUT TO DOMAIN INSTEAD OF VAR NAME?
+
 pf_process <- function(cohort = cohort,
                        site_list = c('seattle','cchmc'),
                        study_name = 'glom',
                        visit_types = c('outpatient','inpatient'),
-                       multi_or_single_site = 'single',
+                       multi_or_single_site = 'multi',
                        collapse_sites = FALSE,
                        #grouped_list = c('site', 'person_id', 'start_date', 
                                         #'end_date', 'fu'),
                        time = FALSE,
-                       time_span = c('2015-01-01', '2023-01-01'),
-                       age_groups = read_codeset('age_group_definitions','iic'),
+                       time_span = c('2014-01-01', '2023-01-01'),
+                       age_groups = NULL, #read_codeset('age_group_definitions','iic'),
                        codeset = NULL,
-                       anomaly_or_exploratory='exploratory',
+                       anomaly_or_exploratory='anomaly',
                        domain_tbl=read_codeset('pf_domains_short','cccc'),
                        visit_type_table=read_codeset('pf_visit_types','ic')){
   
