@@ -313,13 +313,15 @@ pf_ss_exp_nt <- function(data_tbl,
 
 pf_ms_anom_nt <- function(data_tbl,
                           output,
-                          facet){
+                          facet,
+                          kmeans_clusters){
   
   output_prep <- prep_kmeans(dat = data_tbl, 
                              output = output,
                              facet_vars = facet)
   
-  output <- produce_kmeans_output(output_prep)
+  output <- produce_kmeans_output(kmeans_list = output_prep,
+                                  centers = kmeans_clusters)
   
 }
 
