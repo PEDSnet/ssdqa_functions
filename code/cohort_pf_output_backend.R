@@ -568,7 +568,9 @@ produce_multisite_mad <- function(multisite_tbl,
 #' generate color schemes for graphs based on user input or automatically
 #' 
 
-create_color_scheme <- function(type = 'auto'){
+create_color_scheme <- function(type = 'auto',
+                                site_list,
+                                domain_list){
   
   if(type == 'auto'){
     site_names <- site_list
@@ -577,10 +579,10 @@ create_color_scheme <- function(type = 'auto'){
     as.data.frame(site_color) %>% rownames_to_column('site') %>%
       write.csv(file.path(base_dir, 'specs/site_color_config.csv'), row.names = FALSE)
     
-    domain_names <- domain_tbl %>% select(domain) %>% pull()
+    domain_names <- domain_list
     domain_palette_base <- colorRampPalette(brewer.pal(8, "Dark2"))
     domain_color <- setNames(domain_palette_base(length(domain_names)), domain_names)
-    as.data.frame(domain_color) %>% rownames_to_column('site') %>%
+    as.data.frame(domain_color) %>% rownames_to_column('domain') %>%
       write.csv(file.path(base_dir, 'specs/domain_color_config.csv'), row.names = FALSE)
   }else{
     site_color <- read_codeset('site_color_custom', 'cc')
@@ -661,7 +663,6 @@ param_csv_summary <- function(sites,
         dataframe <- dataframe %>% add_row('parameter' = c('output_function', 'output options'),
                                            'inputs' = c('pf_ms_exp_nt', 'median_site_with0s, median_site_without0s'),
                                            'description' = c('The function for output generation that will be run based on user input',
-                                                             'The function for output generation that will be run based on user input',
                                                              'Options for statistics to use in the output. median_site_with0s is the median number of patients
                                                              with a fact, including patients without the fact. median_site_without0s is the median
                                                              number of patients with a fact, excluding patients without the fact.'))
