@@ -143,7 +143,8 @@ compute_dist_mean <- function(data_input,
 #' @param age_group a csv file with user designated age groupings, based on age at cohort entry
 #' @param codeset a csv file with user designated cohort flags based on a user provided codeset
 #'
-#' @return a matrix with one median value per site and per stratification in select_cols
+#' @return a list of matricies (one per distinct grouping of facet variables) with 
+#'         one median value per site and per domain
 #' 
 prep_kmeans <- function(dat,
                         output,
@@ -237,16 +238,16 @@ if(!is.null(facet_vars)){
 
 #' K-Means Output Generation
 #'
-#' @param kmeans_list 
-#' @param centers 
-#' @param facet 
+#' @param kmeans_list a list of output tables from `prep_kmeans`; one table per distinct 
+#'                    grouping of facet variables
+#' @param centers an integer that denotes the number of clusters that should be
+#'                generated
 #'
-#' @return
+#' @return a list of graphs, with one graph per distinct grouping of facet variables, 
+#'         where site and domain are the dimensions
 #' 
 produce_kmeans_output <- function(kmeans_list,
-                                  centers
-                                  #facet = TRUE
-                                  ){
+                                  centers){
   
   output_list <- list()
 
@@ -266,18 +267,25 @@ produce_kmeans_output <- function(kmeans_list,
 
 #' FOT Heuristic Check
 #'
-#' @param target_col 
-#' @param tblx 
-#' @param site_col 
-#' @param time_col 
-#' @param facet_var 
+#' @param target_col the statistic that should be used to generate the output;
+#'                   options based on user configurations are provided in the `parameter_summary`
+#'                   csv file output by `pf_process`
+#' @param tblx table output by `pf_process`, filtered to one domain
+#' @param site_col defaults to `site`
+#' @param time_col defaults to `start_date`
+#' @param facet_var list of variables by which the user would like to facet the output;
+#'                  should match the facets used in `check_fot_multisite`
 #'
-#' @return
+#' @return list of two tables:
+#'           -@fot_heuristic: table with relevant descriptive columns (site + facet_vars) and
+#'                            the heuristic check
+#'           -@fot_heuristic_summary: table with a summary of the heuristic, including the mean, median,
+#'                                    quantiles, stdev, and descriptive columns (site + facet_vars)
 #' 
 fot_check <- function(target_col,
-                      tblx=results_tbl('fot_output'),
+                      tblx,
                       site_col='site',
-                      time_col='month_end',
+                      time_col='start_date',
                       facet_var) {
   if(is.null(facet_var)){
     cols_to_keep <- c(eval(site_col),eval(time_col),'check')
@@ -346,22 +354,30 @@ fot_check <- function(target_col,
 
 #' FOT Heuristic Check Calculation
 #'
-#' @param tblx 
-#' @param site_col 
-#' @param time_col 
-#' @param target_col 
+#' @param tblx table output by `pf_process`, filtered to one domain
+#' @param site_col defaults to `site`
+#' @param time_col defaults to `start_date`
+#' @param target_col the statistic that should be used to generate the output;
+#'                   options based on user configurations are provided in the `parameter_summary`
+#'                   csv file output by `pf_process`
 #'
-#' @return
+#' @return dataframe with normalized distribution for specified domain based on the following heuristic:
+#'         
+#'         (month)/((month-1) x .25+(month+1) x .25+(month-12) x .5)
 #' 
-fot_check_calc <- function(tblx, site_col,time_col, target_col) {
+fot_check_calc <- function(tblx, 
+                           site_col = 'site',
+                           time_col = 'start_date', 
+                           target_col) {
   tblx %>%
     arrange(!! sym(site_col), !! sym(time_col)) %>% 
     mutate(
       lag_1 = lag(!!sym(target_col)),
       lag_1_plus = lead(!!sym(target_col),1),
-      # lag_12 = lag(!!sym(target_col),12),
+      lag_12 = lag(!!sym(target_col),12),
       check_denom = (lag(!!sym(target_col))*.25 +
-                       lead(!!sym(target_col),1)*.25)) %>%
+                       lead(!!sym(target_col),1)*.25 +
+                       lag(!!sym(target_col),12)*.5)) %>%
     # check_denom()) %>% 
     filter(check_denom!=0) %>%
     mutate(check = !!sym(target_col)/check_denom-1)
@@ -397,19 +413,26 @@ check_fot_all_dist <- function(fot_check_output) {
     )
 }
 
-#' Do all FOT checks; 
-#' REQUIRES a column in `tblx` to be called `grp`
+#' Execute all FOT functions
 #' 
-#' @param target_col
-#' @param tblx
-#' @param  site_col defaults to `site`
-#' @param time_col defaults to  `month_end`
+#' @param tblx dataframe output by `pf_process`
+#' @param target_col the statistic that should be used to generate the output;
+#'                   options based on user configurations are provided in the `parameter_summary`
+#'                   csv file output by `pf_process`
+#' @param site_col defaults to `site`
+#' @param time_col defaults to `start_date`
+#' @param domain_list list of available domains in `tblx` to be used in loop
+#' @param facet_var list of variables by which the user would like to facet the output
 #' 
+#' @return dataframe with normalized distribution of facts for each site, domain, and facet variable
+#'         based on the following heuristic
+#'         
+#'         (month)/((month-1) x .25+(month+1) x .25+(month-12) x .5)
 
 check_fot_multisite <- function(tblx,
                                 target_col,
-                                site_col,
-                                time_col, 
+                                site_col = 'site',
+                                time_col = 'start_date', 
                                 domain_list,
                                 facet_var = NULL) {
   
@@ -438,17 +461,18 @@ check_fot_multisite <- function(tblx,
 }
 
 
-#' loops through each medical complexity group
-#' and produces interactive graph 
+#' loops through each domain and produces interactive graph 
 #' using `girafe` package
 #' 
-#' 
-#' @param multisite_tbl a tbl with all sites and a `grp_check` column,
-#' as well as a `month_end`, `distance`, `site` columns; output from 
-#' the `check_for_multisite` function
-#' 
-#' @param date_breaks_str the window length for each unit of time
-#' on the x-axis
+#' @param multisite_tbl a tbl with all sites and a `grp_check` column, as well as a 
+#'                      `month_end`, `distance`, `site` columns; output from the 
+#'                      `check_fot_multisite` function
+#' @param date_breaks_str the window length for each unit of time on the x-axis
+#' @param time_span the start and end dates for the time period on the x-axis
+#' @param facet_var list of variables by which the user would like to facet the output;
+#'                  should match the facets used in `check_fot_multisite`
+#' @param site_colors_v the color palette that should be used for the sites; typically use
+#'                      the palette output by `create_color_scheme`
 #' 
 
 create_multisite_exp <- function(multisite_tbl,
@@ -506,11 +530,17 @@ create_multisite_exp <- function(multisite_tbl,
   grp_output
 }
 
-#' output of `check_for_multisite` to look for points where
+#' output of `check_fot_multisite` to look for points where
 #' a site is +/- 2 MAD from the median/centoid
 #' 
+#' @param multisite_tbl a tbl with all sites and a `grp_check` column, as well as a `month_end`, 
+#'                      `distance`, `site` columns; output from the `check_fot_multisite` function
+#' @param facet_var list of variables by which the user would like to facet the output;
+#'                  should match the facets used in `check_fot_multisite`
+#' @param mad_dev an integer to define the deviation that should be used to compute the upper and lower MAD limits
 #' 
-#' 
+#' @return dataframe that includes statistics relating to the number of outliers / anomalous measures are present
+#'         in the data based on deviation from the MAD
 
 produce_multisite_mad <- function(multisite_tbl,
                                   facet_var = NULL,
@@ -567,6 +597,15 @@ produce_multisite_mad <- function(multisite_tbl,
 
 #' generate color schemes for graphs based on user input or automatically
 #' 
+#' @param type - the type of color palette that should be used for generation
+#'                   - @auto: a color palette will be generated automatically using RColorBrewer
+#'                   - @manual: a custom color palette defined by the user in *domain_color_custom*
+#'                              and *site_color_custom* will be used to create the color palette
+#' @param site_list - the list of sites for which colors are required
+#' @param domain_list - the list of domains for which colors are required
+#' 
+#' @return one csv file each for the site and domain variables that contain the name of the available options
+#'         and the associated hex codes
 
 create_color_scheme <- function(type = 'auto',
                                 site_list,
@@ -596,25 +635,26 @@ create_color_scheme <- function(type = 'auto',
 
 #' generate csv with summary of pf process parameters and recs for output function
 #'
-#' @param sites 
-#' @param visits 
-#' @param ms_site 
-#' @param anom_exp 
-#' @param t 
-#' @param ts 
-#' @param age 
-#' @param cs 
+#' @param site_list - list of sites used to generate output
+#' @param visit_list - list of visit types used to generate output
+#' @param ms_site - multi- or single-site output, as selected by user
+#' @param anom_exp - anomaly or exploratory analysis, as selected by user
+#' @param time - logical to denote whether the analysis was conducted over time, as selected by user
+#' @param time_span - if time = TRUE, the start and end dates for the time period of interest
+#' @param age - csv file that defines age groupings for the cohort, as designated by user. left NULL if age groups
+#'              were not desired
+#' @param cs - csv file that defines codeset flags for the cohort, as designated by user. left NULL if codeset flags
+#'            were not desired
 #'
-#' @return
-#' @export
-#'
-#' @examples
-param_csv_summary <- function(sites,
-                              visits,
+#' @return a csv file with summary information about the parameters used in the `pf_process` function as well as 
+#'         recommendations based on those parameters on how to configure the `pf_output_gen` function
+#' 
+param_csv_summary <- function(site_list,
+                              visit_list,
                               ms_site,
                               anom_exp,
-                              t,
-                              ts,
+                              time,
+                              time_span,
                               age,
                               cs){
   
@@ -622,12 +662,12 @@ param_csv_summary <- function(sites,
   
   if(!is.null(age)){facet_list <- facet_list %>% append('age_grp')}
   if(!is.null(cs)){facet_list <- facet_list %>% append('flag')}
-  if(length(visits) > 1){facet_list <- facet_list %>% append('visit_type')}
+  if(length(visit_list) > 1){facet_list <- facet_list %>% append('visit_type')}
   
   dataframe <- data.frame('parameter' = c('site_list', 'visit_types', 'multi_or_single_site',
                                           'anomaly_or_exploratory', 'time', 'time_span', 'facet'),
-                          'inputs' = c(paste(sites, collapse = ','), paste(visits, collapse = ','), ms_site, 
-                                       anom_exp, t, paste(ts, collapse = ','), paste(facet_list, collapse = ',')),
+                          'inputs' = c(paste(site_list, collapse = ','), paste(visit_list, collapse = ','), ms_site, 
+                                       anom_exp, time, paste(time_span, collapse = ','), paste(facet_list, collapse = ',')),
                           'description' = c('The list of sites included in the output',
                                             'List of visit types available in the output',
                                             'Multi- or Single-Site output',
@@ -636,7 +676,7 @@ param_csv_summary <- function(sites,
                                             'The time span over which across-time output is examined',
                                             'List of recommended facets for output based on user input'))
   
-  if(!t){
+  if(!time){
     if(anom_exp == 'anomaly'){
       if(ms_site == 'multi'){
         dataframe <- dataframe %>% add_row('parameter' = c('output_function', 'output options','kmeans_clusters'),

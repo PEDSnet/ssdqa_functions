@@ -149,12 +149,12 @@ pf_process <- function(cohort = cohort,
   }else if(intermediate_tbl == 'csv'){
     output_tbl(pf_final, 'pf_intermediate_results', file = TRUE)}
   
-  param_csv_summary(sites = site_list,
-                    visits = visit_types,
+  param_csv_summary(site_list = site_list,
+                    visit_list = visit_types,
                     ms_site = multi_or_single_site,
                     anom_exp = anomaly_or_exploratory,
-                    t = time,
-                    ts = time_span,
+                    time = time,
+                    time_span = time_span,
                     age = age_groups,
                     cs = codeset) %>% output_tbl('parameter_summary', file = TRUE)
   
@@ -178,20 +178,35 @@ pf_process <- function(cohort = cohort,
 #' @param pf_process - the summary dataframe output by the `pf_process` function. 
 #' 
 #'                     Note any intermediate table generated is not intended to be used with this function.
-#' @param output_function 
-#' @param output 
-#' @param facet 
-#' @param color 
-#' @param time_span 
-#' @param date_breaks_str 
-#' @param kmeans_clusters 
-#' @param save_as_png 
-#' @param file_path 
+#' @param output_function - the name of the output function that should be used provided in the `parameter_summary` csv 
+#'                          file that is output to the provided results folder after running the `pf_process` function 
+#' @param output - which output variable you would like to use in the graphs. available options based on check 
+#'                 configuration are provided in the `parameter_summary` csv file
+#' @param facet - the variables by which you would like to facet the graph. available and/or recommended options for
+#'                faceting variables are provided in the `parameter_summary` csv file
+#' @param color - option to automatically generate a color palette or manually create one for both domains and sites
+#'                       - @auto: this option will automatically create one color palette each for the distinct domains
+#'                                and sites available in the *pf_process* table
+#'                       - @manual: choose this option to create your own custom color palette. to do this, fill out
+#'                                  the provided *domain_color_config* and *site_color_config* csv files with the name
+#'                                  of the domain/site as it appears in the *pf_process* table and a corresponding hex
+#'                                  code for the color assignment
+#' @param time_span - the length of time that should be displayed for relevant over-time graphs. this time period should
+#'                    either be the same as or a subset of the time period used in the `pf_process` function
+#' @param date_breaks_str - only for single-site, exploratory, over time; a string that informs the program how the
+#'                          time period should be divided (i.e. '1 year', '3 months', etc). Defaults to 1 year.
+#' @param kmeans_clusters - the number of clusters that should be used in the kmeans cluster graph; defaults to 2
+#' 
+#'                          if the function outputs an error, try adjusting this number as a first step for troubleshooting.
+#'                          the kmeans functionality will not work if there are not enough groups in the data to satisfy the 
+#'                          provided number of clusters.
+#' @param save_as_png - logical to tell the program if you would like to save the graphical output locally as a png file
+#' @param file_path - if save_as_png = TRUE, the file path that leads to the location where the png files should be saved
 #'
-#' @return
-#' @export
-#'
-#' @examples
+#' @return "raw" output that can be called within the R environment to generate the graph in the Viewer window
+#' @return if save_as_png = TRUE, a png file with the graphical output
+#' 
+
 pf_output_gen <- function(pf_process,
                           output_function,
                           output,

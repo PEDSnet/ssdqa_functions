@@ -5,13 +5,13 @@
 #' **Single Site, Anomaly, Over Time**
 #' 
 #' This chart will produce output for each domain. The data frame 
-#' that is listed as a parameter of the function should contain a single 
+#' that is listed as a parameter of the function should minimally contain a single 
 #' output for each domain. User can facet by site, age category, 
 #' or other stratifications. Multiple graphs can also be produced (e.g., 
 #' one graph faceting by site, or creating separate output for each site)
 #' 
 #' @param data_tbl output from previous function; 
-#' requires input for one site, one visit type; can create multiple graphs
+#' requires input for one site; can create multiple graphs
 #' for different grouped variables
 #' 
 #' @param output desired output - have 2 options:
@@ -55,13 +55,13 @@ pf_ss_anom_at <- function(data_tbl,
 #' **Single Site, Exploratory, Over Time**
 #' 
 #' This chart will produce output for each domain. The data frame 
-#' that is listed as a parameter of the function should contain a single 
+#' that is listed as a parameter of the function should minimally contain a single 
 #' output for each domain. User can facet by site, age category, 
 #' or other stratifications. Multiple graphs can also be produced (e.g., 
 #' one graph faceting by site, or creating separate output for each site)
 #' 
 #' @param data_tbl output from previous function; 
-#' requires input for one site, one visit type; can create multiple graphs
+#' requires input for one site; can create multiple graphs
 #' for different grouped variables
 #' 
 #' @param output desired output - have 2 options:
@@ -102,12 +102,12 @@ pf_ss_exp_at <- function(data_tbl,
 #' **Multi-Site, Anomaly, Over Time**
 #' 
 #' This chart will produce output for each site & domain. The data frame 
-#' that is listed as a parameter of the function should contain a single 
+#' that is listed as a parameter of the function should minimally contain a single 
 #' output for each site & domain combination. User can facet by visit type, age category, 
 #' or other stratifications. Multiple graphs can also be produced with varying facets.
 #' 
 #' @param data_tbl output from previous function; 
-#' requires input for one site, one domain; can create multiple graphs
+#' requires input for multiple sites; can create multiple graphs
 #' for different grouped variables
 #' 
 #' @param output desired output - have 2 options:
@@ -148,12 +148,12 @@ pf_ms_anom_at <- function(data_tbl,
 #' **Multi-Site, Exploratory, Across Time**
 #' 
 #' This chart will produce output for each site & domain. The data frame 
-#' that is listed as a parameter of the function should contain a single 
+#' that is listed as a parameter of the function should minimally contain a single 
 #' output for each site & domain combination. User can facet by visit type, age category, 
 #' or other stratifications. Multiple graphs can also be produced with varying facets.
 #' 
 #' @param data_tbl output from previous function; 
-#' requires input for one site, one domain; can create multiple graphs
+#' requires input for multiple sites; can create multiple graphs
 #' for different grouped variables
 #' 
 #' @param output desired output - have 2 options:
@@ -194,13 +194,13 @@ pf_ms_exp_at <- function(data_tbl,
 #' **Single Site, Anomaly Detection, No Time**
 #' 
 #' This chart will produce output for each domain. The data frame 
-#' that is listed as a parameter of the function should contain a single 
+#' that is listed as a parameter of the function should minimally contain a single 
 #' output for each domain. User can facet by site, age category, 
 #' or other stratifications. Multiple graphs can also be produced (e.g., 
 #' one graph faceting by site, or creating separate output for each site)
 #' 
 #' @param data_tbl output from previous function; 
-#' requires input for one site, one visit type; can create multiple graphs
+#' requires input for one site; can create multiple graphs
 #' for different grouped variables
 #' 
 #' @param output desired output - have 4 options:
@@ -242,13 +242,13 @@ pf_ss_anom_nt <- function(data_tbl,
 #' **Single-Site, Exploratory, No Time**
 #' 
 #' This chart will produce output for each domain. The data frame 
-#' that is listed as a parameter of the function should contain a single 
+#' that is listed as a parameter of the function should minimally contain a single 
 #' output for each domain. User can facet by site, age category, 
 #' or other stratifications. Multiple graphs can also be produced (e.g., 
 #' one graph faceting by site, or creaeting separate output for each site)
 #' 
 #' @param data_tbl output from previous function; 
-#' requires input for one site, one visit type; can create multiple graphs
+#' requires input for one site; can create multiple graphs
 #' for different grouped variables
 #' 
 #' @param output desired output - have 3 options:
@@ -298,12 +298,12 @@ pf_ss_exp_nt <- function(data_tbl,
 #' **Multi-Site, Anomaly Detection, No Time**
 #' 
 #' This chart will produce a cluster analysis based on each site & domain. The data frame 
-#' that is listed as a parameter of the function should contain a single 
-#' output for each domain and site. User can facet by visit type, age category, 
+#' that is listed as a parameter of the function should minimally contain a single 
+#' output for each domain and site combination. User can facet by visit type, age category, 
 #' or other stratifications. Multiple graphs can also be produced with varying facets.
 #' 
 #' @param data_tbl output from previous function; 
-#' requires input for one site, one domain; can create multiple graphs
+#' requires input for multiple sites; can create multiple graphs
 #' for different grouped variables
 #' 
 #' @param output desired output - have 3 options:
@@ -334,12 +334,12 @@ pf_ms_anom_nt <- function(data_tbl,
 #' #' **Multi-Site, Exploratory, No Time**
 #' 
 #' This chart will produce output for each site & domain. The data frame 
-#' that is listed as a parameter of the function should contain a single 
+#' that is listed as a parameter of the function should minimally contain a single 
 #' output for each domain and site combination. User can facet by visit type, age category, 
 #' or other stratifications. Multiple graphs can also be produced with varying facets.
 #' 
 #' @param data_tbl output from previous function; 
-#' requires input for one site, one domain; can create multiple graphs
+#' requires input for multiple sites; can create multiple graphs
 #' for different grouped variables
 #' 
 #' @param output desired output - have 2 options:
