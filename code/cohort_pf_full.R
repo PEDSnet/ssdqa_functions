@@ -142,12 +142,14 @@ pf_process <- function(cohort = cohort,
                                     visit_type_list = visit_types) %>% collect()}
   
   # Output intermediate results if requested
-  if(intermediate_tbl == 'r_dataframe'){
-    pf_intermediate_results <<- pf_final
-  }else if(intermediate_tbl == 'database_table'){
-    output_tbl(pf_final, 'pf_intermediate_results')
-  }else if(intermediate_tbl == 'csv'){
-    output_tbl(pf_final, 'pf_intermediate_results', file = TRUE)}
+  if(!is.null(intermediate_tbl)){
+    if(intermediate_tbl == 'r_dataframe'){
+      pf_intermediate_results <<- pf_final
+    }else if(intermediate_tbl == 'database_table'){
+        output_tbl(pf_final, 'pf_intermediate_results')
+    }else if(intermediate_tbl == 'csv'){
+      output_tbl(pf_final, 'pf_intermediate_results', file = TRUE)}
+    }else{pf_intermediate_results <- NULL}
   
   param_csv_summary(site_list = site_list,
                     visit_list = visit_types,
