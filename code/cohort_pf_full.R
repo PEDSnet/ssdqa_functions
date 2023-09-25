@@ -77,7 +77,8 @@
 #' @return a dataframe with summary results (i.e. medians) that can be used as the input for `pf_output_gen` to generate graphical output
 #' @return a CSV file with a summary of the parameters used to configure the function and recommendations for how to configure the
 #'         `pf_output_gen` function parameters; written to the provided results folder
-#' 
+#'         
+ 
 pf_process <- function(cohort = cohort,
                        site_list = c('seattle','cchmc'),
                        study_name = 'glom',
@@ -90,7 +91,7 @@ pf_process <- function(cohort = cohort,
                        age_groups = NULL,
                        codeset = NULL,
                        anomaly_or_exploratory='anomaly',
-                       domain_tbl=read_codeset('pf_domains','cccc'),
+                       domain_tbl=read_codeset('pf_domains_short','cccc'),
                        visit_type_table=read_codeset('pf_visit_types','ic')){
   
   ## Step 0: Set cohort name for table output
@@ -148,6 +149,15 @@ pf_process <- function(cohort = cohort,
   }else if(intermediate_tbl == 'csv'){
     output_tbl(pf_final, 'pf_intermediate_results', file = TRUE)}
   
+  param_csv_summary(sites = site_list,
+                    visits = visit_types,
+                    ms_site = multi_or_single_site,
+                    anom_exp = anomaly_or_exploratory,
+                    t = time,
+                    ts = time_span,
+                    age = age_groups,
+                    cs = codeset) %>% output_tbl('parameter_summary', file = TRUE)
+  
   ## Step 3: Summarise (Medians, SD)
   if(!time) {
     if(anomaly_or_exploratory=='anomaly' && multi_or_single_site=='single') {
@@ -159,17 +169,6 @@ pf_process <- function(cohort = cohort,
                                             codeset=codeset)}
     
   }else{pf_output <- pf_final}
-  
-  param_summ <- param_csv_summary(sites = site_list,
-                                   visits = visit_types,
-                                   ms_site = multi_or_single_site,
-                                   anom_exp = anomaly_or_exploratory,
-                                   t = time,
-                                   ts = time_span,
-                                   age = age_groups,
-                                   cs = codeset)
-  
-  output_tbl(param_summ, 'parameter_summary', file = TRUE)
   
 }
 
@@ -198,7 +197,7 @@ pf_output_gen <- function(pf_process,
                           output,
                           facet,
                           color = 'auto',
-                          time_span,
+                          time_span = c('2012-01-01', '2023-01-01'),
                           date_breaks_str = '1 year',
                           kmeans_clusters = 2,
                           save_as_png = FALSE,
@@ -206,7 +205,12 @@ pf_output_gen <- function(pf_process,
   
   ## Create color palettes for sites and domains
   
-  create_color_scheme(type = colors)
+  site_list <- pf_process %>% select(site) %>% distinct() %>% pull()
+  domain_list <- pf_process %>% select(domain) %>% distinct() %>% pull()
+  
+  create_color_scheme(type = color,
+                      site_list = site_list,
+                      domain_list = domain_list)
   
   ## Run output functions
   if(output_function == 'pf_ms_anom_nt'){
@@ -233,7 +237,8 @@ pf_output_gen <- function(pf_process,
   }else if(output_function == 'pf_ss_anom_at'){
     pf_output <- pf_ss_anom_at(data_tbl = pf_process,
                                output = output,
-                               facet = facet)
+                               facet = facet,
+                               time_span = time_span)
   }else if(output_function == 'pf_ms_exp_at'){
     pf_output <- pf_ms_exp_at(data_tbl = pf_process,
                               output = output,
@@ -249,34 +254,30 @@ pf_output_gen <- function(pf_process,
   ## Saving PNG images of graphical output
   if(save_as_png){
     
-    single_op <- c('pf_ms_anom_at', 'pf_ms_exp_nt')
     int_labels <- c("pf_ms_exp_nt","pf_ms_exp_at")
     
-    if(output_function %in% single_op){
-      if(output_function %in% int_labels){
-        
-        htmltools::save_html(html = pf_output, file = paste0(file_path, '/', output_function, '.html'))
-        
-      }else{
-        
-        ggsave(plot = pf_output,
+    if(output_function == 'pf_ms_anom_nt'){
+      
+      for(plot in 1:length(pf_output)){
+        num <- plot
+        ggsave(plot = pf_output[[plot]],
                height = 15,
                width = 25,
                units = c('cm'),
-               filename = paste0(file_path, '/', output_function, '.png'))
-      }
-    }else{
-      for(plot in 1:length(pf_output)){
-        if(!(output_function %in% int_labels)){
-          num <- plot
-          ggsave(plot = pf_output[[plot]],
-                 height = 15,
-                 width = 25,
-                 units = c('cm'),
-                 filename = paste0(file_path, '/', output_function, '_', num, '.png'))
-        }else{
-          num <- plot
-          htmltools::save_html(html = pf_output[[plot]], file = paste0(file_path, '/', label, '_', num, '.html'))}
+               filename = paste0(file_path, '/', output_function, '_', num, '.png'))
+        }
+    
+      }else{
+        if(output_function %in% int_labels){
+          
+          htmltools::save_html(html = pf_output, file = paste0(file_path, '/', output_function, '.html'))
+          
+          }else{
+            ggsave(plot = pf_output,
+                   height = 15,
+                   width = 25,
+                   units = c('cm'),
+                   filename = paste0(file_path, '/', output_function, '.png'))
       }
     }
   }
