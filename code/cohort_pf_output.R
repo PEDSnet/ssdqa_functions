@@ -22,7 +22,8 @@
 
 pf_ss_anom_at <- function(data_tbl,
                           output,
-                          facet){
+                          facet,
+                          time_span){
   
   if(output=='median_fact_ct') {title='Median Facts Across Time'}
   if(output=='sum_fact_ct') {title='Sum of Facts Across Time'}
@@ -30,9 +31,14 @@ pf_ss_anom_at <- function(data_tbl,
   
   facet <- facet %>% append('domain')
   
-  data_tbl <- data_tbl %>% filter(fact_ct_denom > 5)
+  data_tbl_pad <- data_tbl %>% group_by(across(all_of(facet))) %>%
+    pad_by_time(.date_var = start_date,
+                .by = 'year',
+                .start_date = time_span[1],
+                .end_date = time_span[2],
+                .pad_value = 0)
   
-  plot_anomaly_diagnostics(.data=data_tbl, 
+  plot_anomaly_diagnostics(.data=data_tbl_pad,
                            .facet_vars = facet, 
                            .date_var = start_date, 
                            .value=!! sym(output), 
