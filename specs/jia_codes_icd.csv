@@ -1,0 +1,1177 @@
+﻿concept_id,concept_code,concept_name,vocabulary_id
+1569966,M05,Rheumatoid arthritis with rheumatoid factor,ICD10CM
+45577097,M05.3,Rheumatoid arthritis with involvement of other organs and systems,ICD10
+1569991,M05.3,Rheumatoid heart disease with rheumatoid arthritis,ICD10CM
+45586836,M05.30,Rheumatoid heart disease with rheumatoid arthritis of unspecified site,ICD10CM
+42616558,M05.30,"Rheumatoid arthritis with involvement of other organs and systems, multiple sites",ICD10
+42616560,M05.32,"Rheumatoid arthritis with involvement of other organs and systems, upper arm",ICD10
+42616561,M05.33,"Rheumatoid arthritis with involvement of other organs and systems, forearm",ICD10
+42616563,M05.35,"Rheumatoid arthritis with involvement of other organs and systems, pelvic region and thigh",ICD10
+42619374,M05.38,"Rheumatoid arthritis with involvement of other organs and systems, other",ICD10
+42616566,M05.39,"Rheumatoid arthritis with involvement of other organs and systems, site unspecified",ICD10
+1570015,M05.6,Rheumatoid arthritis with involvement of other organs and systems,ICD10CM
+45548259,M05.60,Rheumatoid arthritis of unspecified site with involvement of other organs and systems,ICD10CM
+45567417,M05.69,Rheumatoid arthritis of multiple sites with involvement of other organs and systems,ICD10CM
+45596441,M06,Other rheumatoid arthritis,ICD10
+1570039,M06,Other rheumatoid arthritis,ICD10CM
+45577110,M06.2,Rheumatoid bursitis,ICD10
+42616606,M06.20,"Rheumatoid bursitis, multiple sites",ICD10
+45606057,M06.20,"Rheumatoid bursitis, unspecified site",ICD10CM
+1570049,M06.21,"Rheumatoid bursitis, shoulder",ICD10CM
+42616607,M06.21,"Rheumatoid bursitis, shoulder region",ICD10
+45596443,M06.211,"Rheumatoid bursitis, right shoulder",ICD10CM
+45591702,M06.212,"Rheumatoid bursitis, left shoulder",ICD10CM
+45577111,M06.219,"Rheumatoid bursitis, unspecified shoulder",ICD10CM
+1570050,M06.22,"Rheumatoid bursitis, elbow",ICD10CM
+42616608,M06.22,"Rheumatoid bursitis, upper arm",ICD10
+45577112,M06.221,"Rheumatoid bursitis, right elbow",ICD10CM
+45601285,M06.222,"Rheumatoid bursitis, left elbow",ICD10CM
+45538636,M06.229,"Rheumatoid bursitis, unspecified elbow",ICD10CM
+1570051,M06.23,"Rheumatoid bursitis, wrist",ICD10CM
+42616609,M06.23,"Rheumatoid bursitis, forearm",ICD10
+45557764,M06.231,"Rheumatoid bursitis, right wrist",ICD10CM
+45572342,M06.232,"Rheumatoid bursitis, left wrist",ICD10CM
+45606058,M06.239,"Rheumatoid bursitis, unspecified wrist",ICD10CM
+1570052,M06.24,"Rheumatoid bursitis, hand",ICD10CM
+42616610,M06.24,"Rheumatoid bursitis, hand",ICD10
+45543437,M06.241,"Rheumatoid bursitis, right hand",ICD10CM
+45606059,M06.242,"Rheumatoid bursitis, left hand",ICD10CM
+45577113,M06.249,"Rheumatoid bursitis, unspecified hand",ICD10CM
+42616611,M06.25,"Rheumatoid bursitis, pelvic region and thigh",ICD10
+1570053,M06.25,"Rheumatoid bursitis, hip",ICD10CM
+45586840,M06.251,"Rheumatoid bursitis, right hip",ICD10CM
+45601286,M06.252,"Rheumatoid bursitis, left hip",ICD10CM
+45606060,M06.259,"Rheumatoid bursitis, unspecified hip",ICD10CM
+1570054,M06.26,"Rheumatoid bursitis, knee",ICD10CM
+42616612,M06.26,"Rheumatoid bursitis, lower leg",ICD10
+45586841,M06.261,"Rheumatoid bursitis, right knee",ICD10CM
+45562594,M06.262,"Rheumatoid bursitis, left knee",ICD10CM
+45562595,M06.269,"Rheumatoid bursitis, unspecified knee",ICD10CM
+1570055,M06.27,"Rheumatoid bursitis, ankle and foot",ICD10CM
+42616613,M06.27,"Rheumatoid bursitis, ankle and foot",ICD10
+45577114,M06.271,"Rheumatoid bursitis, right ankle and foot",ICD10CM
+45586842,M06.272,"Rheumatoid bursitis, left ankle and foot",ICD10CM
+45562596,M06.279,"Rheumatoid bursitis, unspecified ankle and foot",ICD10CM
+42616614,M06.28,"Rheumatoid bursitis, other",ICD10
+42616615,M06.29,"Rheumatoid bursitis, site unspecified",ICD10
+45572344,M06.29,"Rheumatoid bursitis, multiple sites",ICD10CM
+45543441,M06.8,Other specified rheumatoid arthritis,ICD10
+1570064,M06.8,Other specified rheumatoid arthritis,ICD10CM
+45548270,M06.80,"Other specified rheumatoid arthritis, unspecified site",ICD10CM
+42616636,M06.82,"Other specified rheumatoid arthritis, upper arm",ICD10
+42616637,M06.83,"Other specified rheumatoid arthritis, forearm",ICD10
+42616639,M06.85,"Other specified rheumatoid arthritis, pelvic region and thigh",ICD10
+42616640,M06.86,"Other specified rheumatoid arthritis, lower leg",ICD10
+42616642,M06.88,"Other specified rheumatoid arthritis, other",ICD10
+45567426,M06.88,"Other specified rheumatoid arthritis, vertebrae",ICD10CM
+42616643,M06.89,"Other specified rheumatoid arthritis, site unspecified",ICD10
+45586845,M06.89,"Other specified rheumatoid arthritis, multiple sites",ICD10CM
+45533705,M06.9,"Rheumatoid arthritis, unspecified",ICD10
+35208753,M06.9,"Rheumatoid arthritis, unspecified",ICD10CM
+42616646,M06.92,"Rheumatoid arthritis, unspecified, upper arm",ICD10
+42616647,M06.93,"Rheumatoid arthritis, unspecified, forearm",ICD10
+42619380,M06.95,"Rheumatoid arthritis, unspecified, pelvic region and thigh",ICD10
+42616649,M06.96,"Rheumatoid arthritis, unspecified, lower leg",ICD10
+42616651,M06.98,"Rheumatoid arthritis, unspecified, other",ICD10
+42616652,M06.99,"Rheumatoid arthritis, unspecified, site unspecified",ICD10
+45606038,M05,Seropositive rheumatoid arthritis,ICD10
+1570023,M05.7,Rheumatoid arthritis with rheumatoid factor without organ or systems involvement,ICD10CM
+45543434,M05.70,Rheumatoid arthritis with rheumatoid factor of unspecified site without organ or systems involvement,ICD10CM
+1570024,M05.71,Rheumatoid arthritis with rheumatoid factor of shoulder without organ or systems involvement,ICD10CM
+45596436,M05.711,Rheumatoid arthritis with rheumatoid factor of right shoulder without organ or systems involvement,ICD10CM
+45543435,M05.712,Rheumatoid arthritis with rheumatoid factor of left shoulder without organ or systems involvement,ICD10CM
+45567418,M05.719,Rheumatoid arthritis with rheumatoid factor of unspecified shoulder without organ or systems involvement,ICD10CM
+1570025,M05.72,Rheumatoid arthritis with rheumatoid factor of elbow without organ or systems involvement,ICD10CM
+45548261,M05.721,Rheumatoid arthritis with rheumatoid factor of right elbow without organ or systems involvement,ICD10CM
+45572337,M05.722,Rheumatoid arthritis with rheumatoid factor of left elbow without organ or systems involvement,ICD10CM
+45562591,M05.729,Rheumatoid arthritis with rheumatoid factor of unspecified elbow without organ or systems involvement,ICD10CM
+1570026,M05.73,Rheumatoid arthritis with rheumatoid factor of wrist without organ or systems involvement,ICD10CM
+45606050,M05.731,Rheumatoid arthritis with rheumatoid factor of right wrist without organ or systems involvement,ICD10CM
+45582014,M05.732,Rheumatoid arthritis with rheumatoid factor of left wrist without organ or systems involvement,ICD10CM
+45553044,M05.739,Rheumatoid arthritis with rheumatoid factor of unspecified wrist without organ or systems involvement,ICD10CM
+1570027,M05.74,Rheumatoid arthritis with rheumatoid factor of hand without organ or systems involvement,ICD10CM
+45606051,M05.741,Rheumatoid arthritis with rheumatoid factor of right hand without organ or systems involvement,ICD10CM
+45596437,M05.742,Rheumatoid arthritis with rheumatoid factor of left hand without organ or systems involvement,ICD10CM
+45582015,M05.749,Rheumatoid arthritis with rheumatoid factor of unspecified hand without organ or systems involvement,ICD10CM
+1570028,M05.75,Rheumatoid arthritis with rheumatoid factor of hip without organ or systems involvement,ICD10CM
+45572338,M05.751,Rheumatoid arthritis with rheumatoid factor of right hip without organ or systems involvement,ICD10CM
+45538633,M05.752,Rheumatoid arthritis with rheumatoid factor of left hip without organ or systems involvement,ICD10CM
+45567419,M05.759,Rheumatoid arthritis with rheumatoid factor of unspecified hip without organ or systems involvement,ICD10CM
+1570029,M05.76,Rheumatoid arthritis with rheumatoid factor of knee without organ or systems involvement,ICD10CM
+45548262,M05.761,Rheumatoid arthritis with rheumatoid factor of right knee without organ or systems involvement,ICD10CM
+45548263,M05.762,Rheumatoid arthritis with rheumatoid factor of left knee without organ or systems involvement,ICD10CM
+45533697,M05.769,Rheumatoid arthritis with rheumatoid factor of unspecified knee without organ or systems involvement,ICD10CM
+1570030,M05.77,Rheumatoid arthritis with rheumatoid factor of ankle and foot without organ or systems involvement,ICD10CM
+45596438,M05.771,Rheumatoid arthritis with rheumatoid factor of right ankle and foot without organ or systems involvement,ICD10CM
+45591700,M05.772,Rheumatoid arthritis with rheumatoid factor of left ankle and foot without organ or systems involvement,ICD10CM
+45596439,M05.779,Rheumatoid arthritis with rheumatoid factor of unspecified ankle and foot without organ or systems involvement,ICD10CM
+45553045,M05.79,Rheumatoid arthritis with rheumatoid factor of multiple sites without organ or systems involvement,ICD10CM
+45538634,M05.8,Other seropositive rheumatoid arthritis,ICD10
+1570031,M05.8,Other rheumatoid arthritis with rheumatoid factor,ICD10CM
+45553046,M05.80,Other rheumatoid arthritis with rheumatoid factor of unspecified site,ICD10CM
+42616567,M05.80,"Other seropositive rheumatoid arthritis, multiple sites",ICD10
+1570032,M05.81,Other rheumatoid arthritis with rheumatoid factor of shoulder,ICD10CM
+42616568,M05.81,"Other seropositive rheumatoid arthritis, shoulder region",ICD10
+45562592,M05.811,Other rheumatoid arthritis with rheumatoid factor of right shoulder,ICD10CM
+45533698,M05.812,Other rheumatoid arthritis with rheumatoid factor of left shoulder,ICD10CM
+45557761,M05.819,Other rheumatoid arthritis with rheumatoid factor of unspecified shoulder,ICD10CM
+42616569,M05.82,"Other seropositive rheumatoid arthritis, upper arm",ICD10
+1570033,M05.82,Other rheumatoid arthritis with rheumatoid factor of elbow,ICD10CM
+45601280,M05.821,Other rheumatoid arthritis with rheumatoid factor of right elbow,ICD10CM
+45601281,M05.822,Other rheumatoid arthritis with rheumatoid factor of left elbow,ICD10CM
+45533699,M05.829,Other rheumatoid arthritis with rheumatoid factor of unspecified elbow,ICD10CM
+42616570,M05.83,"Other seropositive rheumatoid arthritis, forearm",ICD10
+1570034,M05.83,Other rheumatoid arthritis with rheumatoid factor of wrist,ICD10CM
+45572339,M05.831,Other rheumatoid arthritis with rheumatoid factor of right wrist,ICD10CM
+45596440,M05.832,Other rheumatoid arthritis with rheumatoid factor of left wrist,ICD10CM
+45553047,M05.839,Other rheumatoid arthritis with rheumatoid factor of unspecified wrist,ICD10CM
+1570035,M05.84,Other rheumatoid arthritis with rheumatoid factor of hand,ICD10CM
+42616571,M05.84,"Other seropositive rheumatoid arthritis, hand",ICD10
+45586838,M05.841,Other rheumatoid arthritis with rheumatoid factor of right hand,ICD10CM
+45582016,M05.842,Other rheumatoid arthritis with rheumatoid factor of left hand,ICD10CM
+45601282,M05.849,Other rheumatoid arthritis with rheumatoid factor of unspecified hand,ICD10CM
+42616572,M05.85,"Other seropositive rheumatoid arthritis, pelvic region and thigh",ICD10
+1570036,M05.85,Other rheumatoid arthritis with rheumatoid factor of hip,ICD10CM
+45606052,M05.851,Other rheumatoid arthritis with rheumatoid factor of right hip,ICD10CM
+45601283,M05.852,Other rheumatoid arthritis with rheumatoid factor of left hip,ICD10CM
+45533700,M05.859,Other rheumatoid arthritis with rheumatoid factor of unspecified hip,ICD10CM
+1570037,M05.86,Other rheumatoid arthritis with rheumatoid factor of knee,ICD10CM
+42616573,M05.86,"Other seropositive rheumatoid arthritis, lower leg",ICD10
+45543436,M05.861,Other rheumatoid arthritis with rheumatoid factor of right knee,ICD10CM
+45553048,M05.862,Other rheumatoid arthritis with rheumatoid factor of left knee,ICD10CM
+45548264,M05.869,Other rheumatoid arthritis with rheumatoid factor of unspecified knee,ICD10CM
+42616574,M05.87,"Other seropositive rheumatoid arthritis, ankle and foot",ICD10
+1570038,M05.87,Other rheumatoid arthritis with rheumatoid factor of ankle and foot,ICD10CM
+45548265,M05.871,Other rheumatoid arthritis with rheumatoid factor of right ankle and foot,ICD10CM
+45586839,M05.872,Other rheumatoid arthritis with rheumatoid factor of left ankle and foot,ICD10CM
+45548266,M05.879,Other rheumatoid arthritis with rheumatoid factor of unspecified ankle and foot,ICD10CM
+42616575,M05.88,"Other seropositive rheumatoid arthritis, other",ICD10
+45553049,M05.89,Other rheumatoid arthritis with rheumatoid factor of multiple sites,ICD10CM
+42616576,M05.89,"Other seropositive rheumatoid arthritis, site unspecified",ICD10
+45553050,M05.9,"Seropositive rheumatoid arthritis, unspecified",ICD10
+35208750,M05.9,"Rheumatoid arthritis with rheumatoid factor, unspecified",ICD10CM
+42616577,M05.90,"Seropositive rheumatoid arthritis, unspecified, multiple sites",ICD10
+42616578,M05.91,"Seropositive rheumatoid arthritis, unspecified, shoulder region",ICD10
+42616579,M05.92,"Seropositive rheumatoid arthritis, unspecified, upper arm",ICD10
+42616580,M05.93,"Seropositive rheumatoid arthritis, unspecified, forearm",ICD10
+42616581,M05.94,"Seropositive rheumatoid arthritis, unspecified, hand",ICD10
+42616582,M05.95,"Seropositive rheumatoid arthritis, unspecified, pelvic region and thigh",ICD10
+42616583,M05.96,"Seropositive rheumatoid arthritis, unspecified, lower leg",ICD10
+42616584,M05.97,"Seropositive rheumatoid arthritis, unspecified, ankle and foot",ICD10
+42616585,M05.98,"Seropositive rheumatoid arthritis, unspecified, other",ICD10
+42616586,M05.99,"Seropositive rheumatoid arthritis, unspecified, site unspecified",ICD10
+1570081,M08,Juvenile arthritis,ICD10CM
+45538642,M08,Juvenile arthritis,ICD10
+1570040,M06.0,Rheumatoid arthritis without rheumatoid factor,ICD10CM
+45577103,M06.0,Seronegative rheumatoid arthritis,ICD10
+45596442,M06.00,"Rheumatoid arthritis without rheumatoid factor, unspecified site",ICD10CM
+42616587,M06.00,"Seronegative rheumatoid arthritis, multiple sites",ICD10
+1570041,M06.01,"Rheumatoid arthritis without rheumatoid factor, shoulder",ICD10CM
+42616588,M06.01,"Seronegative rheumatoid arthritis, shoulder region",ICD10
+45606053,M06.011,"Rheumatoid arthritis without rheumatoid factor, right shoulder",ICD10CM
+45533701,M06.012,"Rheumatoid arthritis without rheumatoid factor, left shoulder",ICD10CM
+45591701,M06.019,"Rheumatoid arthritis without rheumatoid factor, unspecified shoulder",ICD10CM
+42616589,M06.02,"Seronegative rheumatoid arthritis, upper arm",ICD10
+1570042,M06.02,"Rheumatoid arthritis without rheumatoid factor, elbow",ICD10CM
+45557762,M06.021,"Rheumatoid arthritis without rheumatoid factor, right elbow",ICD10CM
+45577104,M06.022,"Rheumatoid arthritis without rheumatoid factor, left elbow",ICD10CM
+45577105,M06.029,"Rheumatoid arthritis without rheumatoid factor, unspecified elbow",ICD10CM
+42619375,M06.03,"Seronegative rheumatoid arthritis, forearm",ICD10
+1570043,M06.03,"Rheumatoid arthritis without rheumatoid factor, wrist",ICD10CM
+45606054,M06.031,"Rheumatoid arthritis without rheumatoid factor, right wrist",ICD10CM
+45562593,M06.032,"Rheumatoid arthritis without rheumatoid factor, left wrist",ICD10CM
+45577106,M06.039,"Rheumatoid arthritis without rheumatoid factor, unspecified wrist",ICD10CM
+1570044,M06.04,"Rheumatoid arthritis without rheumatoid factor, hand",ICD10CM
+42616590,M06.04,"Seronegative rheumatoid arthritis, hand",ICD10
+45606055,M06.041,"Rheumatoid arthritis without rheumatoid factor, right hand",ICD10CM
+45572340,M06.042,"Rheumatoid arthritis without rheumatoid factor, left hand",ICD10CM
+45577107,M06.049,"Rheumatoid arthritis without rheumatoid factor, unspecified hand",ICD10CM
+42616591,M06.05,"Seronegative rheumatoid arthritis, pelvic region and thigh",ICD10
+1570045,M06.05,"Rheumatoid arthritis without rheumatoid factor, hip",ICD10CM
+45557763,M06.051,"Rheumatoid arthritis without rheumatoid factor, right hip",ICD10CM
+45533702,M06.052,"Rheumatoid arthritis without rheumatoid factor, left hip",ICD10CM
+45577108,M06.059,"Rheumatoid arthritis without rheumatoid factor, unspecified hip",ICD10CM
+1570046,M06.06,"Rheumatoid arthritis without rheumatoid factor, knee",ICD10CM
+42616592,M06.06,"Seronegative rheumatoid arthritis, lower leg",ICD10
+45601284,M06.061,"Rheumatoid arthritis without rheumatoid factor, right knee",ICD10CM
+45553051,M06.062,"Rheumatoid arthritis without rheumatoid factor, left knee",ICD10CM
+45538635,M06.069,"Rheumatoid arthritis without rheumatoid factor, unspecified knee",ICD10CM
+42616593,M06.07,"Seronegative rheumatoid arthritis, ankle and foot",ICD10
+1570047,M06.07,"Rheumatoid arthritis without rheumatoid factor, ankle and foot",ICD10CM
+45577109,M06.071,"Rheumatoid arthritis without rheumatoid factor, right ankle and foot",ICD10CM
+45567420,M06.072,"Rheumatoid arthritis without rheumatoid factor, left ankle and foot",ICD10CM
+45533703,M06.079,"Rheumatoid arthritis without rheumatoid factor, unspecified ankle and foot",ICD10CM
+42616594,M06.08,"Seronegative rheumatoid arthritis, other",ICD10
+45606056,M06.08,"Rheumatoid arthritis without rheumatoid factor, vertebrae",ICD10CM
+42616595,M06.09,"Seronegative rheumatoid arthritis, site unspecified",ICD10
+45572341,M06.09,"Rheumatoid arthritis without rheumatoid factor, multiple sites",ICD10CM
+42616529,M05.01,"Felty syndrome, shoulder region",ICD10
+1569968,M05.01,"Felty's syndrome, shoulder",ICD10CM
+45606039,M05.011,"Felty's syndrome, right shoulder",ICD10CM
+45533689,M05.012,"Felty's syndrome, left shoulder",ICD10CM
+45567403,M05.019,"Felty's syndrome, unspecified shoulder",ICD10CM
+1569976,M05.11,Rheumatoid lung disease with rheumatoid arthritis of shoulder,ICD10CM
+42616539,M05.11,"Rheumatoid lung disease, shoulder region",ICD10
+45582003,M05.119,Rheumatoid lung disease with rheumatoid arthritis of unspecified shoulder,ICD10CM
+1569984,M05.21,Rheumatoid vasculitis with rheumatoid arthritis of shoulder,ICD10CM
+42616549,M05.21,"Rheumatoid vasculitis, shoulder region",ICD10
+45601275,M05.211,Rheumatoid vasculitis with rheumatoid arthritis of right shoulder,ICD10CM
+45553038,M05.212,Rheumatoid vasculitis with rheumatoid arthritis of left shoulder,ICD10CM
+45606041,M05.219,Rheumatoid vasculitis with rheumatoid arthritis of unspecified shoulder,ICD10CM
+42616559,M05.31,"Rheumatoid arthritis with involvement of other organs and systems, shoulder region",ICD10
+1569992,M05.31,Rheumatoid heart disease with rheumatoid arthritis of shoulder,ICD10CM
+45562585,M05.311,Rheumatoid heart disease with rheumatoid arthritis of right shoulder,ICD10CM
+45567409,M05.312,Rheumatoid heart disease with rheumatoid arthritis of left shoulder,ICD10CM
+45557755,M05.319,Rheumatoid heart disease with rheumatoid arthritis of unspecified shoulder,ICD10CM
+1570000,M05.41,Rheumatoid myopathy with rheumatoid arthritis of shoulder,ICD10CM
+45596429,M05.411,Rheumatoid myopathy with rheumatoid arthritis of right shoulder,ICD10CM
+45596430,M05.412,Rheumatoid myopathy with rheumatoid arthritis of left shoulder,ICD10CM
+45596431,M05.419,Rheumatoid myopathy with rheumatoid arthritis of unspecified shoulder,ICD10CM
+1570008,M05.51,Rheumatoid polyneuropathy with rheumatoid arthritis of shoulder,ICD10CM
+45538629,M05.511,Rheumatoid polyneuropathy with rheumatoid arthritis of right shoulder,ICD10CM
+45606046,M05.512,Rheumatoid polyneuropathy with rheumatoid arthritis of left shoulder,ICD10CM
+45596433,M05.519,Rheumatoid polyneuropathy with rheumatoid arthritis of unspecified shoulder,ICD10CM
+1570016,M05.61,Rheumatoid arthritis of shoulder with involvement of other organs and systems,ICD10CM
+45553042,M05.619,Rheumatoid arthritis of unspecified shoulder with involvement of other organs and systems,ICD10CM
+1570024,M05.71,Rheumatoid arthritis with rheumatoid factor of shoulder without organ or systems involvement,ICD10CM
+45596436,M05.711,Rheumatoid arthritis with rheumatoid factor of right shoulder without organ or systems involvement,ICD10CM
+45543435,M05.712,Rheumatoid arthritis with rheumatoid factor of left shoulder without organ or systems involvement,ICD10CM
+45567418,M05.719,Rheumatoid arthritis with rheumatoid factor of unspecified shoulder without organ or systems involvement,ICD10CM
+1570032,M05.81,Other rheumatoid arthritis with rheumatoid factor of shoulder,ICD10CM
+42616568,M05.81,"Other seropositive rheumatoid arthritis, shoulder region",ICD10
+45562592,M05.811,Other rheumatoid arthritis with rheumatoid factor of right shoulder,ICD10CM
+45533698,M05.812,Other rheumatoid arthritis with rheumatoid factor of left shoulder,ICD10CM
+45557761,M05.819,Other rheumatoid arthritis with rheumatoid factor of unspecified shoulder,ICD10CM
+42616578,M05.91,"Seropositive rheumatoid arthritis, unspecified, shoulder region",ICD10
+42616588,M06.01,"Seronegative rheumatoid arthritis, shoulder region",ICD10
+1570041,M06.01,"Rheumatoid arthritis without rheumatoid factor, shoulder",ICD10CM
+45606053,M06.011,"Rheumatoid arthritis without rheumatoid factor, right shoulder",ICD10CM
+45533701,M06.012,"Rheumatoid arthritis without rheumatoid factor, left shoulder",ICD10CM
+45591701,M06.019,"Rheumatoid arthritis without rheumatoid factor, unspecified shoulder",ICD10CM
+42616635,M06.81,"Other specified rheumatoid arthritis, shoulder region",ICD10
+1570065,M06.81,"Other specified rheumatoid arthritis, shoulder",ICD10CM
+45572346,M06.811,"Other specified rheumatoid arthritis, right shoulder",ICD10CM
+45567422,M06.812,"Other specified rheumatoid arthritis, left shoulder",ICD10CM
+45601288,M06.819,"Other specified rheumatoid arthritis, unspecified shoulder",ICD10CM
+42616645,M06.91,"Rheumatoid arthritis, unspecified, shoulder region",ICD10
+45567433,M08.012,"Unspecified juvenile rheumatoid arthritis, left shoulder",ICD10CM
+45553057,M08.019,"Unspecified juvenile rheumatoid arthritis, unspecified shoulder",ICD10CM
+45596448,M08.211,"Juvenile rheumatoid arthritis with systemic onset, right shoulder",ICD10CM
+45591708,M08.212,"Juvenile rheumatoid arthritis with systemic onset, left shoulder",ICD10CM
+45548276,M08.219,"Juvenile rheumatoid arthritis with systemic onset, unspecified shoulder",ICD10CM
+1570099,M08.41,"Pauciarticular juvenile rheumatoid arthritis, shoulder",ICD10CM
+45557770,M08.411,"Pauciarticular juvenile rheumatoid arthritis, right shoulder",ICD10CM
+45548280,M08.412,"Pauciarticular juvenile rheumatoid arthritis, left shoulder",ICD10CM
+45606076,M08.419,"Pauciarticular juvenile rheumatoid arthritis, unspecified shoulder",ICD10CM
+45557774,M08.811,"Other juvenile arthritis, right shoulder",ICD10CM
+45577128,M08.812,"Other juvenile arthritis, left shoulder",ICD10CM
+45553059,M08.819,"Other juvenile arthritis, unspecified shoulder",ICD10CM
+45562607,M08.911,"Juvenile arthritis, unspecified, right shoulder",ICD10CM
+45606081,M08.912,"Juvenile arthritis, unspecified, left shoulder",ICD10CM
+45553062,M08.919,"Juvenile arthritis, unspecified, unspecified shoulder",ICD10CM
+1569971,M05.04,"Felty's syndrome, hand",ICD10CM
+42616532,M05.04,"Felty syndrome, hand",ICD10
+45548249,M05.041,"Felty's syndrome, right hand",ICD10CM
+45548250,M05.042,"Felty's syndrome, left hand",ICD10CM
+45567405,M05.049,"Felty's syndrome, unspecified hand",ICD10CM
+42616541,M05.13,"Rheumatoid lung disease, forearm",ICD10
+1569979,M05.14,Rheumatoid lung disease with rheumatoid arthritis of hand,ICD10CM
+42616542,M05.14,"Rheumatoid lung disease, hand",ICD10
+45577094,M05.149,Rheumatoid lung disease with rheumatoid arthritis of unspecified hand,ICD10CM
+42616552,M05.24,"Rheumatoid vasculitis, hand",ICD10
+1569987,M05.24,Rheumatoid vasculitis with rheumatoid arthritis of hand,ICD10CM
+45596426,M05.241,Rheumatoid vasculitis with rheumatoid arthritis of right hand,ICD10CM
+45606043,M05.242,Rheumatoid vasculitis with rheumatoid arthritis of left hand,ICD10CM
+45538624,M05.249,Rheumatoid vasculitis with rheumatoid arthritis of unspecified hand,ICD10CM
+42616562,M05.34,"Rheumatoid arthritis with involvement of other organs and systems, hand",ICD10
+1569995,M05.34,Rheumatoid heart disease with rheumatoid arthritis of hand,ICD10CM
+45582008,M05.341,Rheumatoid heart disease with rheumatoid arthritis of right hand,ICD10CM
+45562587,M05.342,Rheumatoid heart disease with rheumatoid arthritis of left hand,ICD10CM
+45601276,M05.349,Rheumatoid heart disease with rheumatoid arthritis of unspecified hand,ICD10CM
+1570003,M05.44,Rheumatoid myopathy with rheumatoid arthritis of hand,ICD10CM
+45533693,M05.441,Rheumatoid myopathy with rheumatoid arthritis of right hand,ICD10CM
+45596432,M05.442,Rheumatoid myopathy with rheumatoid arthritis of left hand,ICD10CM
+45606045,M05.449,Rheumatoid myopathy with rheumatoid arthritis of unspecified hand,ICD10CM
+1570011,M05.54,Rheumatoid polyneuropathy with rheumatoid arthritis of hand,ICD10CM
+45591694,M05.541,Rheumatoid polyneuropathy with rheumatoid arthritis of right hand,ICD10CM
+45538631,M05.542,Rheumatoid polyneuropathy with rheumatoid arthritis of left hand,ICD10CM
+45543433,M05.549,Rheumatoid polyneuropathy with rheumatoid arthritis of unspecified hand,ICD10CM
+1570019,M05.64,Rheumatoid arthritis of hand with involvement of other organs and systems,ICD10CM
+45572336,M05.649,Rheumatoid arthritis of unspecified hand with involvement of other organs and systems,ICD10CM
+1570027,M05.74,Rheumatoid arthritis with rheumatoid factor of hand without organ or systems involvement,ICD10CM
+45606051,M05.741,Rheumatoid arthritis with rheumatoid factor of right hand without organ or systems involvement,ICD10CM
+45596437,M05.742,Rheumatoid arthritis with rheumatoid factor of left hand without organ or systems involvement,ICD10CM
+45582015,M05.749,Rheumatoid arthritis with rheumatoid factor of unspecified hand without organ or systems involvement,ICD10CM
+1570035,M05.84,Other rheumatoid arthritis with rheumatoid factor of hand,ICD10CM
+42616571,M05.84,"Other seropositive rheumatoid arthritis, hand",ICD10
+45586838,M05.841,Other rheumatoid arthritis with rheumatoid factor of right hand,ICD10CM
+45582016,M05.842,Other rheumatoid arthritis with rheumatoid factor of left hand,ICD10CM
+45601282,M05.849,Other rheumatoid arthritis with rheumatoid factor of unspecified hand,ICD10CM
+42616581,M05.94,"Seropositive rheumatoid arthritis, unspecified, hand",ICD10
+1570044,M06.04,"Rheumatoid arthritis without rheumatoid factor, hand",ICD10CM
+42616590,M06.04,"Seronegative rheumatoid arthritis, hand",ICD10
+45606055,M06.041,"Rheumatoid arthritis without rheumatoid factor, right hand",ICD10CM
+45572340,M06.042,"Rheumatoid arthritis without rheumatoid factor, left hand",ICD10CM
+45577107,M06.049,"Rheumatoid arthritis without rheumatoid factor, unspecified hand",ICD10CM
+1570068,M06.84,"Other specified rheumatoid arthritis, hand",ICD10CM
+42616638,M06.84,"Other specified rheumatoid arthritis, hand",ICD10
+45606063,M06.841,"Other specified rheumatoid arthritis, right hand",ICD10CM
+45562599,M06.842,"Other specified rheumatoid arthritis, left hand",ICD10CM
+45577119,M06.849,"Other specified rheumatoid arthritis, unspecified hand",ICD10CM
+42616648,M06.94,"Rheumatoid arthritis, unspecified, hand",ICD10
+45606068,M08.041,"Unspecified juvenile rheumatoid arthritis, right hand",ICD10CM
+45562602,M08.042,"Unspecified juvenile rheumatoid arthritis, left hand",ICD10CM
+45601295,M08.049,"Unspecified juvenile rheumatoid arthritis, unspecified hand",ICD10CM
+45577124,M08.241,"Juvenile rheumatoid arthritis with systemic onset, right hand",ICD10CM
+45606075,M08.242,"Juvenile rheumatoid arthritis with systemic onset, left hand",ICD10CM
+45548277,M08.249,"Juvenile rheumatoid arthritis with systemic onset, unspecified hand",ICD10CM
+45557772,M08.441,"Pauciarticular juvenile rheumatoid arthritis, right hand",ICD10CM
+45557773,M08.442,"Pauciarticular juvenile rheumatoid arthritis, left hand",ICD10CM
+45606077,M08.449,"Pauciarticular juvenile rheumatoid arthritis, unspecified hand",ICD10CM
+45606078,M08.841,"Other juvenile arthritis, right hand",ICD10CM
+45606079,M08.842,"Other juvenile arthritis, left hand",ICD10CM
+45557775,M08.849,"Other juvenile arthritis, unspecified hand",ICD10CM
+1570118,M08.94,"Juvenile arthritis, unspecified, hand",ICD10CM
+45553063,M08.941,"Juvenile arthritis, unspecified, right hand",ICD10CM
+45567439,M08.942,"Juvenile arthritis, unspecified, left hand",ICD10CM
+45586857,M08.949,"Juvenile arthritis, unspecified, unspecified hand",ICD10CM
+1569972,M05.05,"Felty's syndrome, hip",ICD10CM
+45591685,M05.051,"Felty's syndrome, right hip",ICD10CM
+45577090,M05.052,"Felty's syndrome, left hip",ICD10CM
+45543428,M05.059,"Felty's syndrome, unspecified hip",ICD10CM
+1569980,M05.15,Rheumatoid lung disease with rheumatoid arthritis of hip,ICD10CM
+45538623,M05.159,Rheumatoid lung disease with rheumatoid arthritis of unspecified hip,ICD10CM
+1569988,M05.25,Rheumatoid vasculitis with rheumatoid arthritis of hip,ICD10CM
+45577096,M05.251,Rheumatoid vasculitis with rheumatoid arthritis of right hip,ICD10CM
+45533691,M05.252,Rheumatoid vasculitis with rheumatoid arthritis of left hip,ICD10CM
+45596427,M05.259,Rheumatoid vasculitis with rheumatoid arthritis of unspecified hip,ICD10CM
+1569996,M05.35,Rheumatoid heart disease with rheumatoid arthritis of hip,ICD10CM
+45538627,M05.351,Rheumatoid heart disease with rheumatoid arthritis of right hip,ICD10CM
+45557756,M05.352,Rheumatoid heart disease with rheumatoid arthritis of left hip,ICD10CM
+45548255,M05.359,Rheumatoid heart disease with rheumatoid arthritis of unspecified hip,ICD10CM
+1570004,M05.45,Rheumatoid myopathy with rheumatoid arthritis of hip,ICD10CM
+45543432,M05.451,Rheumatoid myopathy with rheumatoid arthritis of right hip,ICD10CM
+45572333,M05.452,Rheumatoid myopathy with rheumatoid arthritis of left hip,ICD10CM
+45548256,M05.459,Rheumatoid myopathy with rheumatoid arthritis of unspecified hip,ICD10CM
+1570012,M05.55,Rheumatoid polyneuropathy with rheumatoid arthritis of hip,ICD10CM
+45591695,M05.551,Rheumatoid polyneuropathy with rheumatoid arthritis of right hip,ICD10CM
+45582010,M05.552,Rheumatoid polyneuropathy with rheumatoid arthritis of left hip,ICD10CM
+45582011,M05.559,Rheumatoid polyneuropathy with rheumatoid arthritis of unspecified hip,ICD10CM
+1570020,M05.65,Rheumatoid arthritis of hip with involvement of other organs and systems,ICD10CM
+45567416,M05.659,Rheumatoid arthritis of unspecified hip with involvement of other organs and systems,ICD10CM
+1570028,M05.75,Rheumatoid arthritis with rheumatoid factor of hip without organ or systems involvement,ICD10CM
+45572338,M05.751,Rheumatoid arthritis with rheumatoid factor of right hip without organ or systems involvement,ICD10CM
+45538633,M05.752,Rheumatoid arthritis with rheumatoid factor of left hip without organ or systems involvement,ICD10CM
+45567419,M05.759,Rheumatoid arthritis with rheumatoid factor of unspecified hip without organ or systems involvement,ICD10CM
+1570036,M05.85,Other rheumatoid arthritis with rheumatoid factor of hip,ICD10CM
+45606052,M05.851,Other rheumatoid arthritis with rheumatoid factor of right hip,ICD10CM
+45601283,M05.852,Other rheumatoid arthritis with rheumatoid factor of left hip,ICD10CM
+45533700,M05.859,Other rheumatoid arthritis with rheumatoid factor of unspecified hip,ICD10CM
+1570045,M06.05,"Rheumatoid arthritis without rheumatoid factor, hip",ICD10CM
+45557763,M06.051,"Rheumatoid arthritis without rheumatoid factor, right hip",ICD10CM
+45533702,M06.052,"Rheumatoid arthritis without rheumatoid factor, left hip",ICD10CM
+45577108,M06.059,"Rheumatoid arthritis without rheumatoid factor, unspecified hip",ICD10CM
+1570069,M06.85,"Other specified rheumatoid arthritis, hip",ICD10CM
+45543442,M06.851,"Other specified rheumatoid arthritis, right hip",ICD10CM
+45543443,M06.852,"Other specified rheumatoid arthritis, left hip",ICD10CM
+45567424,M06.859,"Other specified rheumatoid arthritis, unspecified hip",ICD10CM
+45538643,M08.051,"Unspecified juvenile rheumatoid arthritis, right hip",ICD10CM
+45606069,M08.052,"Unspecified juvenile rheumatoid arthritis, left hip",ICD10CM
+45538644,M08.059,"Unspecified juvenile rheumatoid arthritis, unspecified hip",ICD10CM
+1570095,M08.25,"Juvenile rheumatoid arthritis with systemic onset, hip",ICD10CM
+45567435,M08.251,"Juvenile rheumatoid arthritis with systemic onset, right hip",ICD10CM
+45586850,M08.252,"Juvenile rheumatoid arthritis with systemic onset, left hip",ICD10CM
+45533706,M08.259,"Juvenile rheumatoid arthritis with systemic onset, unspecified hip",ICD10CM
+45577126,M08.451,"Pauciarticular juvenile rheumatoid arthritis, right hip",ICD10CM
+45591710,M08.452,"Pauciarticular juvenile rheumatoid arthritis, left hip",ICD10CM
+45572350,M08.459,"Pauciarticular juvenile rheumatoid arthritis, unspecified hip",ICD10CM
+45586856,M08.851,"Other juvenile arthritis, right hip",ICD10CM
+45543447,M08.852,"Other juvenile arthritis, left hip",ICD10CM
+45538645,M08.859,"Other juvenile arthritis, unspecified hip",ICD10CM
+45533708,M08.951,"Juvenile arthritis, unspecified, right hip",ICD10CM
+45557780,M08.952,"Juvenile arthritis, unspecified, left hip",ICD10CM
+45533709,M08.959,"Juvenile arthritis, unspecified, unspecified hip",ICD10CM
+1569973,M05.06,"Felty's syndrome, knee",ICD10CM
+45548251,M05.061,"Felty's syndrome, right knee",ICD10CM
+45572326,M05.062,"Felty's syndrome, left knee",ICD10CM
+45577091,M05.069,"Felty's syndrome, unspecified knee",ICD10CM
+42616544,M05.16,"Rheumatoid lung disease, lower leg",ICD10
+1569981,M05.16,Rheumatoid lung disease with rheumatoid arthritis of knee,ICD10CM
+45567407,M05.169,Rheumatoid lung disease with rheumatoid arthritis of unspecified knee,ICD10CM
+1569989,M05.26,Rheumatoid vasculitis with rheumatoid arthritis of knee,ICD10CM
+45572328,M05.261,Rheumatoid vasculitis with rheumatoid arthritis of right knee,ICD10CM
+45567408,M05.262,Rheumatoid vasculitis with rheumatoid arthritis of left knee,ICD10CM
+45591690,M05.269,Rheumatoid vasculitis with rheumatoid arthritis of unspecified knee,ICD10CM
+42616564,M05.36,"Rheumatoid arthritis with involvement of other organs and systems, lower leg",ICD10
+1569997,M05.36,Rheumatoid heart disease with rheumatoid arthritis of knee,ICD10CM
+45572330,M05.361,Rheumatoid heart disease with rheumatoid arthritis of right knee,ICD10CM
+45562588,M05.362,Rheumatoid heart disease with rheumatoid arthritis of left knee,ICD10CM
+45567410,M05.369,Rheumatoid heart disease with rheumatoid arthritis of unspecified knee,ICD10CM
+1570005,M05.46,Rheumatoid myopathy with rheumatoid arthritis of knee,ICD10CM
+45567412,M05.461,Rheumatoid myopathy with rheumatoid arthritis of right knee,ICD10CM
+45533694,M05.462,Rheumatoid myopathy with rheumatoid arthritis of left knee,ICD10CM
+45591692,M05.469,Rheumatoid myopathy with rheumatoid arthritis of unspecified knee,ICD10CM
+1570013,M05.56,Rheumatoid polyneuropathy with rheumatoid arthritis of knee,ICD10CM
+45548258,M05.561,Rheumatoid polyneuropathy with rheumatoid arthritis of right knee,ICD10CM
+45582012,M05.562,Rheumatoid polyneuropathy with rheumatoid arthritis of left knee,ICD10CM
+45562590,M05.569,Rheumatoid polyneuropathy with rheumatoid arthritis of unspecified knee,ICD10CM
+1570021,M05.66,Rheumatoid arthritis of knee with involvement of other organs and systems,ICD10CM
+45606048,M05.669,Rheumatoid arthritis of unspecified knee with involvement of other organs and systems,ICD10CM
+1570029,M05.76,Rheumatoid arthritis with rheumatoid factor of knee without organ or systems involvement,ICD10CM
+45548262,M05.761,Rheumatoid arthritis with rheumatoid factor of right knee without organ or systems involvement,ICD10CM
+45548263,M05.762,Rheumatoid arthritis with rheumatoid factor of left knee without organ or systems involvement,ICD10CM
+45533697,M05.769,Rheumatoid arthritis with rheumatoid factor of unspecified knee without organ or systems involvement,ICD10CM
+1570037,M05.86,Other rheumatoid arthritis with rheumatoid factor of knee,ICD10CM
+45543436,M05.861,Other rheumatoid arthritis with rheumatoid factor of right knee,ICD10CM
+45553048,M05.862,Other rheumatoid arthritis with rheumatoid factor of left knee,ICD10CM
+45548264,M05.869,Other rheumatoid arthritis with rheumatoid factor of unspecified knee,ICD10CM
+1570046,M06.06,"Rheumatoid arthritis without rheumatoid factor, knee",ICD10CM
+45601284,M06.061,"Rheumatoid arthritis without rheumatoid factor, right knee",ICD10CM
+45553051,M06.062,"Rheumatoid arthritis without rheumatoid factor, left knee",ICD10CM
+45538635,M06.069,"Rheumatoid arthritis without rheumatoid factor, unspecified knee",ICD10CM
+1570070,M06.86,"Other specified rheumatoid arthritis, knee",ICD10CM
+45601289,M06.861,"Other specified rheumatoid arthritis, right knee",ICD10CM
+45562600,M06.862,"Other specified rheumatoid arthritis, left knee",ICD10CM
+45548271,M06.869,"Other specified rheumatoid arthritis, unspecified knee",ICD10CM
+1570088,M08.06,"Unspecified juvenile rheumatoid arthritis, knee",ICD10CM
+45606070,M08.061,"Unspecified juvenile rheumatoid arthritis, right knee",ICD10CM
+45572348,M08.062,"Unspecified juvenile rheumatoid arthritis, left knee",ICD10CM
+45557768,M08.069,"Unspecified juvenile rheumatoid arthritis, unspecified knee",ICD10CM
+1570096,M08.26,"Juvenile rheumatoid arthritis with systemic onset, knee",ICD10CM
+45548278,M08.261,"Juvenile rheumatoid arthritis with systemic onset, right knee",ICD10CM
+45577125,M08.262,"Juvenile rheumatoid arthritis with systemic onset, left knee",ICD10CM
+45596449,M08.269,"Juvenile rheumatoid arthritis with systemic onset, unspecified knee",ICD10CM
+45577127,M08.461,"Pauciarticular juvenile rheumatoid arthritis, right knee",ICD10CM
+45586854,M08.462,"Pauciarticular juvenile rheumatoid arthritis, left knee",ICD10CM
+45601302,M08.469,"Pauciarticular juvenile rheumatoid arthritis, unspecified knee",ICD10CM
+45562605,M08.861,"Other juvenile arthritis, right knee",ICD10CM
+45557776,M08.862,"Other juvenile arthritis, left knee",ICD10CM
+45557777,M08.869,"Other juvenile arthritis, unspecified knee",ICD10CM
+45562609,M08.961,"Juvenile arthritis, unspecified, right knee",ICD10CM
+45553064,M08.962,"Juvenile arthritis, unspecified, left knee",ICD10CM
+45533710,M08.969,"Juvenile arthritis, unspecified, unspecified knee",ICD10CM
+1569969,M05.02,"Felty's syndrome, elbow",ICD10CM
+45557752,M05.021,"Felty's syndrome, right elbow",ICD10CM
+45562581,M05.022,"Felty's syndrome, left elbow",ICD10CM
+45548248,M05.029,"Felty's syndrome, unspecified elbow",ICD10CM
+1569977,M05.12,Rheumatoid lung disease with rheumatoid arthritis of elbow,ICD10CM
+42616540,M05.12,"Rheumatoid lung disease, upper arm",ICD10
+45582004,M05.122,Rheumatoid lung disease with rheumatoid arthritis of left elbow,ICD10CM
+45543429,M05.129,Rheumatoid lung disease with rheumatoid arthritis of unspecified elbow,ICD10CM
+1569985,M05.22,Rheumatoid vasculitis with rheumatoid arthritis of elbow,ICD10CM
+45596425,M05.221,Rheumatoid vasculitis with rheumatoid arthritis of right elbow,ICD10CM
+45586835,M05.222,Rheumatoid vasculitis with rheumatoid arthritis of left elbow,ICD10CM
+45591689,M05.229,Rheumatoid vasculitis with rheumatoid arthritis of unspecified elbow,ICD10CM
+1569993,M05.32,Rheumatoid heart disease with rheumatoid arthritis of elbow,ICD10CM
+45553039,M05.321,Rheumatoid heart disease with rheumatoid arthritis of right elbow,ICD10CM
+45553040,M05.322,Rheumatoid heart disease with rheumatoid arthritis of left elbow,ICD10CM
+45533692,M05.329,Rheumatoid heart disease with rheumatoid arthritis of unspecified elbow,ICD10CM
+1570001,M05.42,Rheumatoid myopathy with rheumatoid arthritis of elbow,ICD10CM
+45562589,M05.421,Rheumatoid myopathy with rheumatoid arthritis of right elbow,ICD10CM
+45606044,M05.422,Rheumatoid myopathy with rheumatoid arthritis of left elbow,ICD10CM
+45557758,M05.429,Rheumatoid myopathy with rheumatoid arthritis of unspecified elbow,ICD10CM
+1570009,M05.52,Rheumatoid polyneuropathy with rheumatoid arthritis of elbow,ICD10CM
+45567414,M05.521,Rheumatoid polyneuropathy with rheumatoid arthritis of right elbow,ICD10CM
+45533695,M05.522,Rheumatoid polyneuropathy with rheumatoid arthritis of left elbow,ICD10CM
+45596434,M05.529,Rheumatoid polyneuropathy with rheumatoid arthritis of unspecified elbow,ICD10CM
+1570017,M05.62,Rheumatoid arthritis of elbow with involvement of other organs and systems,ICD10CM
+45601277,M05.621,Rheumatoid arthritis of right elbow with involvement of other organs and systems,ICD10CM
+45591696,M05.622,Rheumatoid arthritis of left elbow with involvement of other organs and systems,ICD10CM
+45591697,M05.629,Rheumatoid arthritis of unspecified elbow with involvement of other organs and systems,ICD10CM
+1570025,M05.72,Rheumatoid arthritis with rheumatoid factor of elbow without organ or systems involvement,ICD10CM
+45548261,M05.721,Rheumatoid arthritis with rheumatoid factor of right elbow without organ or systems involvement,ICD10CM
+45572337,M05.722,Rheumatoid arthritis with rheumatoid factor of left elbow without organ or systems involvement,ICD10CM
+45562591,M05.729,Rheumatoid arthritis with rheumatoid factor of unspecified elbow without organ or systems involvement,ICD10CM
+1570033,M05.82,Other rheumatoid arthritis with rheumatoid factor of elbow,ICD10CM
+45601280,M05.821,Other rheumatoid arthritis with rheumatoid factor of right elbow,ICD10CM
+45601281,M05.822,Other rheumatoid arthritis with rheumatoid factor of left elbow,ICD10CM
+45533699,M05.829,Other rheumatoid arthritis with rheumatoid factor of unspecified elbow,ICD10CM
+1570042,M06.02,"Rheumatoid arthritis without rheumatoid factor, elbow",ICD10CM
+45557762,M06.021,"Rheumatoid arthritis without rheumatoid factor, right elbow",ICD10CM
+45577104,M06.022,"Rheumatoid arthritis without rheumatoid factor, left elbow",ICD10CM
+45577105,M06.029,"Rheumatoid arthritis without rheumatoid factor, unspecified elbow",ICD10CM
+1570066,M06.82,"Other specified rheumatoid arthritis, elbow",ICD10CM
+45538639,M06.821,"Other specified rheumatoid arthritis, right elbow",ICD10CM
+45562598,M06.822,"Other specified rheumatoid arthritis, left elbow",ICD10CM
+45596446,M06.829,"Other specified rheumatoid arthritis, unspecified elbow",ICD10CM
+1570084,M08.02,Unspecified juvenile rheumatoid arthritis of elbow,ICD10CM
+45543445,M08.021,"Unspecified juvenile rheumatoid arthritis, right elbow",ICD10CM
+45572347,M08.022,"Unspecified juvenile rheumatoid arthritis, left elbow",ICD10CM
+45586849,M08.029,"Unspecified juvenile rheumatoid arthritis, unspecified elbow",ICD10CM
+1570092,M08.22,"Juvenile rheumatoid arthritis with systemic onset, elbow",ICD10CM
+45591709,M08.221,"Juvenile rheumatoid arthritis with systemic onset, right elbow",ICD10CM
+45606074,M08.222,"Juvenile rheumatoid arthritis with systemic onset, left elbow",ICD10CM
+45601297,M08.229,"Juvenile rheumatoid arthritis with systemic onset, unspecified elbow",ICD10CM
+45601300,M08.421,"Pauciarticular juvenile rheumatoid arthritis, right elbow",ICD10CM
+45548281,M08.422,"Pauciarticular juvenile rheumatoid arthritis, left elbow",ICD10CM
+45557771,M08.429,"Pauciarticular juvenile rheumatoid arthritis, unspecified elbow",ICD10CM
+45591712,M08.821,"Other juvenile arthritis, right elbow",ICD10CM
+45562604,M08.822,"Other juvenile arthritis, left elbow",ICD10CM
+45548283,M08.829,"Other juvenile arthritis, unspecified elbow",ICD10CM
+45557778,M08.921,"Juvenile arthritis, unspecified, right elbow",ICD10CM
+45557779,M08.922,"Juvenile arthritis, unspecified, left elbow",ICD10CM
+45562608,M08.929,"Juvenile arthritis, unspecified, unspecified elbow",ICD10CM
+1569970,M05.03,"Felty's syndrome, wrist",ICD10CM
+45582002,M05.031,"Felty's syndrome, right wrist",ICD10CM
+45567404,M05.032,"Felty's syndrome, left wrist",ICD10CM
+45538622,M05.039,"Felty's syndrome, unspecified wrist",ICD10CM
+1569978,M05.13,Rheumatoid lung disease with rheumatoid arthritis of wrist,ICD10CM
+45567406,M05.139,Rheumatoid lung disease with rheumatoid arthritis of unspecified wrist,ICD10CM
+1569986,M05.23,Rheumatoid vasculitis with rheumatoid arthritis of wrist,ICD10CM
+45543431,M05.231,Rheumatoid vasculitis with rheumatoid arthritis of right wrist,ICD10CM
+45562584,M05.232,Rheumatoid vasculitis with rheumatoid arthritis of left wrist,ICD10CM
+45606042,M05.239,Rheumatoid vasculitis with rheumatoid arthritis of unspecified wrist,ICD10CM
+1569994,M05.33,Rheumatoid heart disease with rheumatoid arthritis of wrist,ICD10CM
+45562586,M05.331,Rheumatoid heart disease with rheumatoid arthritis of right wrist,ICD10CM
+45572329,M05.332,Rheumatoid heart disease with rheumatoid arthritis of left wrist,ICD10CM
+45582007,M05.339,Rheumatoid heart disease with rheumatoid arthritis of unspecified wrist,ICD10CM
+1570002,M05.43,Rheumatoid myopathy with rheumatoid arthritis of wrist,ICD10CM
+45567411,M05.431,Rheumatoid myopathy with rheumatoid arthritis of right wrist,ICD10CM
+45582009,M05.432,Rheumatoid myopathy with rheumatoid arthritis of left wrist,ICD10CM
+45577099,M05.439,Rheumatoid myopathy with rheumatoid arthritis of unspecified wrist,ICD10CM
+1570010,M05.53,Rheumatoid polyneuropathy with rheumatoid arthritis of wrist,ICD10CM
+45548257,M05.531,Rheumatoid polyneuropathy with rheumatoid arthritis of right wrist,ICD10CM
+45591693,M05.532,Rheumatoid polyneuropathy with rheumatoid arthritis of left wrist,ICD10CM
+45538630,M05.539,Rheumatoid polyneuropathy with rheumatoid arthritis of unspecified wrist,ICD10CM
+1570018,M05.63,Rheumatoid arthritis of wrist with involvement of other organs and systems,ICD10CM
+45577102,M05.631,Rheumatoid arthritis of right wrist with involvement of other organs and systems,ICD10CM
+45601278,M05.632,Rheumatoid arthritis of left wrist with involvement of other organs and systems,ICD10CM
+45557760,M05.639,Rheumatoid arthritis of unspecified wrist with involvement of other organs and systems,ICD10CM
+1570026,M05.73,Rheumatoid arthritis with rheumatoid factor of wrist without organ or systems involvement,ICD10CM
+45606050,M05.731,Rheumatoid arthritis with rheumatoid factor of right wrist without organ or systems involvement,ICD10CM
+45582014,M05.732,Rheumatoid arthritis with rheumatoid factor of left wrist without organ or systems involvement,ICD10CM
+45553044,M05.739,Rheumatoid arthritis with rheumatoid factor of unspecified wrist without organ or systems involvement,ICD10CM
+1570034,M05.83,Other rheumatoid arthritis with rheumatoid factor of wrist,ICD10CM
+45572339,M05.831,Other rheumatoid arthritis with rheumatoid factor of right wrist,ICD10CM
+45596440,M05.832,Other rheumatoid arthritis with rheumatoid factor of left wrist,ICD10CM
+45553047,M05.839,Other rheumatoid arthritis with rheumatoid factor of unspecified wrist,ICD10CM
+1570043,M06.03,"Rheumatoid arthritis without rheumatoid factor, wrist",ICD10CM
+45606054,M06.031,"Rheumatoid arthritis without rheumatoid factor, right wrist",ICD10CM
+45562593,M06.032,"Rheumatoid arthritis without rheumatoid factor, left wrist",ICD10CM
+45577106,M06.039,"Rheumatoid arthritis without rheumatoid factor, unspecified wrist",ICD10CM
+1570067,M06.83,"Other specified rheumatoid arthritis, wrist",ICD10CM
+45577117,M06.831,"Other specified rheumatoid arthritis, right wrist",ICD10CM
+45567423,M06.832,"Other specified rheumatoid arthritis, left wrist",ICD10CM
+45577118,M06.839,"Other specified rheumatoid arthritis, unspecified wrist",ICD10CM
+1570085,M08.03,"Unspecified juvenile rheumatoid arthritis, wrist",ICD10CM
+45601293,M08.031,"Unspecified juvenile rheumatoid arthritis, right wrist",ICD10CM
+45543446,M08.032,"Unspecified juvenile rheumatoid arthritis, left wrist",ICD10CM
+45601294,M08.039,"Unspecified juvenile rheumatoid arthritis, unspecified wrist",ICD10CM
+1570093,M08.23,"Juvenile rheumatoid arthritis with systemic onset, wrist",ICD10CM
+45577123,M08.231,"Juvenile rheumatoid arthritis with systemic onset, right wrist",ICD10CM
+45601298,M08.232,"Juvenile rheumatoid arthritis with systemic onset, left wrist",ICD10CM
+45582019,M08.239,"Juvenile rheumatoid arthritis with systemic onset, unspecified wrist",ICD10CM
+45562603,M08.431,"Pauciarticular juvenile rheumatoid arthritis, right wrist",ICD10CM
+45548282,M08.432,"Pauciarticular juvenile rheumatoid arthritis, left wrist",ICD10CM
+45601301,M08.439,"Pauciarticular juvenile rheumatoid arthritis, unspecified wrist",ICD10CM
+45553060,M08.831,"Other juvenile arthritis, right wrist",ICD10CM
+45548284,M08.832,"Other juvenile arthritis, left wrist",ICD10CM
+45591713,M08.839,"Other juvenile arthritis, unspecified wrist",ICD10CM
+1570117,M08.93,"Juvenile arthritis, unspecified, wrist",ICD10CM
+45606082,M08.931,"Juvenile arthritis, unspecified, right wrist",ICD10CM
+45548285,M08.932,"Juvenile arthritis, unspecified, left wrist",ICD10CM
+45601304,M08.939,"Juvenile arthritis, unspecified, unspecified wrist",ICD10CM
+42616528,M05.00,"Felty syndrome, multiple sites",ICD10
+42616538,M05.10,"Rheumatoid lung disease, multiple sites",ICD10
+45557754,M05.19,Rheumatoid lung disease with rheumatoid arthritis of multiple sites,ICD10CM
+42616548,M05.20,"Rheumatoid vasculitis, multiple sites",ICD10
+45596428,M05.29,Rheumatoid vasculitis with rheumatoid arthritis of multiple sites,ICD10CM
+45577098,M05.39,Rheumatoid heart disease with rheumatoid arthritis of multiple sites,ICD10CM
+45577100,M05.49,Rheumatoid myopathy with rheumatoid arthritis of multiple sites,ICD10CM
+45567415,M05.59,Rheumatoid polyneuropathy with rheumatoid arthritis of multiple sites,ICD10CM
+42616567,M05.80,"Other seropositive rheumatoid arthritis, multiple sites",ICD10
+45553049,M05.89,Other rheumatoid arthritis with rheumatoid factor of multiple sites,ICD10CM
+42616577,M05.90,"Seropositive rheumatoid arthritis, unspecified, multiple sites",ICD10
+42616587,M06.00,"Seronegative rheumatoid arthritis, multiple sites",ICD10
+45572341,M06.09,"Rheumatoid arthritis without rheumatoid factor, multiple sites",ICD10CM
+42616634,M06.80,"Other specified rheumatoid arthritis, multiple sites",ICD10
+42616644,M06.90,"Rheumatoid arthritis, unspecified, multiple sites",ICD10
+45548275,M08.09,"Unspecified juvenile rheumatoid arthritis, multiple sites",ICD10CM
+45601299,M08.29,"Juvenile rheumatoid arthritis with systemic onset, multiple sites",ICD10CM
+1569974,M05.07,"Felty's syndrome, ankle and foot",ICD10CM
+42616535,M05.07,"Felty syndrome, ankle and foot",ICD10
+45533690,M05.071,"Felty's syndrome, right ankle and foot",ICD10CM
+45548252,M05.072,"Felty's syndrome, left ankle and foot",ICD10CM
+45553036,M05.079,"Felty's syndrome, unspecified ankle and foot",ICD10CM
+1569982,M05.17,Rheumatoid lung disease with rheumatoid arthritis of ankle and foot,ICD10CM
+42616545,M05.17,"Rheumatoid lung disease, ankle and foot",ICD10
+45601274,M05.171,Rheumatoid lung disease with rheumatoid arthritis of right ankle and foot,ICD10CM
+45582006,M05.172,Rheumatoid lung disease with rheumatoid arthritis of left ankle and foot,ICD10CM
+45606040,M05.179,Rheumatoid lung disease with rheumatoid arthritis of unspecified ankle and foot,ICD10CM
+1569990,M05.27,Rheumatoid vasculitis with rheumatoid arthritis of ankle and foot,ICD10CM
+42616555,M05.27,"Rheumatoid vasculitis, ankle and foot",ICD10
+45591691,M05.271,Rheumatoid vasculitis with rheumatoid arthritis of right ankle and foot,ICD10CM
+45538625,M05.272,Rheumatoid vasculitis with rheumatoid arthritis of left ankle and foot,ICD10CM
+45538626,M05.279,Rheumatoid vasculitis with rheumatoid arthritis of unspecified ankle and foot,ICD10CM
+1569998,M05.37,Rheumatoid heart disease with rheumatoid arthritis of ankle and foot,ICD10CM
+42616565,M05.37,"Rheumatoid arthritis with involvement of other organs and systems, ankle and foot",ICD10
+45572331,M05.371,Rheumatoid heart disease with rheumatoid arthritis of right ankle and foot,ICD10CM
+45586837,M05.372,Rheumatoid heart disease with rheumatoid arthritis of left ankle and foot,ICD10CM
+45557757,M05.379,Rheumatoid heart disease with rheumatoid arthritis of unspecified ankle and foot,ICD10CM
+1570006,M05.47,Rheumatoid myopathy with rheumatoid arthritis of ankle and foot,ICD10CM
+45557759,M05.471,Rheumatoid myopathy with rheumatoid arthritis of right ankle and foot,ICD10CM
+45538628,M05.472,Rheumatoid myopathy with rheumatoid arthritis of left ankle and foot,ICD10CM
+45572334,M05.479,Rheumatoid myopathy with rheumatoid arthritis of unspecified ankle and foot,ICD10CM
+1570014,M05.57,Rheumatoid polyneuropathy with rheumatoid arthritis of ankle and foot,ICD10CM
+45538632,M05.571,Rheumatoid polyneuropathy with rheumatoid arthritis of right ankle and foot,ICD10CM
+45582013,M05.572,Rheumatoid polyneuropathy with rheumatoid arthritis of left ankle and foot,ICD10CM
+45553041,M05.579,Rheumatoid polyneuropathy with rheumatoid arthritis of unspecified ankle and foot,ICD10CM
+1570022,M05.67,Rheumatoid arthritis of ankle and foot with involvement of other organs and systems,ICD10CM
+45553043,M05.671,Rheumatoid arthritis of right ankle and foot with involvement of other organs and systems,ICD10CM
+45606049,M05.672,Rheumatoid arthritis of left ankle and foot with involvement of other organs and systems,ICD10CM
+45601279,M05.679,Rheumatoid arthritis of unspecified ankle and foot with involvement of other organs and systems,ICD10CM
+1570030,M05.77,Rheumatoid arthritis with rheumatoid factor of ankle and foot without organ or systems involvement,ICD10CM
+45596438,M05.771,Rheumatoid arthritis with rheumatoid factor of right ankle and foot without organ or systems involvement,ICD10CM
+45591700,M05.772,Rheumatoid arthritis with rheumatoid factor of left ankle and foot without organ or systems involvement,ICD10CM
+45596439,M05.779,Rheumatoid arthritis with rheumatoid factor of unspecified ankle and foot without organ or systems involvement,ICD10CM
+1570038,M05.87,Other rheumatoid arthritis with rheumatoid factor of ankle and foot,ICD10CM
+42616574,M05.87,"Other seropositive rheumatoid arthritis, ankle and foot",ICD10
+45548265,M05.871,Other rheumatoid arthritis with rheumatoid factor of right ankle and foot,ICD10CM
+45586839,M05.872,Other rheumatoid arthritis with rheumatoid factor of left ankle and foot,ICD10CM
+45548266,M05.879,Other rheumatoid arthritis with rheumatoid factor of unspecified ankle and foot,ICD10CM
+42616584,M05.97,"Seropositive rheumatoid arthritis, unspecified, ankle and foot",ICD10
+1570047,M06.07,"Rheumatoid arthritis without rheumatoid factor, ankle and foot",ICD10CM
+42616593,M06.07,"Seronegative rheumatoid arthritis, ankle and foot",ICD10
+45577109,M06.071,"Rheumatoid arthritis without rheumatoid factor, right ankle and foot",ICD10CM
+45567420,M06.072,"Rheumatoid arthritis without rheumatoid factor, left ankle and foot",ICD10CM
+45533703,M06.079,"Rheumatoid arthritis without rheumatoid factor, unspecified ankle and foot",ICD10CM
+42616641,M06.87,"Other specified rheumatoid arthritis, ankle and foot",ICD10
+1570071,M06.87,"Other specified rheumatoid arthritis, ankle and foot",ICD10CM
+45606064,M06.871,"Other specified rheumatoid arthritis, right ankle and foot",ICD10CM
+45591705,M06.872,"Other specified rheumatoid arthritis, left ankle and foot",ICD10CM
+45567425,M06.879,"Other specified rheumatoid arthritis, unspecified ankle and foot",ICD10CM
+42616650,M06.97,"Rheumatoid arthritis, unspecified, ankle and foot",ICD10
+45606071,M08.071,"Unspecified juvenile rheumatoid arthritis, right ankle and foot",ICD10CM
+45567434,M08.072,"Unspecified juvenile rheumatoid arthritis, left ankle and foot",ICD10CM
+45606072,M08.079,"Unspecified juvenile rheumatoid arthritis, unspecified ankle and foot",ICD10CM
+45548279,M08.271,"Juvenile rheumatoid arthritis with systemic onset, right ankle and foot",ICD10CM
+45586851,M08.272,"Juvenile rheumatoid arthritis with systemic onset, left ankle and foot",ICD10CM
+45586852,M08.279,"Juvenile rheumatoid arthritis with systemic onset, unspecified ankle and foot",ICD10CM
+45591711,M08.471,"Pauciarticular juvenile rheumatoid arthritis, right ankle and foot",ICD10CM
+45533707,M08.472,"Pauciarticular juvenile rheumatoid arthritis, left ankle and foot",ICD10CM
+45567436,M08.479,"Pauciarticular juvenile rheumatoid arthritis, unspecified ankle and foot",ICD10CM
+45562606,M08.871,"Other juvenile arthritis, right ankle and foot",ICD10CM
+45606080,M08.872,"Other juvenile arthritis, left ankle and foot",ICD10CM
+45577129,M08.879,"Other juvenile arthritis, unspecified ankle and foot",ICD10CM
+45543448,M08.971,"Juvenile arthritis, unspecified, right ankle and foot",ICD10CM
+45606083,M08.972,"Juvenile arthritis, unspecified, left ankle and foot",ICD10CM
+45553065,M08.979,"Juvenile arthritis, unspecified, unspecified ankle and foot",ICD10CM
+45586848,M08.0,Juvenile rheumatoid arthritis,ICD10
+1570082,M08.0,Unspecified juvenile rheumatoid arthritis,ICD10CM
+45567431,M08.00,Unspecified juvenile rheumatoid arthritis of unspecified site,ICD10CM
+42616721,M08.00,"Juvenile rheumatoid arthritis, multiple sites",ICD10
+1570083,M08.01,"Unspecified juvenile rheumatoid arthritis, shoulder",ICD10CM
+42616722,M08.01,"Juvenile rheumatoid arthritis, shoulder region",ICD10
+45567432,M08.011,"Unspecified juvenile rheumatoid arthritis, right shoulder",ICD10CM
+45567433,M08.012,"Unspecified juvenile rheumatoid arthritis, left shoulder",ICD10CM
+45553057,M08.019,"Unspecified juvenile rheumatoid arthritis, unspecified shoulder",ICD10CM
+42616723,M08.02,"Juvenile rheumatoid arthritis, upper arm",ICD10
+1570084,M08.02,Unspecified juvenile rheumatoid arthritis of elbow,ICD10CM
+45543445,M08.021,"Unspecified juvenile rheumatoid arthritis, right elbow",ICD10CM
+45572347,M08.022,"Unspecified juvenile rheumatoid arthritis, left elbow",ICD10CM
+45586849,M08.029,"Unspecified juvenile rheumatoid arthritis, unspecified elbow",ICD10CM
+1570085,M08.03,"Unspecified juvenile rheumatoid arthritis, wrist",ICD10CM
+42616724,M08.03,"Juvenile rheumatoid arthritis, forearm",ICD10
+45601293,M08.031,"Unspecified juvenile rheumatoid arthritis, right wrist",ICD10CM
+45543446,M08.032,"Unspecified juvenile rheumatoid arthritis, left wrist",ICD10CM
+45601294,M08.039,"Unspecified juvenile rheumatoid arthritis, unspecified wrist",ICD10CM
+42616725,M08.04,"Juvenile rheumatoid arthritis, hand",ICD10
+1570086,M08.04,"Unspecified juvenile rheumatoid arthritis, hand",ICD10CM
+45606068,M08.041,"Unspecified juvenile rheumatoid arthritis, right hand",ICD10CM
+45562602,M08.042,"Unspecified juvenile rheumatoid arthritis, left hand",ICD10CM
+45601295,M08.049,"Unspecified juvenile rheumatoid arthritis, unspecified hand",ICD10CM
+42616726,M08.05,"Juvenile rheumatoid arthritis, pelvic region and thigh",ICD10
+1570087,M08.05,"Unspecified juvenile rheumatoid arthritis, hip",ICD10CM
+45538643,M08.051,"Unspecified juvenile rheumatoid arthritis, right hip",ICD10CM
+45606069,M08.052,"Unspecified juvenile rheumatoid arthritis, left hip",ICD10CM
+45538644,M08.059,"Unspecified juvenile rheumatoid arthritis, unspecified hip",ICD10CM
+42616727,M08.06,"Juvenile rheumatoid arthritis, lower leg",ICD10
+1570088,M08.06,"Unspecified juvenile rheumatoid arthritis, knee",ICD10CM
+45606070,M08.061,"Unspecified juvenile rheumatoid arthritis, right knee",ICD10CM
+45572348,M08.062,"Unspecified juvenile rheumatoid arthritis, left knee",ICD10CM
+45557768,M08.069,"Unspecified juvenile rheumatoid arthritis, unspecified knee",ICD10CM
+1570089,M08.07,"Unspecified juvenile rheumatoid arthritis, ankle and foot",ICD10CM
+42616728,M08.07,"Juvenile rheumatoid arthritis, ankle and foot",ICD10
+45606071,M08.071,"Unspecified juvenile rheumatoid arthritis, right ankle and foot",ICD10CM
+45567434,M08.072,"Unspecified juvenile rheumatoid arthritis, left ankle and foot",ICD10CM
+45606072,M08.079,"Unspecified juvenile rheumatoid arthritis, unspecified ankle and foot",ICD10CM
+45557769,M08.08,"Unspecified juvenile rheumatoid arthritis, vertebrae",ICD10CM
+42616729,M08.08,"Juvenile rheumatoid arthritis, other",ICD10
+45548275,M08.09,"Unspecified juvenile rheumatoid arthritis, multiple sites",ICD10CM
+42616730,M08.09,"Juvenile rheumatoid arthritis, site unspecified",ICD10
+45567437,M08.8,Other juvenile arthritis,ICD10
+1570106,M08.8,Other juvenile arthritis,ICD10CM
+45586855,M08.80,"Other juvenile arthritis, unspecified site",ICD10CM
+42616769,M08.80,"Other juvenile arthritis, multiple sites",ICD10
+42616770,M08.81,"Other juvenile arthritis, shoulder region",ICD10
+1570107,M08.81,"Other juvenile arthritis, shoulder",ICD10CM
+45557774,M08.811,"Other juvenile arthritis, right shoulder",ICD10CM
+45577128,M08.812,"Other juvenile arthritis, left shoulder",ICD10CM
+45553059,M08.819,"Other juvenile arthritis, unspecified shoulder",ICD10CM
+42616771,M08.82,"Other juvenile arthritis, upper arm",ICD10
+45591712,M08.821,"Other juvenile arthritis, right elbow",ICD10CM
+45562604,M08.822,"Other juvenile arthritis, left elbow",ICD10CM
+45548283,M08.829,"Other juvenile arthritis, unspecified elbow",ICD10CM
+42616772,M08.83,"Other juvenile arthritis, forearm",ICD10
+45553060,M08.831,"Other juvenile arthritis, right wrist",ICD10CM
+45548284,M08.832,"Other juvenile arthritis, left wrist",ICD10CM
+45591713,M08.839,"Other juvenile arthritis, unspecified wrist",ICD10CM
+1570110,M08.84,"Other juvenile arthritis, hand",ICD10CM
+42616773,M08.84,"Other juvenile arthritis, hand",ICD10
+45606078,M08.841,"Other juvenile arthritis, right hand",ICD10CM
+45606079,M08.842,"Other juvenile arthritis, left hand",ICD10CM
+45557775,M08.849,"Other juvenile arthritis, unspecified hand",ICD10CM
+42616774,M08.85,"Other juvenile arthritis, pelvic region and thigh",ICD10
+45586856,M08.851,"Other juvenile arthritis, right hip",ICD10CM
+45543447,M08.852,"Other juvenile arthritis, left hip",ICD10CM
+45538645,M08.859,"Other juvenile arthritis, unspecified hip",ICD10CM
+42616775,M08.86,"Other juvenile arthritis, lower leg",ICD10
+45562605,M08.861,"Other juvenile arthritis, right knee",ICD10CM
+45557776,M08.862,"Other juvenile arthritis, left knee",ICD10CM
+45557777,M08.869,"Other juvenile arthritis, unspecified knee",ICD10CM
+42616776,M08.87,"Other juvenile arthritis, ankle and foot",ICD10
+1570113,M08.87,"Other juvenile arthritis, ankle and foot",ICD10CM
+45562606,M08.871,"Other juvenile arthritis, right ankle and foot",ICD10CM
+45606080,M08.872,"Other juvenile arthritis, left ankle and foot",ICD10CM
+45577129,M08.879,"Other juvenile arthritis, unspecified ankle and foot",ICD10CM
+45553061,M08.88,"Other juvenile arthritis, other specified site",ICD10CM
+42616777,M08.88,"Other juvenile arthritis, other",ICD10
+42616778,M08.89,"Other juvenile arthritis, site unspecified",ICD10
+45591714,M08.89,"Other juvenile arthritis, multiple sites",ICD10CM
+1570114,M08.9,"Juvenile arthritis, unspecified",ICD10CM
+45596451,M08.9,"Juvenile arthritis, unspecified",ICD10
+45567438,M08.90,"Juvenile arthritis, unspecified, unspecified site",ICD10CM
+42616779,M08.90,"Juvenile arthritis, unspecified, multiple sites",ICD10
+1570115,M08.91,"Juvenile arthritis, unspecified, shoulder",ICD10CM
+42616780,M08.91,"Juvenile arthritis, unspecified, shoulder region",ICD10
+45562607,M08.911,"Juvenile arthritis, unspecified, right shoulder",ICD10CM
+45606081,M08.912,"Juvenile arthritis, unspecified, left shoulder",ICD10CM
+45553062,M08.919,"Juvenile arthritis, unspecified, unspecified shoulder",ICD10CM
+42616781,M08.92,"Juvenile arthritis, unspecified, upper arm",ICD10
+45557778,M08.921,"Juvenile arthritis, unspecified, right elbow",ICD10CM
+45557779,M08.922,"Juvenile arthritis, unspecified, left elbow",ICD10CM
+45562608,M08.929,"Juvenile arthritis, unspecified, unspecified elbow",ICD10CM
+42616782,M08.93,"Juvenile arthritis, unspecified, forearm",ICD10
+1570117,M08.93,"Juvenile arthritis, unspecified, wrist",ICD10CM
+45606082,M08.931,"Juvenile arthritis, unspecified, right wrist",ICD10CM
+45548285,M08.932,"Juvenile arthritis, unspecified, left wrist",ICD10CM
+45601304,M08.939,"Juvenile arthritis, unspecified, unspecified wrist",ICD10CM
+1570118,M08.94,"Juvenile arthritis, unspecified, hand",ICD10CM
+42616783,M08.94,"Juvenile arthritis, unspecified, hand",ICD10
+45553063,M08.941,"Juvenile arthritis, unspecified, right hand",ICD10CM
+45567439,M08.942,"Juvenile arthritis, unspecified, left hand",ICD10CM
+45586857,M08.949,"Juvenile arthritis, unspecified, unspecified hand",ICD10CM
+42619393,M08.95,"Juvenile arthritis, unspecified, pelvic region and thigh",ICD10
+45533708,M08.951,"Juvenile arthritis, unspecified, right hip",ICD10CM
+45557780,M08.952,"Juvenile arthritis, unspecified, left hip",ICD10CM
+45533709,M08.959,"Juvenile arthritis, unspecified, unspecified hip",ICD10CM
+42616784,M08.96,"Juvenile arthritis, unspecified, lower leg",ICD10
+45562609,M08.961,"Juvenile arthritis, unspecified, right knee",ICD10CM
+45553064,M08.962,"Juvenile arthritis, unspecified, left knee",ICD10CM
+45533710,M08.969,"Juvenile arthritis, unspecified, unspecified knee",ICD10CM
+1570121,M08.97,"Juvenile arthritis, unspecified, ankle and foot",ICD10CM
+42616785,M08.97,"Juvenile arthritis, unspecified, ankle and foot",ICD10
+45543448,M08.971,"Juvenile arthritis, unspecified, right ankle and foot",ICD10CM
+45606083,M08.972,"Juvenile arthritis, unspecified, left ankle and foot",ICD10CM
+45553065,M08.979,"Juvenile arthritis, unspecified, unspecified ankle and foot",ICD10CM
+45577130,M08.98,"Juvenile arthritis, unspecified, vertebrae",ICD10CM
+42616786,M08.98,"Juvenile arthritis, unspecified, other",ICD10
+42616787,M08.99,"Juvenile arthritis, unspecified, site unspecified",ICD10
+45606084,M08.99,"Juvenile arthritis, unspecified, multiple sites",ICD10CM
+45755463,M09,Juvenile arthritis in diseases classified elsewhere,ICD10
+1570108,M08.82,"Other juvenile arthritis, elbow",ICD10CM
+1570109,M08.83,"Other juvenile arthritis, wrist",ICD10CM
+1570111,M08.85,"Other juvenile arthritis, hip",ICD10CM
+1570112,M08.86,"Other juvenile arthritis, knee",ICD10CM
+1570116,M08.92,"Juvenile arthritis, unspecified, elbow",ICD10CM
+1570119,M08.95,"Juvenile arthritis, unspecified, hip",ICD10CM
+1570120,M08.96,"Juvenile arthritis, unspecified, knee",ICD10CM
+45586858,M09.8,Juvenile arthritis in other diseases classified elsewhere,ICD10
+42616818,M09.80,"Juvenile arthritis in other diseases classified elsewhere, multiple sites",ICD10
+42616819,M09.81,"Juvenile arthritis in other diseases classified elsewhere, shoulder region",ICD10
+42616820,M09.82,"Juvenile arthritis in other diseases classified elsewhere, upper arm",ICD10
+42616821,M09.83,"Juvenile arthritis in other diseases classified elsewhere, forearm",ICD10
+42619400,M09.84,"Juvenile arthritis in other diseases classified elsewhere, hand",ICD10
+42616822,M09.85,"Juvenile arthritis in other diseases classified elsewhere, pelvic region and thigh",ICD10
+42616823,M09.86,"Juvenile arthritis in other diseases classified elsewhere, lower leg",ICD10
+42616824,M09.87,"Juvenile arthritis in other diseases classified elsewhere, ankle and foot",ICD10
+42616825,M09.88,"Juvenile arthritis in other diseases classified elsewhere, other",ICD10
+42616826,M09.89,"Juvenile arthritis in other diseases classified elsewhere, site unspecified",ICD10
+45591687,M05.112,Rheumatoid lung disease with rheumatoid arthritis of left shoulder,ICD10CM
+45577101,M05.612,Rheumatoid arthritis of left shoulder with involvement of other organs and systems,ICD10CM
+45586834,M05.111,Rheumatoid lung disease with rheumatoid arthritis of right shoulder,ICD10CM
+45596435,M05.611,Rheumatoid arthritis of right shoulder with involvement of other organs and systems,ICD10CM
+45582005,M05.132,Rheumatoid lung disease with rheumatoid arthritis of left wrist,ICD10CM
+45562582,M05.121,Rheumatoid lung disease with rheumatoid arthritis of right elbow,ICD10CM
+45543430,M05.131,Rheumatoid lung disease with rheumatoid arthritis of right wrist,ICD10CM
+45553037,M05.162,Rheumatoid lung disease with rheumatoid arthritis of left knee,ICD10CM
+45591699,M05.662,Rheumatoid arthritis of left knee with involvement of other organs and systems,ICD10CM
+45577095,M05.161,Rheumatoid lung disease with rheumatoid arthritis of right knee,ICD10CM
+45606047,M05.661,Rheumatoid arthritis of right knee with involvement of other organs and systems,ICD10CM
+45577093,M05.142,Rheumatoid lung disease with rheumatoid arthritis of left hand,ICD10CM
+45572335,M05.642,Rheumatoid arthritis of left hand with involvement of other organs and systems,ICD10CM
+45548254,M05.152,Rheumatoid lung disease with rheumatoid arthritis of left hip,ICD10CM
+45533696,M05.652,Rheumatoid arthritis of left hip with involvement of other organs and systems,ICD10CM
+45591688,M05.141,Rheumatoid lung disease with rheumatoid arthritis of right hand,ICD10CM
+45591698,M05.641,Rheumatoid arthritis of right hand with involvement of other organs and systems,ICD10CM
+45548253,M05.151,Rheumatoid lung disease with rheumatoid arthritis of right hip,ICD10CM
+45548260,M05.651,Rheumatoid arthritis of right hip with involvement of other organs and systems,ICD10CM
+45582020,M08.4,Pauciarticular juvenile arthritis,ICD10
+1570098,M08.4,Pauciarticular juvenile rheumatoid arthritis,ICD10CM
+45586853,M08.40,"Pauciarticular juvenile rheumatoid arthritis, unspecified site",ICD10CM
+42616760,M08.40,"Pauciarticular juvenile arthritis, multiple sites",ICD10
+42616761,M08.41,"Pauciarticular juvenile arthritis, shoulder region",ICD10
+1570099,M08.41,"Pauciarticular juvenile rheumatoid arthritis, shoulder",ICD10CM
+45557770,M08.411,"Pauciarticular juvenile rheumatoid arthritis, right shoulder",ICD10CM
+45548280,M08.412,"Pauciarticular juvenile rheumatoid arthritis, left shoulder",ICD10CM
+45606076,M08.419,"Pauciarticular juvenile rheumatoid arthritis, unspecified shoulder",ICD10CM
+42616762,M08.42,"Pauciarticular juvenile arthritis, upper arm",ICD10
+1570100,M08.42,"Pauciarticular juvenile rheumatoid arthritis, elbow",ICD10CM
+45601300,M08.421,"Pauciarticular juvenile rheumatoid arthritis, right elbow",ICD10CM
+45548281,M08.422,"Pauciarticular juvenile rheumatoid arthritis, left elbow",ICD10CM
+45557771,M08.429,"Pauciarticular juvenile rheumatoid arthritis, unspecified elbow",ICD10CM
+1570101,M08.43,"Pauciarticular juvenile rheumatoid arthritis, wrist",ICD10CM
+42616763,M08.43,"Pauciarticular juvenile arthritis, forearm",ICD10
+45562603,M08.431,"Pauciarticular juvenile rheumatoid arthritis, right wrist",ICD10CM
+45548282,M08.432,"Pauciarticular juvenile rheumatoid arthritis, left wrist",ICD10CM
+45601301,M08.439,"Pauciarticular juvenile rheumatoid arthritis, unspecified wrist",ICD10CM
+42616764,M08.44,"Pauciarticular juvenile arthritis, hand",ICD10
+1570102,M08.44,"Pauciarticular juvenile rheumatoid arthritis, hand",ICD10CM
+45557772,M08.441,"Pauciarticular juvenile rheumatoid arthritis, right hand",ICD10CM
+45557773,M08.442,"Pauciarticular juvenile rheumatoid arthritis, left hand",ICD10CM
+45606077,M08.449,"Pauciarticular juvenile rheumatoid arthritis, unspecified hand",ICD10CM
+1570103,M08.45,"Pauciarticular juvenile rheumatoid arthritis, hip",ICD10CM
+42616765,M08.45,"Pauciarticular juvenile arthritis, pelvic region and thigh",ICD10
+45577126,M08.451,"Pauciarticular juvenile rheumatoid arthritis, right hip",ICD10CM
+45591710,M08.452,"Pauciarticular juvenile rheumatoid arthritis, left hip",ICD10CM
+45572350,M08.459,"Pauciarticular juvenile rheumatoid arthritis, unspecified hip",ICD10CM
+42619392,M08.46,"Pauciarticular juvenile arthritis, lower leg",ICD10
+1570104,M08.46,"Pauciarticular juvenile rheumatoid arthritis, knee",ICD10CM
+45577127,M08.461,"Pauciarticular juvenile rheumatoid arthritis, right knee",ICD10CM
+45586854,M08.462,"Pauciarticular juvenile rheumatoid arthritis, left knee",ICD10CM
+45601302,M08.469,"Pauciarticular juvenile rheumatoid arthritis, unspecified knee",ICD10CM
+42616766,M08.47,"Pauciarticular juvenile arthritis, ankle and foot",ICD10
+1570105,M08.47,"Pauciarticular juvenile rheumatoid arthritis, ankle and foot",ICD10CM
+45591711,M08.471,"Pauciarticular juvenile rheumatoid arthritis, right ankle and foot",ICD10CM
+45533707,M08.472,"Pauciarticular juvenile rheumatoid arthritis, left ankle and foot",ICD10CM
+45567436,M08.479,"Pauciarticular juvenile rheumatoid arthritis, unspecified ankle and foot",ICD10CM
+42616767,M08.48,"Pauciarticular juvenile arthritis, other",ICD10
+45601303,M08.48,"Pauciarticular juvenile rheumatoid arthritis, vertebrae",ICD10CM
+42616768,M08.49,"Pauciarticular juvenile arthritis, site unspecified",ICD10
+35208752,M06.4,Inflammatory polyarthropathy,ICD10CM
+45567421,M06.4,Inflammatory polyarthropathy,ICD10
+42616625,M06.40,"Inflammatory polyarthropathy, multiple sites",ICD10
+42616626,M06.41,"Inflammatory polyarthropathy, shoulder region",ICD10
+42616627,M06.42,"Inflammatory polyarthropathy, upper arm",ICD10
+42616628,M06.43,"Inflammatory polyarthropathy, forearm",ICD10
+42616629,M06.44,"Inflammatory polyarthropathy, hand",ICD10
+42616630,M06.45,"Inflammatory polyarthropathy, pelvic region and thigh",ICD10
+42616631,M06.46,"Inflammatory polyarthropathy, lower leg",ICD10
+42616632,M06.47,"Inflammatory polyarthropathy, ankle and foot",ICD10
+42619379,M06.48,"Inflammatory polyarthropathy, other",ICD10
+42616633,M06.49,"Inflammatory polyarthropathy, site unspecified",ICD10
+45538675,M13.0,"Polyarthritis, unspecified",ICD10
+35208758,M13.0,"Polyarthritis, unspecified",ICD10CM
+42616999,M13.00,"Polyarthritis, unspecified, multiple sites",ICD10
+42617000,M13.01,"Polyarthritis, unspecified, shoulder region",ICD10
+42617001,M13.02,"Polyarthritis, unspecified, upper arm",ICD10
+42619416,M13.03,"Polyarthritis, unspecified, forearm",ICD10
+42617002,M13.04,"Polyarthritis, unspecified, hand",ICD10
+42617003,M13.05,"Polyarthritis, unspecified, pelvic region and thigh",ICD10
+42617004,M13.06,"Polyarthritis, unspecified, lower leg",ICD10
+42617005,M13.07,"Polyarthritis, unspecified, ankle and foot",ICD10
+42617006,M13.08,"Polyarthritis, unspecified, other",ICD10
+42617007,M13.09,"Polyarthritis, unspecified, site unspecified",ICD10
+42617018,M13.80,"Other specified arthritis, multiple sites",ICD10
+45562642,M13.89,"Other specified arthritis, multiple sites",ICD10CM
+42617027,M13.90,"Arthritis, unspecified, multiple sites",ICD10
+45596490,M15,Polyarthrosis,ICD10
+45562646,M15.8,Other polyarthrosis,ICD10
+45543481,M15.9,"Polyarthrosis, unspecified",ICD10
+45591684,M05.0,Felty syndrome,ICD10
+1569967,M05.0,Felty's syndrome,ICD10CM
+45586833,M05.00,"Felty's syndrome, unspecified site",ICD10CM
+42616528,M05.00,"Felty syndrome, multiple sites",ICD10
+1569968,M05.01,"Felty's syndrome, shoulder",ICD10CM
+42616529,M05.01,"Felty syndrome, shoulder region",ICD10
+45606039,M05.011,"Felty's syndrome, right shoulder",ICD10CM
+45533689,M05.012,"Felty's syndrome, left shoulder",ICD10CM
+45567403,M05.019,"Felty's syndrome, unspecified shoulder",ICD10CM
+1569969,M05.02,"Felty's syndrome, elbow",ICD10CM
+42616530,M05.02,"Felty syndrome, upper arm",ICD10
+45557752,M05.021,"Felty's syndrome, right elbow",ICD10CM
+45562581,M05.022,"Felty's syndrome, left elbow",ICD10CM
+45548248,M05.029,"Felty's syndrome, unspecified elbow",ICD10CM
+42616531,M05.03,"Felty syndrome, forearm",ICD10
+1569970,M05.03,"Felty's syndrome, wrist",ICD10CM
+45582002,M05.031,"Felty's syndrome, right wrist",ICD10CM
+45567404,M05.032,"Felty's syndrome, left wrist",ICD10CM
+45538622,M05.039,"Felty's syndrome, unspecified wrist",ICD10CM
+1569971,M05.04,"Felty's syndrome, hand",ICD10CM
+42616532,M05.04,"Felty syndrome, hand",ICD10
+45548249,M05.041,"Felty's syndrome, right hand",ICD10CM
+45548250,M05.042,"Felty's syndrome, left hand",ICD10CM
+45567405,M05.049,"Felty's syndrome, unspecified hand",ICD10CM
+1569972,M05.05,"Felty's syndrome, hip",ICD10CM
+42616533,M05.05,"Felty syndrome, pelvic region and thigh",ICD10
+45591685,M05.051,"Felty's syndrome, right hip",ICD10CM
+45577090,M05.052,"Felty's syndrome, left hip",ICD10CM
+45543428,M05.059,"Felty's syndrome, unspecified hip",ICD10CM
+42616534,M05.06,"Felty syndrome, lower leg",ICD10
+1569973,M05.06,"Felty's syndrome, knee",ICD10CM
+45548251,M05.061,"Felty's syndrome, right knee",ICD10CM
+45572326,M05.062,"Felty's syndrome, left knee",ICD10CM
+45577091,M05.069,"Felty's syndrome, unspecified knee",ICD10CM
+1569974,M05.07,"Felty's syndrome, ankle and foot",ICD10CM
+42616535,M05.07,"Felty syndrome, ankle and foot",ICD10
+45533690,M05.071,"Felty's syndrome, right ankle and foot",ICD10CM
+45548252,M05.072,"Felty's syndrome, left ankle and foot",ICD10CM
+45553036,M05.079,"Felty's syndrome, unspecified ankle and foot",ICD10CM
+42616536,M05.08,"Felty syndrome, other",ICD10
+42616537,M05.09,"Felty syndrome, site unspecified",ICD10
+45577092,M05.09,"Felty's syndrome, multiple sites",ICD10CM
+45596450,M08.3,Juvenile polyarthritis (seronegative),ICD10
+35208755,M08.3,Juvenile rheumatoid polyarthritis (seronegative),ICD10CM
+42616750,M08.30,"Juvenile polyarthritis (seronegative), multiple sites",ICD10
+42616751,M08.31,"Juvenile polyarthritis (seronegative), shoulder region",ICD10
+42616752,M08.32,"Juvenile polyarthritis (seronegative), upper arm",ICD10
+42616753,M08.33,"Juvenile polyarthritis (seronegative), forearm",ICD10
+42616754,M08.34,"Juvenile polyarthritis (seronegative), hand",ICD10
+42616755,M08.35,"Juvenile polyarthritis (seronegative), pelvic region and thigh",ICD10
+42616756,M08.36,"Juvenile polyarthritis (seronegative), lower leg",ICD10
+42616757,M08.37,"Juvenile polyarthritis (seronegative), ankle and foot",ICD10
+42616758,M08.38,"Juvenile polyarthritis (seronegative), other",ICD10
+42616759,M08.39,"Juvenile polyarthritis (seronegative), site unspecified",ICD10
+45557703,L40.5,Arthropathic psoriasis,ICD10
+1569778,L40.5,Arthropathic psoriasis,ICD10CM
+45548196,L40.50,"Arthropathic psoriasis, unspecified",ICD10CM
+45533640,L40.54,Psoriatic juvenile arthropathy,ICD10CM
+45596373,L40.59,Other psoriatic arthropathy,ICD10CM
+45591706,M07.3,Other psoriatic arthropathies,ICD10
+42616683,M07.30,"Other psoriatic arthropathies, multiple sites",ICD10
+42616684,M07.31,"Other psoriatic arthropathies, shoulder region",ICD10
+42616685,M07.32,"Other psoriatic arthropathies, upper arm",ICD10
+42616686,M07.33,"Other psoriatic arthropathies, forearm",ICD10
+42616687,M07.34,"Other psoriatic arthropathies, hand",ICD10
+42616688,M07.35,"Other psoriatic arthropathies, pelvic region and thigh",ICD10
+42616689,M07.36,"Other psoriatic arthropathies, lower leg",ICD10
+42616690,M07.37,"Other psoriatic arthropathies, ankle and foot",ICD10
+42616691,M07.38,"Other psoriatic arthropathies, other",ICD10
+42616692,M07.39,"Other psoriatic arthropathies, site unspecified",ICD10
+45586768,L40.53,Psoriatic spondylitis,ICD10CM
+45553054,M07.2,Psoriatic spondylitis,ICD10
+42616673,M07.20,"Psoriatic spondylitis, multiple sites",ICD10
+42616674,M07.21,"Psoriatic spondylitis, shoulder region",ICD10
+42616675,M07.22,"Psoriatic spondylitis, upper arm",ICD10
+42616676,M07.23,"Psoriatic spondylitis, forearm",ICD10
+42616677,M07.24,"Psoriatic spondylitis, hand",ICD10
+42616678,M07.25,"Psoriatic spondylitis, pelvic region and thigh",ICD10
+42616679,M07.26,"Psoriatic spondylitis, lower leg",ICD10
+42616680,M07.27,"Psoriatic spondylitis, ankle and foot",ICD10
+42616681,M07.28,"Psoriatic spondylitis, other",ICD10
+42616682,M07.29,"Psoriatic spondylitis, site unspecified",ICD10
+45538646,M09.0,Juvenile arthritis in psoriasis,ICD10
+42616788,M09.00,"Juvenile arthritis in psoriasis, multiple sites",ICD10
+42616789,M09.01,"Juvenile arthritis in psoriasis, shoulder region",ICD10
+42616790,M09.02,"Juvenile arthritis in psoriasis, upper arm",ICD10
+42616791,M09.03,"Juvenile arthritis in psoriasis, forearm",ICD10
+42616792,M09.04,"Juvenile arthritis in psoriasis, hand",ICD10
+42616793,M09.05,"Juvenile arthritis in psoriasis, pelvic region and thigh",ICD10
+42616794,M09.06,"Juvenile arthritis in psoriasis, lower leg",ICD10
+42616795,M09.07,"Juvenile arthritis in psoriasis, ankle and foot",ICD10
+42616796,M09.08,"Juvenile arthritis in psoriasis, other",ICD10
+42616797,M09.09,"Juvenile arthritis in psoriasis, site unspecified",ICD10
+45601222,L40.51,Distal interphalangeal psoriatic arthropathy,ICD10CM
+45577120,M07.0,Distal interphalangeal psoriatic arthropathy,ICD10
+42616653,M07.00,"Distal interphalangeal psoriatic arthropathy, multiple sites",ICD10
+42616654,M07.01,"Distal interphalangeal psoriatic arthropathy, shoulder region",ICD10
+42616655,M07.02,"Distal interphalangeal psoriatic arthropathy, upper arm",ICD10
+42616656,M07.03,"Distal interphalangeal psoriatic arthropathy, forearm",ICD10
+42616657,M07.04,"Distal interphalangeal psoriatic arthropathy, hand",ICD10
+42616658,M07.05,"Distal interphalangeal psoriatic arthropathy, pelvic region and thigh",ICD10
+42616659,M07.06,"Distal interphalangeal psoriatic arthropathy, lower leg",ICD10
+42616660,M07.07,"Distal interphalangeal psoriatic arthropathy, ankle and foot",ICD10
+42616661,M07.08,"Distal interphalangeal psoriatic arthropathy, other",ICD10
+42616662,M07.09,"Distal interphalangeal psoriatic arthropathy, site unspecified",ICD10
+45548197,L40.52,Psoriatic arthritis mutilans,ICD10CM
+45596578,M46.0,Spinal enthesopathy,ICD10
+1570656,M46.0,Spinal enthesopathy,ICD10CM
+45553185,M46.00,"Spinal enthesopathy, site unspecified",ICD10CM
+42617547,M46.00,"Spinal enthesopathy, multiple sites in spine",ICD10
+45543578,M46.01,"Spinal enthesopathy, occipito-atlanto-axial region",ICD10CM
+42617548,M46.01,"Spinal enthesopathy, occipito-atlanto-axial region",ICD10
+45557880,M46.02,"Spinal enthesopathy, cervical region",ICD10CM
+42617549,M46.02,"Spinal enthesopathy, cervical region",ICD10
+45601455,M46.03,"Spinal enthesopathy, cervicothoracic region",ICD10CM
+42617550,M46.03,"Spinal enthesopathy, cervicothoracic region",ICD10
+45538765,M46.04,"Spinal enthesopathy, thoracic region",ICD10CM
+42617551,M46.04,"Spinal enthesopathy, thoracic region",ICD10
+45586970,M46.05,"Spinal enthesopathy, thoracolumbar region",ICD10CM
+42617552,M46.05,"Spinal enthesopathy, thoracolumbar region",ICD10
+45577262,M46.06,"Spinal enthesopathy, lumbar region",ICD10CM
+42617553,M46.06,"Spinal enthesopathy, lumbar region",ICD10
+45562725,M46.07,"Spinal enthesopathy, lumbosacral region",ICD10CM
+42617554,M46.07,"Spinal enthesopathy, lumbosacral region",ICD10
+42617555,M46.08,"Spinal enthesopathy, sacral and sacrococcygeal region",ICD10
+45562726,M46.08,"Spinal enthesopathy, sacral and sacrococcygeal region",ICD10CM
+42617556,M46.09,"Spinal enthesopathy, site unspecified",ICD10
+45562727,M46.09,"Spinal enthesopathy, multiple sites in spine",ICD10CM
+45557769,M08.08,"Unspecified juvenile rheumatoid arthritis, vertebrae",ICD10CM
+45572349,M08.28,"Juvenile rheumatoid arthritis with systemic onset, vertebrae",ICD10CM
+45591841,M45,Ankylosing spondylitis,ICD10
+1570654,M45,Ankylosing spondylitis,ICD10CM
+45548418,M45.0,Ankylosing spondylitis of multiple sites in spine,ICD10CM
+45533840,M45.1,Ankylosing spondylitis of occipito-atlanto-axial region,ICD10CM
+45533841,M45.2,Ankylosing spondylitis of cervical region,ICD10CM
+45586969,M45.3,Ankylosing spondylitis of cervicothoracic region,ICD10CM
+45553184,M45.4,Ankylosing spondylitis of thoracic region,ICD10CM
+45543577,M45.5,Ankylosing spondylitis of thoracolumbar region,ICD10CM
+45548419,M45.6,Ankylosing spondylitis lumbar region,ICD10CM
+45601454,M45.7,Ankylosing spondylitis of lumbosacral region,ICD10CM
+45567561,M45.8,Ankylosing spondylitis sacral and sacrococcygeal region,ICD10CM
+45582150,M45.9,Ankylosing spondylitis of unspecified sites in spine,ICD10CM
+42617483,M43.24,"Other fusion of spine, thoracic region",ICD10
+45601452,M43.24,"Fusion of spine, thoracic region",ICD10CM
+42617480,M43.21,"Other fusion of spine, occipito-atlanto-axial region",ICD10
+45548417,M43.21,"Fusion of spine, occipito-atlanto-axial region",ICD10CM
+42617481,M43.22,"Other fusion of spine, cervical region",ICD10
+45601451,M43.22,"Fusion of spine, cervical region",ICD10CM
+45591835,M43.25,"Fusion of spine, thoracolumbar region",ICD10CM
+42617484,M43.25,"Other fusion of spine, thoracolumbar region",ICD10
+42617482,M43.23,"Other fusion of spine, cervicothoracic region",ICD10
+45553182,M43.23,"Fusion of spine, cervicothoracic region",ICD10CM
+45606073,M08.1,Juvenile ankylosing spondylitis,ICD10
+35208754,M08.1,Juvenile ankylosing spondylitis,ICD10CM
+42616731,M08.10,"Juvenile ankylosing spondylitis, multiple sites",ICD10
+42616732,M08.11,"Juvenile ankylosing spondylitis, shoulder region",ICD10
+42619386,M08.12,"Juvenile ankylosing spondylitis, upper arm",ICD10
+42616733,M08.13,"Juvenile ankylosing spondylitis, forearm",ICD10
+42616734,M08.14,"Juvenile ankylosing spondylitis, hand",ICD10
+42616735,M08.15,"Juvenile ankylosing spondylitis, pelvic region and thigh",ICD10
+42616736,M08.16,"Juvenile ankylosing spondylitis, lower leg",ICD10
+42616737,M08.17,"Juvenile ankylosing spondylitis, ankle and foot",ICD10
+42616738,M08.18,"Juvenile ankylosing spondylitis, other",ICD10
+42616739,M08.19,"Juvenile ankylosing spondylitis, site unspecified",ICD10
+45567385,M00.08,"Staphylococcal arthritis, vertebrae",ICD10CM
+45596407,M00.18,"Pneumococcal arthritis, vertebrae",ICD10CM
+45553022,M00.28,"Other streptococcal arthritis, vertebrae",ICD10CM
+45543423,M00.88,"Arthritis due to other bacteria, vertebrae",ICD10CM
+45586831,M02.88,"Other reactive arthropathies, vertebrae",ICD10CM
+45577122,M07.68,"Enteropathic arthropathies, vertebrae",ICD10CM
+45577130,M08.98,"Juvenile arthritis, unspecified, vertebrae",ICD10CM
+45538764,M46,Other inflammatory spondylopathies,ICD10
+1570655,M46,Other inflammatory spondylopathies,ICD10CM
+45538766,M46.5,Other infective spondylopathies,ICD10
+1570660,M46.5,Other infective spondylopathies,ICD10CM
+42617596,M46.50,"Other infective spondylopathies, multiple sites in spine",ICD10
+45557882,M46.50,"Other infective spondylopathies, site unspecified",ICD10CM
+42617605,M46.59,"Other infective spondylopathies, site unspecified",ICD10
+45533844,M46.59,"Other infective spondylopathies, multiple sites in spine",ICD10CM
+1570661,M46.8,Other specified inflammatory spondylopathies,ICD10CM
+45538768,M46.8,Other specified inflammatory spondylopathies,ICD10
+45533845,M46.80,"Other specified inflammatory spondylopathies, site unspecified",ICD10CM
+42617606,M46.80,"Other specified inflammatory spondylopathies, multiple sites in spine",ICD10
+42617607,M46.81,"Other specified inflammatory spondylopathies, occipito-atlanto-axial region",ICD10
+45586973,M46.81,"Other specified inflammatory spondylopathies, occipito-atlanto-axial region",ICD10CM
+45557883,M46.82,"Other specified inflammatory spondylopathies, cervical region",ICD10CM
+42617608,M46.82,"Other specified inflammatory spondylopathies, cervical region",ICD10
+42617609,M46.83,"Other specified inflammatory spondylopathies, cervicothoracic region",ICD10
+45538769,M46.83,"Other specified inflammatory spondylopathies, cervicothoracic region",ICD10CM
+42617610,M46.84,"Other specified inflammatory spondylopathies, thoracic region",ICD10
+45601459,M46.84,"Other specified inflammatory spondylopathies, thoracic region",ICD10CM
+45596580,M46.85,"Other specified inflammatory spondylopathies, thoracolumbar region",ICD10CM
+42617611,M46.85,"Other specified inflammatory spondylopathies, thoracolumbar region",ICD10
+42617612,M46.86,"Other specified inflammatory spondylopathies, lumbar region",ICD10
+45543585,M46.86,"Other specified inflammatory spondylopathies, lumbar region",ICD10CM
+42617613,M46.87,"Other specified inflammatory spondylopathies, lumbosacral region",ICD10
+45562731,M46.87,"Other specified inflammatory spondylopathies, lumbosacral region",ICD10CM
+45543586,M46.88,"Other specified inflammatory spondylopathies, sacral and sacrococcygeal region",ICD10CM
+42617614,M46.88,"Other specified inflammatory spondylopathies, sacral and sacrococcygeal region",ICD10
+45601460,M46.89,"Other specified inflammatory spondylopathies, multiple sites in spine",ICD10CM
+42617615,M46.89,"Other specified inflammatory spondylopathies, site unspecified",ICD10
+45533846,M46.9,"Inflammatory spondylopathy, unspecified",ICD10
+1570662,M46.9,Unspecified inflammatory spondylopathy,ICD10CM
+42617616,M46.90,"Inflammatory spondylopathy, unspecified, multiple sites in spine",ICD10
+45596581,M46.90,"Unspecified inflammatory spondylopathy, site unspecified",ICD10CM
+45582153,M46.91,"Unspecified inflammatory spondylopathy, occipito-atlanto-axial region",ICD10CM
+42617617,M46.91,"Inflammatory spondylopathy, unspecified, occipito-atlanto-axial region",ICD10
+42617618,M46.92,"Inflammatory spondylopathy, unspecified, cervical region",ICD10
+45538770,M46.92,"Unspecified inflammatory spondylopathy, cervical region",ICD10CM
+42617619,M46.93,"Inflammatory spondylopathy, unspecified, cervicothoracic region",ICD10
+45572457,M46.93,"Unspecified inflammatory spondylopathy, cervicothoracic region",ICD10CM
+45606226,M46.94,"Unspecified inflammatory spondylopathy, thoracic region",ICD10CM
+42617620,M46.94,"Inflammatory spondylopathy, unspecified, thoracic region",ICD10
+42617621,M46.95,"Inflammatory spondylopathy, unspecified, thoracolumbar region",ICD10
+45543587,M46.95,"Unspecified inflammatory spondylopathy, thoracolumbar region",ICD10CM
+42617622,M46.96,"Inflammatory spondylopathy, unspecified, lumbar region",ICD10
+45553188,M46.96,"Unspecified inflammatory spondylopathy, lumbar region",ICD10CM
+45582154,M46.97,"Unspecified inflammatory spondylopathy, lumbosacral region",ICD10CM
+42617623,M46.97,"Inflammatory spondylopathy, unspecified, lumbosacral region",ICD10
+45586974,M46.98,"Unspecified inflammatory spondylopathy, sacral and sacrococcygeal region",ICD10CM
+42617624,M46.98,"Inflammatory spondylopathy, unspecified, sacral and sacrococcygeal region",ICD10
+42617625,M46.99,"Inflammatory spondylopathy, unspecified, site unspecified",ICD10
+45577266,M46.99,"Unspecified inflammatory spondylopathy, multiple sites in spine",ICD10CM
+45606221,M43.2,Other fusion of spine,ICD10
+1570649,M43.2,Fusion of spine,ICD10CM
+45543574,M43.20,"Fusion of spine, site unspecified",ICD10CM
+42619372,M43.20,"Other fusion of spine, multiple sites in spine",ICD10
+42617487,M43.28,"Other fusion of spine, sacral and sacrococcygeal region",ICD10
+45591837,M43.28,"Fusion of spine, sacral and sacrococcygeal region",ICD10CM
+42617488,M43.29,"Other fusion of spine, site unspecified",ICD10
+35208870,M46.1,"Sacroiliitis, not elsewhere classified",ICD10CM
+45577263,M46.1,"Sacroiliitis, not elsewhere classified",ICD10
+42619378,M46.10,"Sacroiliitis, not elsewhere classified, multiple sites in spine",ICD10
+42617557,M46.11,"Sacroiliitis, not elsewhere classified, occipito-atlanto-axial region",ICD10
+42617558,M46.12,"Sacroiliitis, not elsewhere classified, cervical region",ICD10
+42617559,M46.13,"Sacroiliitis, not elsewhere classified, cervicothoracic region",ICD10
+42617560,M46.14,"Sacroiliitis, not elsewhere classified, thoracic region",ICD10
+42617561,M46.15,"Sacroiliitis, not elsewhere classified, thoracolumbar region",ICD10
+42617562,M46.16,"Sacroiliitis, not elsewhere classified, lumbar region",ICD10
+42617563,M46.17,"Sacroiliitis, not elsewhere classified, lumbosacral region",ICD10
+42617564,M46.18,"Sacroiliitis, not elsewhere classified, sacral and sacrococcygeal region",ICD10
+42617565,M46.19,"Sacroiliitis, not elsewhere classified, site unspecified",ICD10
+45591836,M43.27,"Fusion of spine, lumbosacral region",ICD10CM
+42617486,M43.27,"Other fusion of spine, lumbosacral region",ICD10
+45601296,M08.2,Juvenile arthritis with systemic onset,ICD10
+1570090,M08.2,Juvenile rheumatoid arthritis with systemic onset,ICD10CM
+42616740,M08.20,"Juvenile arthritis with systemic onset, multiple sites",ICD10
+45553058,M08.20,"Juvenile rheumatoid arthritis with systemic onset, unspecified site",ICD10CM
+42616741,M08.21,"Juvenile arthritis with systemic onset, shoulder region",ICD10
+1570091,M08.21,"Juvenile rheumatoid arthritis with systemic onset, shoulder",ICD10CM
+45596448,M08.211,"Juvenile rheumatoid arthritis with systemic onset, right shoulder",ICD10CM
+45591708,M08.212,"Juvenile rheumatoid arthritis with systemic onset, left shoulder",ICD10CM
+45548276,M08.219,"Juvenile rheumatoid arthritis with systemic onset, unspecified shoulder",ICD10CM
+1570092,M08.22,"Juvenile rheumatoid arthritis with systemic onset, elbow",ICD10CM
+42616742,M08.22,"Juvenile arthritis with systemic onset, upper arm",ICD10
+45591709,M08.221,"Juvenile rheumatoid arthritis with systemic onset, right elbow",ICD10CM
+45606074,M08.222,"Juvenile rheumatoid arthritis with systemic onset, left elbow",ICD10CM
+45601297,M08.229,"Juvenile rheumatoid arthritis with systemic onset, unspecified elbow",ICD10CM
+42616743,M08.23,"Juvenile arthritis with systemic onset, forearm",ICD10
+1570093,M08.23,"Juvenile rheumatoid arthritis with systemic onset, wrist",ICD10CM
+45577123,M08.231,"Juvenile rheumatoid arthritis with systemic onset, right wrist",ICD10CM
+45601298,M08.232,"Juvenile rheumatoid arthritis with systemic onset, left wrist",ICD10CM
+45582019,M08.239,"Juvenile rheumatoid arthritis with systemic onset, unspecified wrist",ICD10CM
+1570094,M08.24,"Juvenile rheumatoid arthritis with systemic onset, hand",ICD10CM
+42616744,M08.24,"Juvenile arthritis with systemic onset, hand",ICD10
+45577124,M08.241,"Juvenile rheumatoid arthritis with systemic onset, right hand",ICD10CM
+45606075,M08.242,"Juvenile rheumatoid arthritis with systemic onset, left hand",ICD10CM
+45548277,M08.249,"Juvenile rheumatoid arthritis with systemic onset, unspecified hand",ICD10CM
+1570095,M08.25,"Juvenile rheumatoid arthritis with systemic onset, hip",ICD10CM
+42616745,M08.25,"Juvenile arthritis with systemic onset, pelvic region and thigh",ICD10
+45567435,M08.251,"Juvenile rheumatoid arthritis with systemic onset, right hip",ICD10CM
+45586850,M08.252,"Juvenile rheumatoid arthritis with systemic onset, left hip",ICD10CM
+45533706,M08.259,"Juvenile rheumatoid arthritis with systemic onset, unspecified hip",ICD10CM
+1570096,M08.26,"Juvenile rheumatoid arthritis with systemic onset, knee",ICD10CM
+42616746,M08.26,"Juvenile arthritis with systemic onset, lower leg",ICD10
+45548278,M08.261,"Juvenile rheumatoid arthritis with systemic onset, right knee",ICD10CM
+45577125,M08.262,"Juvenile rheumatoid arthritis with systemic onset, left knee",ICD10CM
+45596449,M08.269,"Juvenile rheumatoid arthritis with systemic onset, unspecified knee",ICD10CM
+1570097,M08.27,"Juvenile rheumatoid arthritis with systemic onset, ankle and foot",ICD10CM
+42616747,M08.27,"Juvenile arthritis with systemic onset, ankle and foot",ICD10
+45548279,M08.271,"Juvenile rheumatoid arthritis with systemic onset, right ankle and foot",ICD10CM
+45586851,M08.272,"Juvenile rheumatoid arthritis with systemic onset, left ankle and foot",ICD10CM
+45586852,M08.279,"Juvenile rheumatoid arthritis with systemic onset, unspecified ankle and foot",ICD10CM
+42616748,M08.28,"Juvenile arthritis with systemic onset, other",ICD10
+45572349,M08.28,"Juvenile rheumatoid arthritis with systemic onset, vertebrae",ICD10CM
+42616749,M08.29,"Juvenile arthritis with systemic onset, site unspecified",ICD10
+45601299,M08.29,"Juvenile rheumatoid arthritis with systemic onset, multiple sites",ICD10CM
