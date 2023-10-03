@@ -10,11 +10,11 @@
 #' the codeset utilization param
 
 check_code_dist <- function(cohort,
-                            concept_set = load_codeset('jia_codes_icd') %>% distinct(),
+                            concept_set = load_codeset('jia_codes') %>% distinct(),
                             code_type = 'source',
                             code_domain = 'condition_occurrence',
                             domain_tbl = read_codeset('scv_domains', 'ccc'),
-                            grouped_list){
+                            grouped_list = c('site')){
   
   # pick the right domain/columns
   domain_filter <- domain_tbl %>% filter(domain == code_domain)
@@ -24,7 +24,7 @@ check_code_dist <- function(cohort,
   # pull the table
   fact_tbl <- cdm_tbl(code_domain) %>% 
     inner_join(cohort, by = c('site', 'person_id')) %>%
-    select(site, concept_col, source_col) %>%
+    select(all_of(grouped_list), concept_col, source_col) %>%
     rename('concept_id' = concept_col)
   
   if(code_type == 'source'){
@@ -38,7 +38,11 @@ check_code_dist <- function(cohort,
              'snomed_concept' = concept_id_2) %>%
       compute_new()
     
-    # filter the fact table down to just the appropriate mappings
+    # list of mappings assigned to groups for NA fill
+    map_w_group <- icd_snomed_map %>%
+      cross_join(select(cohort, grouped_list)) %>% distinct()
+      
+    # filter the fact table down to just the available mappings
     fact_tbl_filter <- icd_snomed_map %>%
       inner_join(fact_tbl %>% select(-source_col), by = c('snomed_concept' = 'concept_id')) %>%
       compute_new()
@@ -46,42 +50,51 @@ check_code_dist <- function(cohort,
     # compute overall counts + proportions for each icd code and icd/snomed code pair
     # join back into mappings to pull in any NAs (heat map best viz?? looks ok but a lot of blanks)
     overall <- fact_tbl_filter %>%
-      select(-site) %>%
       group_by(icd_concept) %>%
       mutate(code_denom = n()) %>%
       group_by(icd_concept, snomed_concept) %>%
       mutate(code_ct = n(),
              code_prop = round((as.numeric(code_ct) / as.numeric(code_denom)), 2)) %>% 
-      full_join(icd_snomed_map) %>%
-      distinct() %>% compute_new()
+      full_join(map_w_group) %>%
+      distinct() %>% collect_new() %>% ungroup()
     
-    # compute overall counts + proportions for each site/icd pait and site/icd/snomed combo
-    # NAs will appear in final step after left joining with the overall counts
-    by_site <- fact_tbl_filter %>%
-      group_by(site, icd_concept) %>%
-      mutate(site_code_denom = n()) %>%
-      group_by(site, icd_concept, snomed_concept) %>%
-      mutate(site_code_ct = n(),
-             site_code_prop = round(as.numeric(site_code_ct) / as.numeric(site_code_denom), 2)) %>% 
-      distinct() %>% compute_new()
+    # not sure if we need a specified site level computation -- if collapse sites is false
+    # that's what overall will become
+    #
+    # on the other hand, may be confusing if collapse sites is false and there are no additional
+    # groupings since overall and grp level will be the same counts / props
+    
+    # by_site <- fact_tbl_filter %>%
+    #   group_by(site, icd_concept) %>%
+    #   mutate(site_code_denom = n()) %>%
+    #   group_by(site, icd_concept, snomed_concept) %>%
+    #   mutate(site_code_ct = n(),
+    #          site_code_prop = round(as.numeric(site_code_ct) / as.numeric(site_code_denom), 2)) %>% 
+    #   distinct() %>% ungroup() %>% collect_new() 
     
     # compute overall counts + proportions for each group list/icd combo and group list/icd/snomed combo
     # NAs will appear in final step after left joining with the overall counts
     
-    # by_group <- fact_tbl_filter %>%
-    #   group_by(all_of(grouped_list), icd_concept) %>%
-    #   mutate(grp_code_denom = n()) %>%
-    #   group_by(all_of(grouped_list), icd_concept, snomed_concept) %>%
-    #   mutate(grp_code_ct = n(),
-    #          grp_code_prop = round(as.numeric(grp_code_ct) / as.numeric(grp_code_denom), 2)) %>% 
-    #   distinct() %>% compute_new()
+    by_group <- fact_tbl_filter %>%
+      group_by(!!! syms(grouped_list), icd_concept) %>%
+      mutate(grp_code_denom = n()) %>%
+      group_by(!!! syms(grouped_list), icd_concept, snomed_concept) %>%
+      mutate(grp_code_ct = n(),
+             grp_code_prop = round(as.numeric(grp_code_ct) / as.numeric(grp_code_denom), 2)) %>%
+      distinct() %>% ungroup() %>% collect_new() 
     
     
     # left join overall, site, and group counts together
     scv_final <- overall %>%
-      left_join(by_site) %>%
-      #left_join(by_group) %>% 
-      distinct()
+      #left_join(by_site) %>%
+      left_join(by_group) %>% 
+      distinct() %>%
+      group_by(icd_concept) %>% fill(code_denom, .direction = "updown") %>% 
+      group_by(icd_concept, snomed_concept) %>% fill(c(code_ct, code_prop), .direction = "updown") %>% 
+      #group_by(site, icd_concept) %>% fill(site_code_denom, .direction = "updown") %>%
+      #group_by(site, icd_concept, snomed_concept) %>% fill(c(site_code_ct, site_code_prop), .direction = "updown") %>%
+      ungroup() %>%
+      mutate_all(~replace(., is.na(.), 0))
     
     
   }else{
@@ -109,28 +122,28 @@ check_code_dist <- function(cohort,
       select(-site) %>%
       group_by(snomed_concept) %>%
       mutate(code_denom = n()) %>%
-      group_by(icd_concept, snomed_concept) %>%
+      group_by(snomed_concept, icd_concept) %>%
       mutate(code_ct = n(),
              code_prop = round((as.numeric(code_ct) / as.numeric(code_denom)), 2)) %>%
       full_join(snomed_icd_map, by = c('icd_concept', 'snomed_concept')) %>%
       distinct() %>% compute_new()
     
-    # compute counts + proportions for each site/snomed combo and site/snomed/icd combo
-    # NAs will appear in final step when left joining with overall counts
-    by_site <- fact_tbl_filter %>%
-      group_by(site, snomed_concept) %>%
-      mutate(site_code_denom = n()) %>%
-      group_by(site, snomed_concept, icd_concept) %>%
-      mutate(site_code_ct = n(),
-             site_code_prop = round(as.numeric(site_code_ct) / as.numeric(site_code_denom), 2)) %>% 
-      distinct() %>% compute_new()
+    # tbd on site level computation
+    
+    # by_site <- fact_tbl_filter %>%
+    #   group_by(site, snomed_concept) %>%
+    #   mutate(site_code_denom = n()) %>%
+    #   group_by(site, snomed_concept, icd_concept) %>%
+    #   mutate(site_code_ct = n(),
+    #          site_code_prop = round(as.numeric(site_code_ct) / as.numeric(site_code_denom), 2)) %>% 
+    #   distinct() %>% compute_new()
     
     # compute counts + proportions for each grouped list/snomed combo and grouped list/snomed/icd combo
     # NAs will appear in final step when left joining with overall counts
     by_group <- fact_tbl_filter %>%
-      group_by(all_of(grouped_list), snomed_concept) %>%
+      group_by(!!! syms(grouped_list), snomed_concept) %>%
       mutate(site_code_denom = n()) %>%
-      group_by(all_of(grouped_list), snomed_concept, icd_concept) %>%
+      group_by(!!! syms(grouped_list), snomed_concept, icd_concept) %>%
       mutate(grp_code_ct = n(),
              grp_code_prop = round(as.numeric(grp_code_ct) / as.numeric(grp_code_denom), 2)) %>% 
       distinct() %>% compute_new()
@@ -138,7 +151,7 @@ check_code_dist <- function(cohort,
     # left join overall, site, and group computations together
     scv_final <- overall %>%
       left_join(by_site) %>%
-      #left_join(by_group) %>% 
+      left_join(by_group) %>% 
       distinct()
     
   }
@@ -148,15 +161,35 @@ check_code_dist <- function(cohort,
 
 ### output generation skeleton
 
-output_gen <- function(process_output,
+ss_exp_nt <- function(process_output = test,
                        output,
                        facet){
   
-  ss_exp_nt <- process_output %>%
-    arrange(code_denom) %>%
-    head(30) %>%
-    ggplot(aes(y = as.character(icd_concept), x = as.character(snomed_concept), fill = !! sym(output))) +
-    geom_tile() +
+  if(output == x){
+    denom == y
+    title == z
+  }
+  
+  if(source){
+    op_filter <- process_output %>% 
+      select(icd_concept, denom, output) %>%
+      arrange(denom) %>%
+      group_by(!!! syms(facet)) %>%
+      slice(1:20)
+  }else{
+    op_filter <- process_output %>% 
+      select(snomed_concept, denom, output) %>%
+      arrange(denom) %>%
+      group_by(!!! syms(facet)) %>%
+      slice(1:20) 
+    }
+  
+  
+  test_final %>% ggplot(aes(x = as.character(snomed_concept), y = as.character(icd_concept), fill = code_prop)) + 
+    geom_tile() + 
+    geom_text(aes(label = code_prop), size = 2, color = 'black') +
+    scale_fill_gradient2(low = 'lightpink', mid = 'white', high = 'maroon', midpoint = 0.5) + 
+    theme_bw() +
     facet_wrap((facet))
   
   
@@ -192,4 +225,164 @@ output_gen <- function(process_output,
 #' 
 #' 
 #' 
+
+
+
+#' loops through visit types and sites to compute patient facts
 #' 
+#' @param cohort_tbl the tbl that comes from `prepare_pf`
+#' @param one_site_output a logical that tells the program to either loop through sites or run it once for all sites combined, 
+#' or if it is just one site
+#' @param visit_type_tbl The visit_concept_ids of interest for the analysis. `all` may be used in this field
+#'                      to select every visit type; defaults to `pf_visit_types` in specs folder
+#' @param visit_tbl the cdm visit_occurrence tbl; defaults to `cdm_tbl('visit_occurrence')`
+#' @param site_list the sites to iterate through
+#' @param visit_list the list of visit types to iterate through
+#' @param grouped_list the input for which to group variables
+#' @param domain_tbl defaults to `pf_domains` in the specs folder; 
+#'      @domain: the domain name; output will have this domain
+#'      @default_tbl: the table to pull from 
+#'      @field_name the field name to filter by; leave null if no filter
+#'      @field_filter: the filtered codes
+#' 
+#' @return a returned list stratified by visit type
+#' 
+
+loop_through_visits2 <- function(cohort_tbl,
+                                 code_type,
+                                 code_domain,
+                                 concept_set,
+                                 time=FALSE,
+                                 collapse_sites=FALSE,
+                                 visit_type_tbl=read_codeset('pf_visit_types','ic'),
+                                 visit_tbl=cdm_tbl('visit_occurrence'),
+                                 site_list=list('stanford','colorado'),
+                                 visit_list=c('inpatient','outpatient'),
+                                 grouped_list=c('site'),
+                                 domain_tbl=read_codeset('scv_domains', 'ccc')) {
+  
+  # iterates through visits
+  visit_output <- list()
+  for(j in 1:length(visit_list)) {
+    
+    # iterates through sites
+    site_output <- list()
+    for(k in 1:length(site_list)) {
+      
+      if(collapse_sites) {
+        site_list_thisrnd <- unlist(site_list)
+      } else {site_list_thisrnd <- site_list[[k]]}
+      
+      # filters by site
+      cohort_site <- cohort_tbl %>% filter(site%in%c(site_list_thisrnd))
+      
+      # pulls the visit_concept_id's that correspond to the visit_list
+      visit_types <- 
+        visit_type_tbl %>% 
+        filter(visit_type %in% c(visit_list[[j]])) %>% 
+        select(visit_concept_id) %>% pull()
+      
+      # narrows the visit time to cohort_entry and end date
+      visits <- 
+        cohort_site %>% 
+        inner_join(
+          select(visit_tbl,
+                 person_id,
+                 visit_occurrence_id,
+                 visit_concept_id,
+                 visit_start_date)
+        ) %>% 
+        filter(visit_concept_id %in% c(visit_types)) %>% 
+        filter(visit_start_date >= start_date,
+               visit_start_date <= end_date) %>% 
+        compute_new(temporary=TRUE,
+                    indexes=list('person_id'))
+      
+      # calls function `compute_pf` and adds site, with cohort_tbl filtered by site as input
+      if(!time) {
+        domain_compute <- check_code_dist(cohort = visits,
+                                          code_type = code_type,
+                                          code_domain = code_domain,
+                                          concept_set = concept_set,
+                                          grouped_list = grouped_list) #%>% add_site()
+      } else {
+        'time function tbd'
+      }
+      
+      site_output[[k]] <- domain_compute
+      
+      if(collapse_sites) break;
+      
+    }
+    
+    visit_type <- visit_list[j]
+    
+    all_site <- reduce(.x=site_output,
+                       .f=dplyr::union) %>% mutate(visit_type = visit_type)
+    
+    #visit_output[[paste0('pf_',config('cohort'),'_',(visit_list[j]))]] <- all_site
+    visit_output[[visit_list[j]]] <- all_site
+    
+  }
+  
+  all_visit <- reduce(.x = visit_output,
+                      .f = dplyr::union)
+  
+  all_visit
+  #visit_output
+  
+}
+
+
+
+
+
+
+
+scv_process <- function(cohort = cohort,
+                        site_list = c('seattle','cchmc'),
+                        study_name = 'glom',
+                        code_type = 'source',
+                        concept_set = read_codeset('sample_codeset.csv'),
+                        code_domain = 'condition_occurrence',
+                        multi_or_single_site = 'single',
+                        collapse_sites = FALSE,
+                        anomaly_or_exploratory='exploratory',
+                        time = FALSE,
+                        time_span = c('2014-01-01', '2023-01-01'),
+                        visit_types = c('outpatient','inpatient'),
+                        age_groups = NULL,
+                        codeset = NULL,
+                        domain_tbl=read_codeset('scv_domains','ccc'),
+                        visit_type_table=read_codeset('pf_visit_types','ic')){
+  
+  # Prep cohort
+  
+  cohort_prep <- prepare_pf(cohort = cohort, age_groups = age_groups, codeset = codeset)
+  
+  # Set up grouped list
+  
+  grouped_list <- c('site')
+  
+  if(is.data.frame(age_groups)){grouped_list <- grouped_list %>% append('age_grp')}
+  if(is.data.frame(codeset)){grouped_list <- grouped_list %>% append('flag')}
+  
+  # loop
+  
+  if(!time){
+    if(anomaly_or_exploratory == 'exploratory'){
+      scv_tbl <- loop_through_visits2(cohort_tbl = cohort_prep,
+                                      code_type = code_type,
+                                      code_domain = code_domain,
+                                      concept_set = concept_set,
+                                      visit_list = visit_types,
+                                      site_list = site_list,
+                                      collapse_sites = collapse_sites,
+                                      grouped_list = grouped_list)
+    }else{
+      scv_tbl <- 'no time anomaly code goes here'
+    }
+  }else{
+    scv_tbl <- 'time code goes here'
+  }
+}
