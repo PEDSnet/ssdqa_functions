@@ -8,6 +8,8 @@
 #' 
 #' need to figure out how to clearly differentiate between the concept set param and
 #' the codeset utilization param
+#' 
+
 
 check_code_dist <- function(cohort,
                             concept_set = load_codeset('jia_codes') %>% distinct(),
@@ -25,7 +27,8 @@ check_code_dist <- function(cohort,
   fact_tbl <- cdm_tbl(code_domain) %>% 
     inner_join(cohort, by = c('site', 'person_id')) %>%
     select(all_of(grouped_list), concept_col, source_col) %>%
-    rename('concept_id' = concept_col)
+    rename('concept_id' = concept_col,
+           'source_concept_id' = source_col)
   
   if(code_type == 'source'){
     
@@ -39,15 +42,15 @@ check_code_dist <- function(cohort,
       compute_new()
     
     # list of mappings assigned to groups for NA fill
-    map_w_group <- icd_snomed_map %>%
-      cross_join(select(cohort, grouped_list)) %>% distinct()
+    # map_w_group <- icd_snomed_map %>%
+    #   cross_join(select(cohort, grouped_list)) %>% distinct()
       
     # filter the fact table down to just the available mappings
     fact_tbl_filter <- icd_snomed_map %>%
-      inner_join(fact_tbl %>% select(-source_col), by = c('snomed_concept' = 'concept_id')) %>%
+      inner_join(fact_tbl, by = c('snomed_concept' = 'concept_id', 'icd_concept' = 'source_concept_id')) %>%
       compute_new()
     
-    # compute overall counts + proportions for each icd code and icd/snomed code pair
+    # compute overall counts + proportions for each icd -> snomed code pair
     # join back into mappings to pull in any NAs (heat map best viz?? looks ok but a lot of blanks)
     overall <- fact_tbl_filter %>%
       group_by(icd_concept) %>%
@@ -55,24 +58,10 @@ check_code_dist <- function(cohort,
       group_by(icd_concept, snomed_concept) %>%
       mutate(code_ct = n(),
              code_prop = round((as.numeric(code_ct) / as.numeric(code_denom)), 2)) %>% 
-      full_join(map_w_group) %>%
+      #full_join(map_w_group) %>%
       distinct() %>% collect_new() %>% ungroup()
     
-    # not sure if we need a specified site level computation -- if collapse sites is false
-    # that's what overall will become
-    #
-    # on the other hand, may be confusing if collapse sites is false and there are no additional
-    # groupings since overall and grp level will be the same counts / props
-    
-    # by_site <- fact_tbl_filter %>%
-    #   group_by(site, icd_concept) %>%
-    #   mutate(site_code_denom = n()) %>%
-    #   group_by(site, icd_concept, snomed_concept) %>%
-    #   mutate(site_code_ct = n(),
-    #          site_code_prop = round(as.numeric(site_code_ct) / as.numeric(site_code_denom), 2)) %>% 
-    #   distinct() %>% ungroup() %>% collect_new() 
-    
-    # compute overall counts + proportions for each group list/icd combo and group list/icd/snomed combo
+    # compute overall counts + proportions for each group list + icd -> snomed code pair
     # NAs will appear in final step after left joining with the overall counts
     
     by_group <- fact_tbl_filter %>%
@@ -86,13 +75,10 @@ check_code_dist <- function(cohort,
     
     # left join overall, site, and group counts together
     scv_final <- overall %>%
-      #left_join(by_site) %>%
       left_join(by_group) %>% 
       distinct() %>%
       group_by(icd_concept) %>% fill(code_denom, .direction = "updown") %>% 
       group_by(icd_concept, snomed_concept) %>% fill(c(code_ct, code_prop), .direction = "updown") %>% 
-      #group_by(site, icd_concept) %>% fill(site_code_denom, .direction = "updown") %>%
-      #group_by(site, icd_concept, snomed_concept) %>% fill(c(site_code_ct, site_code_prop), .direction = "updown") %>%
       ungroup() %>%
       mutate_all(~replace(., is.na(.), 0))
     
@@ -107,52 +93,44 @@ check_code_dist <- function(cohort,
              'icd_concept' = concept_id_2) %>%
       compute_new()
     
+    # list of mappings assigned to groups for NA fill
+    # map_w_group <- snomed_icd_map %>%
+    #   cross_join(select(cohort, grouped_list)) %>% distinct()
+    
     # filter fact table down to necessary mappings
-    fact_tbl_filter <- fact_tbl %>%
-      inner_join(concept_set, by = c('concept_id')) %>%
-      select(site, concept_id, source_col) %>%
-      rename('icd_concept' = source_col,
-             'snomed_concept' = concept_id) %>%
-      inner_join(snomed_icd_map, by = c('icd_concept', 'snomed_concept')) %>% 
+    fact_tbl_filter <- snomed_icd_map %>%
+      inner_join(fact_tbl, by = c('snomed_concept' = 'concept_id', 'icd_concept' = 'source_concept_id')) %>%
       compute_new()
     
     # compute counts + proportions for each snomed code and snomed/icd combo
     # join back into mappings to pull in NAs (a lot -- need to figure out best visualization here)
     overall <- fact_tbl_filter %>%
-      select(-site) %>%
       group_by(snomed_concept) %>%
       mutate(code_denom = n()) %>%
       group_by(snomed_concept, icd_concept) %>%
       mutate(code_ct = n(),
              code_prop = round((as.numeric(code_ct) / as.numeric(code_denom)), 2)) %>%
-      full_join(snomed_icd_map, by = c('icd_concept', 'snomed_concept')) %>%
-      distinct() %>% compute_new()
-    
-    # tbd on site level computation
-    
-    # by_site <- fact_tbl_filter %>%
-    #   group_by(site, snomed_concept) %>%
-    #   mutate(site_code_denom = n()) %>%
-    #   group_by(site, snomed_concept, icd_concept) %>%
-    #   mutate(site_code_ct = n(),
-    #          site_code_prop = round(as.numeric(site_code_ct) / as.numeric(site_code_denom), 2)) %>% 
-    #   distinct() %>% compute_new()
+      #full_join(map_w_group) %>%
+      distinct() %>% ungroup() %>% collect_new()
     
     # compute counts + proportions for each grouped list/snomed combo and grouped list/snomed/icd combo
     # NAs will appear in final step when left joining with overall counts
     by_group <- fact_tbl_filter %>%
       group_by(!!! syms(grouped_list), snomed_concept) %>%
-      mutate(site_code_denom = n()) %>%
+      mutate(grp_code_denom = n()) %>%
       group_by(!!! syms(grouped_list), snomed_concept, icd_concept) %>%
       mutate(grp_code_ct = n(),
              grp_code_prop = round(as.numeric(grp_code_ct) / as.numeric(grp_code_denom), 2)) %>% 
-      distinct() %>% compute_new()
+      distinct() %>% ungroup() %>% collect_new()
     
     # left join overall, site, and group computations together
     scv_final <- overall %>%
-      left_join(by_site) %>%
       left_join(by_group) %>% 
-      distinct()
+      distinct() %>%
+      group_by(snomed_concept) %>% fill(code_denom, .direction = "updown") %>% 
+      group_by(snomed_concept, icd_concept) %>% fill(c(code_ct, code_prop), .direction = "updown") %>% 
+      ungroup() %>%
+      mutate_all(~replace(., is.na(.), 0))
     
   }
 }
@@ -161,70 +139,83 @@ check_code_dist <- function(cohort,
 
 ### output generation skeleton
 
-ss_exp_nt <- function(process_output = test,
-                       output,
-                       facet){
+#' use the right denominator to sort the output and find the most common codes for filtering purposes
+#' sort the output by the most commonly occurring codes; group where needed
+#' 
+#' thinking about options for output:
+#' -- snomed --> icd as a lot of codes, even when excluding those that don't appear in the data,
+#'    so its a little better to facet by snomed code (still a little messy for some codes)
+#' -- icd --> snomed is easier to read without facetting, and facetting may make the graph a little
+#'    sparse looking
+#' -- how does this look in other source <--> concept mappings
+
+ss_exp_nt <- function(process_output = scv_final,
+                      output,
+                      facet){
   
-  if(output == x){
-    denom == y
-    title == z
+  # picking columns / titles 
+  if(output == 'code_prop'){
+    denom <-  'code_denom'
+    title <-  'Total Proportion of Code Representation'
+  }else if(output == 'grp_code_prop'){
+    denom <- 'grp_code_denom'
+    title <- 'Proportion of Code Representation per Group'
   }
   
+  # sorting output to select the most commonly occurring codes and using those in the output
+  # is this the best way to filter down the output?
   if(source){
-    op_filter <- process_output %>% 
-      select(icd_concept, denom, output) %>%
-      arrange(denom) %>%
-      group_by(!!! syms(facet)) %>%
-      slice(1:20)
+    if(!is.null(facet)){
+      filter <- process_output %>%
+        select(icd_concept, denom) %>%
+        distinct() %>%
+        group_by(!!! syms(facet)) %>%
+        arrange(desc(!! sym(denom))) %>%
+        slice(1:10)
+    }else{
+      filter <- process_output %>%
+        select(icd_concept, denom) %>%
+        distinct() %>%
+        arrange(desc(!! sym(denom))) %>%
+        slice(1:20)
+    }
   }else{
-    op_filter <- process_output %>% 
-      select(snomed_concept, denom, output) %>%
-      arrange(denom) %>%
-      group_by(!!! syms(facet)) %>%
-      slice(1:20) 
+    if(!is.null(facet)){
+      filter <- process_output %>%
+        select(snomed_concept, denom) %>%
+        distinct() %>%
+        group_by(!!! syms(facet)) %>%
+        arrange(desc(!! sym(denom))) %>%
+        slice(1:10)
+    }else{
+      filter <- process_output %>%
+        select(snomed_concept, denom) %>%
+        distinct() %>%
+        arrange(desc(!! sym(denom))) %>%
+        slice(1:10)
+    }
+    
+    final <- process_output %>% 
+      inner_join(filter) 
     }
   
-  
-  test_final %>% ggplot(aes(x = as.character(snomed_concept), y = as.character(icd_concept), fill = code_prop)) + 
+  # option 1: heatmap, option to facet by group, not legible for snomed --> icd mappings
+  final %>% ggplot(aes(x = as.character(snomed_concept), y = as.character(icd_concept), fill = code_prop)) + 
     geom_tile() + 
     geom_text(aes(label = code_prop), size = 2, color = 'black') +
-    scale_fill_gradient2(low = 'lightpink', mid = 'white', high = 'maroon', midpoint = 0.5) + 
-    theme_bw() +
+    scale_fill_gradient2(low = 'lightpink', high = 'maroon') + 
     facet_wrap((facet))
+  
+  # option 2: heatmap, already facets by snomed code (how to account for group?), would look very empty
+  #           for icd --> snomed mappings
+  final %>% ggplot(aes(x = as.character(snomed_concept), y = as.character(icd_concept), fill = code_prop)) + 
+    geom_tile() + 
+    geom_text(aes(label = code_prop), size = 2, color = 'black') +
+    scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+    facet_wrap(~as.character(snomed_concept), scales = 'free')
   
   
 }
-
-
-
-
-
-
-
-
-
-
-#' create csv with domain to column mappings for concept and source fields
-#'  -- user can edit this as needed if their field names are different or if they want to add more fields
-#' 
-#' argument to select which domain the codeset belongs to (based off csv file)
-#' 
-#' for this domain, use code_type arg to decide which column to use
-#'  -- need to enforce structure for codeset so we can reference concept_id/concept_code columns reliably
-#' 
-#' inner join cohort to domain tbl, inner join codeset to that tbl
-#' 
-#' get denominator -- group by *_concept_id OR *_source_concept_id depending on selection and count (code_denom)
-#' 
-#' for total counts, group by *_concept_id and *_source_concept_id and count (code_ct, code_prop)
-#' 
-#' for site counts, add site to this grouping (site_code_ct, site_code_prop)
-#' 
-#' for more specific group counts, append to grouped list (it will separate by visit type automatically using the loop)
-#' (grp_code_ct, grp_code_prop)
-#' 
-#' 
-#' 
 
 
 
@@ -338,6 +329,7 @@ loop_through_visits2 <- function(cohort_tbl,
 
 
 
+#' putting it all together
 
 scv_process <- function(cohort = cohort,
                         site_list = c('seattle','cchmc'),
