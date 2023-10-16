@@ -75,7 +75,8 @@ check_code_dist <- function(cohort,
       distinct() %>% ungroup() %>% collect_new() 
     
     
-    # left join overall, site, and group counts together
+    # left join overall and site counts together
+    # if we decide to pull in the NAs, do we want to fill them with 0s / some kind of placeholder?
     scv_final <- overall %>%
       left_join(by_site) %>% 
       distinct() #%>%
@@ -125,7 +126,8 @@ check_code_dist <- function(cohort,
              site_code_prop = round(as.numeric(site_code_ct) / as.numeric(site_code_denom), 2)) %>% 
       distinct() %>% ungroup() %>% collect_new()
     
-    # left join overall, site, and group computations together
+    # left join overall and site computations together
+    # if we decide to pull in the NAs, do we want to fill them with 0s / some kind of placeholder?
     scv_final <- overall %>%
       left_join(by_group) %>% 
       distinct() #%>%
@@ -158,10 +160,10 @@ ss_exp_nt <- function(process_output = scv_final,
   # picking columns / titles 
   if(output == 'code_prop'){
     denom <-  'code_denom'
-    title <-  'Total Proportion of Code Representation'
-  }else if(output == 'grp_code_prop'){
+    title <-  'Proportion of Code Representation'
+  }else if(output == 'site_code_prop'){
     denom <- 'grp_code_denom'
-    title <- 'Proportion of Code Representation per Group'
+    title <- 'Proportion of Code Representation by Site'
   }
   
   # sorting output to select the most commonly occurring codes and using those in the output
@@ -175,7 +177,7 @@ ss_exp_nt <- function(process_output = scv_final,
         arrange(desc(!! sym(denom))) %>%
         slice(1:10)
     }else{
-      filter <- testing_groupings %>%
+      filter <- process_output %>%
         select(icd_concept, denom) %>%
         distinct() %>%
         arrange(desc(!! sym(denom))) %>%
@@ -197,7 +199,7 @@ ss_exp_nt <- function(process_output = scv_final,
         slice(1:10)
     }
     
-    final <- testing_groupings %>% 
+    final <- process_output %>% 
       inner_join(filter) 
     }
   
@@ -245,13 +247,13 @@ loop_through_visits2 <- function(cohort_tbl,
                                  code_type,
                                  code_domain,
                                  concept_set,
+                                 grouped_list,
                                  time=FALSE,
                                  collapse_sites=FALSE,
                                  visit_type_tbl=read_codeset('pf_visit_types','ic'),
                                  visit_tbl=cdm_tbl('visit_occurrence'),
                                  site_list=list('stanford','colorado'),
                                  visit_list=c('inpatient','outpatient'),
-                                 grouped_list=c('site'),
                                  domain_tbl=read_codeset('scv_domains', 'ccc')) {
   
   # iterates through visits
@@ -336,8 +338,8 @@ loop_through_visits2 <- function(cohort_tbl,
 scv_process <- function(cohort = cohort,
                         site_list = c('seattle','cchmc'),
                         study_name = 'glom',
-                        code_type = 'source',
-                        concept_set = load_codeset('jia_codes_icd'),
+                        code_type = 'cdm',
+                        concept_set = load_codeset('jia_codes'),
                         code_domain = 'condition_occurrence',
                         multi_or_single_site = 'single',
                         collapse_sites = FALSE,
