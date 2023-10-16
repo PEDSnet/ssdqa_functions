@@ -162,7 +162,7 @@ ss_exp_nt <- function(process_output = scv_final,
     denom <-  'code_denom'
     title <-  'Proportion of Code Representation'
   }else if(output == 'site_code_prop'){
-    denom <- 'grp_code_denom'
+    denom <- 'site_code_denom'
     title <- 'Proportion of Code Representation by Site'
   }
   
