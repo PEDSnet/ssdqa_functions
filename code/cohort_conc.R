@@ -8,8 +8,8 @@ prepare_conc <- function(cohort_tbl,
   
   stnd <- 
     ct %>% 
-   # mutate(fu = round((end_date - start_date + 1)/365.25,3)) %>% 
-   # select(person_id, start_date, end_date, fu) %>% 
+    # mutate(fu = round((end_date - start_date + 1)/365.25,3)) %>% 
+    # select(person_id, start_date, end_date, fu) %>% 
     add_site()
   
   if(!is.data.frame(age_groups)){
@@ -34,11 +34,9 @@ prepare_conc <- function(cohort_tbl,
   
 }
 
-
+#' THIS is the main function I'm working with
 #' function to compute fact + visit specialty concordance
-#'  numerator is number of visit_occurrences with the grouping that have the fact + specialty on the same visit
-#'  denominator is the number of visit_occurrences with the grouping that have the fact
-#' @param cohort the cohort for which to iterate 
+#' @param cohort the cohort for which to look for events
 #' @param conc_input_tbl the tbl that should be iterated --> not currently using, but would be passed in after prepare_conc
 #' @param grouped_list a vector to group input by. Defaults to `site`
 #' @param codeset_tbl table in the specs directory with the columns:
@@ -46,11 +44,13 @@ prepare_conc <- function(cohort_tbl,
 #'                        default_tbl: name of the cdm_tbl
 #'                        field_name: column name in the default_tbl for which to search the codeset concept_ids
 #'                        codeset_name: name of a codeset in the specs directory
+#' @param care_site boolean indicating whether to search care_site (at visit level) for specialty
+#' @param provider boolean indicating whether to search provider (at visit level) for specialty
 #' @return table with cols:
-#'                        codeset_name: name of the codeset in the specs directory with facts
-#'                        n_spec: number of visits with specialty + fact
-#'                        n_tot: total number of visits with fact
-#'                        freq: n_spec/n_tot
+#'                        codeset_name: name of the codeset in the specs directory with event facts
+#'                        specialty_concept_id: concept_id of specialty from either care_site or provider
+#'                        specialty_concept_name: concept_name of specialty from either care_site or provider
+#'                        num_visits: number of visits with the specialty+fact
 #'                        ... any columns in the `grouped_list`
 #' 
 
@@ -85,23 +85,22 @@ compute_conc <- function(cohort,
                                        fact_tbl=domain_tbl_use,
                                        care_site,
                                        provider)
-
+    
     # calculate the concordance per the grouping parameters
-  #  visit_conc_ct <- visit_specs %>%
-      conc_prop<- visit_specs %>%
+    conc_prop<- visit_specs %>%
       group_by(!!!syms(grp_spec))%>%
       summarise(num_visits=n()) %>%
       ungroup()%>%
-        mutate(codeset_name=codeset_name)
+      mutate(codeset_name=codeset_name)
     
     codeset_results[[codeset_name]] <- conc_prop
-  
-      
+    
+    
   }
   
-   codeset_results_all <- 
-     reduce(.x=codeset_results,
-            .f=dplyr::union_all)
+  codeset_results_all <- 
+    reduce(.x=codeset_results,
+           .f=dplyr::union_all)
 }
 
 #' Function to find the visit_occurrences during which patient had a dx of interest + specialty of interest
@@ -156,51 +155,6 @@ find_fact_spec_conc <- function(cohort,
   
 }
 
-#' Function to find the provider specialty for a visit_occurrence, only if it exists in a codeset
-#' @param visit_tbl table with visit_occurrences
-#' @param cohort table with person_ids for persons in the cohort
-#' @param spec_codeset codeset with concept_id and spec_flag for specialties of interest
-#' @return table with all the visit_occurrences for the cohort,
-#'            and a column for specialty_concept_id_pv and specialty_concept_name_pv iff the provider specialty of the visit_occurrence is in the spec_codeset
-find_visit_specialty <- function(visit_tbl=cdm_tbl('visit_occurrence'),
-                                 cohort,
-                                 care_site,
-                                 provider){
-  if(care_site&!provider){
-    cdm_tbl('care_site')%>%
-      inner_join(select(spec_codeset, c(concept_id, spec_flag)), by = c('specialty_concept_id'='concept_id')) %>%
-      select(provider_id, specialty_concept_id, specialty_concept_name, spec_flag)%>%
-      rename(specialty_concept_id_pv=specialty_concept_id,
-             specialty_concept_name_pv=specialty_concept_name)
-    
-  }else if(provider&!care_site){
-    
-  }else if(care_site&provider){
-    
-  }
-  else{
-    message("Please select either care_site or provider specialty")
-  }
-# just look at provider?
-  # cs_spec <- cdm_tbl('care_site')%>%
-  #   inner_join(select(spec_codeset, concept_id), by = c('specialty_concept_id'='concept_id')) %>%
-  #   select(care_site_id, specialty_concept_id, specialty_concept_name) %>%
-  #   rename(specialty_concept_id_cs=specialty_concept_id,
-  #          specialty_concept_name_cs=specialty_concept_name)
-  
-  pv_spec <- cdm_tbl('provider')%>%
-    inner_join(select(spec_codeset, c(concept_id, spec_flag)), by = c('specialty_concept_id'='concept_id')) %>%
-    select(provider_id, specialty_concept_id, specialty_concept_name, spec_flag)%>%
-    rename(specialty_concept_id_pv=specialty_concept_id,
-           specialty_concept_name_pv=specialty_concept_name)
-  
-  vis_w_spec <- visit_tbl %>%
-    inner_join(cohort)%>%
-   # left_join(cs_spec, by = 'care_site_id') %>%
-    left_join(pv_spec, by = 'provider_id')
-  
-  
-}
 
 #' loops through visit types and sites to compute concordance - NOT functional yet
 #' 
