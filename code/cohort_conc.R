@@ -57,11 +57,15 @@ prepare_conc <- function(cohort_tbl,
 compute_conc <- function(cohort,
                          conc_input_tbl,
                          grouped_list=c('site'),
-                         codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc')) {
+                         codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
+                         care_site,
+                         provider) {
   
   codeset_results <- list()
   codeset_list <- split(codeset_tbl, seq(nrow(codeset_tbl)))
   grp_vis <- grouped_list %>% append('visit_occurrence_id')
+  grp_vis_spec <- grp_vis %>% append(c('spec_flag','total_gp_ct'))
+  grp_spec <- grouped_list%>%append(c('specialty_concept_id', 'specialty_concept_name'))
   
   
   for (i in 1:length(codeset_list)) {
@@ -78,24 +82,17 @@ compute_conc <- function(cohort,
     # find occurrences of codeset codes with specialty
     visit_specs <- find_fact_spec_conc(cohort,
                                        fact_codes=codes_to_use,
-                                       fact_tbl=domain_tbl_use)
+                                       fact_tbl=domain_tbl_use,
+                                       care_site,
+                                       provider)
 
     # calculate the concordance per the grouping parameters
-    visit_conc_ct <- visit_specs %>%
-      mutate(spec_any=case_when(!is.na(spec_flag)~1L,
-                                TRUE~0L))%>%
-      group_by(!!!syms(grp_vis)) %>%
-      summarise(spec_visit_any=case_when(any(spec_any==1L)~1L,
-                                         TRUE~0L)) %>%
-      ungroup()
-    
-    conc_prop <- visit_conc_ct%>%
-      group_by(!!!syms(grouped_list))%>%
-      summarise(n_spec=sum(spec_visit_any),
-                n_tot=n()) %>%
+  #  visit_conc_ct <- visit_specs %>%
+      conc_prop<- visit_specs %>%
+      group_by(!!!syms(grp_spec))%>%
+      summarise(num_visits=n()) %>%
       ungroup()%>%
-      mutate(freq=n_spec/n_tot,
-             codeset_name=codeset_name)
+        mutate(codeset_name=codeset_name)
     
     codeset_results[[codeset_name]] <- conc_prop
   
@@ -114,19 +111,48 @@ compute_conc <- function(cohort,
 #' @return table with all occurrences of the fact_codes for the cohort, and visit info only if visit was to a specialty in the codeset
 find_fact_spec_conc <- function(cohort,
                                 fact_codes,
-                                fact_tbl){
+                                fact_tbl,
+                                care_site,
+                                provider){
   
   
   fact_occurrences <- fact_tbl %>%
     inner_join(fact_codes) %>% # should join on the joincol since it was renamed, but may want to find a way to specify
     inner_join(select(cohort,person_id), by = 'person_id') %>%# may want to specify join columns
-    select(-c(provider_id, site_id)) # keeping out since may not match visit_occurrence
+    select(-c(provider_id, site_id)) %>%# keeping out since may not match visit_occurrence
+    inner_join(cdm_tbl('visit_occurrence'))
   
-  visit_specs <- find_visit_specialty(spec_codeset=load_codeset('conc_specialties'),
-                                      cohort=cohort)
-  
-  fact_occurrences %>%
-    left_join(visit_specs, by = c('visit_occurrence_id','person_id','site'))
+  if(care_site&provider){
+    pv_spec <- fact_occurrences %>%
+      left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id, specialty_concept_name)),
+                by = 'provider_id')%>%
+      rename(specialty_concept_id_pv=specialty_concept_id,
+             specialty_concept_name_pv=specialty_concept_name)
+    cs_spec <- fact_occurrences %>%
+      left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id, specialty_concept_name)),
+                by = 'care_site_id')%>%
+      rename(specialty_concept_id_cs=specialty_concept_id,
+             specialty_concept_name_cs=specialty_concept_name)
+    
+    spec_full <- pv_spec %>%
+      full_join(cs_spec) %>%
+      mutate(specialty_concept_id=case_when(!is.na(specialty_concept_id_pv)~specialty_concept_id_pv,
+                                            !is.na(specialty_concept_id_cs)~specialty_concept_id_cs,
+                                            TRUE~NA_integer_),
+             specialty_concept_name=case_when(!is.na(specialty_concept_name_pv)~specialty_concept_name_pv,
+                                              !is.na(specialty_concept_name_cs)~specialty_concept_name_cs,
+                                              TRUE~NA_character_))
+    
+  }else if(provider&!care_site){
+    spec_full <- fact_occurrences %>%
+      left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id, specialty_concept_name)),
+                by = 'provider_id')
+  }else if(care_site&!provider){
+    spec_full <- fact_occurrences %>%
+      left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id, specialty_concept_name)),
+                by = 'care_site_id')
+  }
+  return(spec_full)
   
 }
 
@@ -138,7 +164,23 @@ find_fact_spec_conc <- function(cohort,
 #'            and a column for specialty_concept_id_pv and specialty_concept_name_pv iff the provider specialty of the visit_occurrence is in the spec_codeset
 find_visit_specialty <- function(visit_tbl=cdm_tbl('visit_occurrence'),
                                  cohort,
-                                 spec_codeset){
+                                 care_site,
+                                 provider){
+  if(care_site&!provider){
+    cdm_tbl('care_site')%>%
+      inner_join(select(spec_codeset, c(concept_id, spec_flag)), by = c('specialty_concept_id'='concept_id')) %>%
+      select(provider_id, specialty_concept_id, specialty_concept_name, spec_flag)%>%
+      rename(specialty_concept_id_pv=specialty_concept_id,
+             specialty_concept_name_pv=specialty_concept_name)
+    
+  }else if(provider&!care_site){
+    
+  }else if(care_site&provider){
+    
+  }
+  else{
+    message("Please select either care_site or provider specialty")
+  }
 # just look at provider?
   # cs_spec <- cdm_tbl('care_site')%>%
   #   inner_join(select(spec_codeset, concept_id), by = c('specialty_concept_id'='concept_id')) %>%
