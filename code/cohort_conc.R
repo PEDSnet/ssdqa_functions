@@ -38,7 +38,8 @@ prepare_conc <- function(cohort_tbl,
 #' function to compute fact + visit specialty concordance
 #' @param cohort the cohort for which to look for events
 #' @param conc_input_tbl the tbl that should be iterated --> not currently using, but would be passed in after prepare_conc
-#' @param grouped_list a vector to group input by. Defaults to `site`
+#' @param grouped_list a vector to group input by. Defaults to `site`.
+#'                      If `year` is in `grouped_list`, results are returned by year of `visit_start_date`
 #' @param codeset_tbl table in the specs directory with the columns:
 #'                        domain: name of the domain
 #'                        default_tbl: name of the cdm_tbl
@@ -46,10 +47,10 @@ prepare_conc <- function(cohort_tbl,
 #'                        codeset_name: name of a codeset in the specs directory
 #' @param care_site boolean indicating whether to search care_site (at visit level) for specialty
 #' @param provider boolean indicating whether to search provider (at visit level) for specialty
+#' @param visit_type_tbl if provided, a map from visit_concept_id to a visit_type classification. if not required, should be `NA`
 #' @return table with cols:
 #'                        codeset_name: name of the codeset in the specs directory with event facts
 #'                        specialty_concept_id: concept_id of specialty from either care_site or provider
-#'                        specialty_concept_name: concept_name of specialty from either care_site or provider
 #'                        num_visits: number of visits with the specialty+fact
 #'                        ... any columns in the `grouped_list`
 #' 
@@ -59,13 +60,14 @@ compute_conc <- function(cohort,
                          grouped_list=c('site'),
                          codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
                          care_site,
-                         provider) {
+                         provider,
+                         visit_type_tbl=NA) {
   
   codeset_results <- list()
   codeset_list <- split(codeset_tbl, seq(nrow(codeset_tbl)))
   grp_vis <- grouped_list %>% append('visit_occurrence_id')
   grp_vis_spec <- grp_vis %>% append(c('spec_flag','total_gp_ct'))
-  grp_spec <- grouped_list%>%append(c('specialty_concept_id', 'specialty_concept_name'))
+  grp_spec <- grouped_list%>%append(c('specialty_concept_id'))
   
   
   for (i in 1:length(codeset_list)) {
@@ -85,6 +87,10 @@ compute_conc <- function(cohort,
                                        fact_tbl=domain_tbl_use,
                                        care_site,
                                        provider)
+    if('year'%in%grouped_list){
+      visit_specs <- visit_specs %>%
+        mutate(year=year(visit_start_date))
+    }
     
     # calculate the concordance per the grouping parameters
     conc_prop<- visit_specs %>%
@@ -92,6 +98,16 @@ compute_conc <- function(cohort,
       summarise(num_visits=n()) %>%
       ungroup()%>%
       mutate(codeset_name=codeset_name)
+    if(length(visit_type_tbl)>1){
+      grp_vis_type <- grp_spec[!grp_spec=='visit_concept_id']
+      grp_vis_type <- grp_vis_type %>% append(c('visit_type','codeset_name'))
+
+      conc_prop <- conc_prop %>%
+        left_join(visit_type_tbl, by = 'visit_concept_id', copy=TRUE) %>%
+        group_by(!!!syms(grp_vis_type)) %>%
+        summarise(num_visits=sum(num_visits, na.rm=TRUE)) %>%
+        ungroup()
+    }
     
     codeset_results[[codeset_name]] <- conc_prop
     
@@ -123,32 +139,27 @@ find_fact_spec_conc <- function(cohort,
   
   if(care_site&provider){
     pv_spec <- fact_occurrences %>%
-      left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id, specialty_concept_name)),
+      left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id)),
                 by = 'provider_id')%>%
-      rename(specialty_concept_id_pv=specialty_concept_id,
-             specialty_concept_name_pv=specialty_concept_name)
+      rename(specialty_concept_id_pv=specialty_concept_id)
     cs_spec <- fact_occurrences %>%
-      left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id, specialty_concept_name)),
+      left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id)),
                 by = 'care_site_id')%>%
-      rename(specialty_concept_id_cs=specialty_concept_id,
-             specialty_concept_name_cs=specialty_concept_name)
+      rename(specialty_concept_id_cs=specialty_concept_id)
     
     spec_full <- pv_spec %>%
       full_join(cs_spec) %>%
       mutate(specialty_concept_id=case_when(!is.na(specialty_concept_id_pv)~specialty_concept_id_pv,
                                             !is.na(specialty_concept_id_cs)~specialty_concept_id_cs,
-                                            TRUE~NA_integer_),
-             specialty_concept_name=case_when(!is.na(specialty_concept_name_pv)~specialty_concept_name_pv,
-                                              !is.na(specialty_concept_name_cs)~specialty_concept_name_cs,
-                                              TRUE~NA_character_))
+                                            TRUE~NA_integer_))
     
   }else if(provider&!care_site){
     spec_full <- fact_occurrences %>%
-      left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id, specialty_concept_name)),
+      left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id)),
                 by = 'provider_id')
   }else if(care_site&!provider){
     spec_full <- fact_occurrences %>%
-      left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id, specialty_concept_name)),
+      left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id)),
                 by = 'care_site_id')
   }
   return(spec_full)
@@ -256,4 +267,14 @@ loop_through_visits_conc <- function(cohort_tbl,
   
   visit_output
   
+}
+
+#' Function to generate a table of concept_id + concept_name for a set of concepts
+#' @param tbl table with a specialty_concept_id column
+#' @param vocab table with a concept_id and concept_name column, defaulting to the vocabulary_tbl `concept`
+#' @return table with distinct specialty_concept_id | concept_name
+find_distinct_concepts <- function(tbl,
+                                   vocab=vocabulary_tbl('concept')){
+  tbl %>% distinct(specialty_concept_id) %>%
+    inner_join(select(vocab, c(concept_id, concept_name)), by = c('specialty_concept_id'='concept_id'))
 }
