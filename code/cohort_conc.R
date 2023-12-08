@@ -37,7 +37,6 @@ prepare_conc <- function(cohort_tbl,
 #' THIS is the main function I'm working with
 #' function to compute fact + visit specialty concordance
 #' @param cohort the cohort for which to look for events
-#' @param conc_input_tbl the tbl that should be iterated --> not currently using, but would be passed in after prepare_conc
 #' @param grouped_list a vector to group input by. Defaults to `site`.
 #'                      If `year` is in `grouped_list`, results are returned by year of `visit_start_date`
 #' @param codeset_tbl table in the specs directory with the columns:
@@ -47,7 +46,7 @@ prepare_conc <- function(cohort_tbl,
 #'                        codeset_name: name of a codeset in the specs directory
 #' @param care_site boolean indicating whether to search care_site (at visit level) for specialty
 #' @param provider boolean indicating whether to search provider (at visit level) for specialty
-#' @param visit_type_tbl if provided, a map from visit_concept_id to a visit_type classification. if not required, should be `NA`
+#' @param visit_type_tbl if provided, a map from visit_concept_id to a visit_type classification. if not required, should be `NULL`
 #' @return table with cols:
 #'                        codeset_name: name of the codeset in the specs directory with event facts
 #'                        specialty_concept_id: concept_id of specialty from either care_site or provider
@@ -56,12 +55,12 @@ prepare_conc <- function(cohort_tbl,
 #' 
 
 compute_conc <- function(cohort,
-                         conc_input_tbl,
                          grouped_list=c('site'),
                          codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
                          care_site,
                          provider,
-                         visit_type_tbl=NA) {
+                         visit_type_tbl=NULL,
+                         age_gp_tbl=NULL) {
   
   codeset_results <- list()
   codeset_list <- split(codeset_tbl, seq(nrow(codeset_tbl)))
@@ -91,6 +90,18 @@ compute_conc <- function(cohort,
       visit_specs <- visit_specs %>%
         mutate(year=year(visit_start_date))
     }
+    if(is.data.frame(age_gp_tbl)){
+      
+      visit_specs <- visit_specs %>%
+        inner_join(select(cdm_tbl('person'), c(person_id, birth_date)),
+                   by='person_id')%>%
+        mutate(visit_age=(visit_start_date-birth_date)/365.25)%>%
+        merge(age_gp_tbl) %>%
+        mutate(age_grp = case_when(visit_age >= min_age & visit_age <= max_age ~ group,
+                                   TRUE ~ as.character(NA)))%>%
+        filter(!is.na(age_grp))%>%
+        select(-c(birth_date, min_age, max_age, group))
+    }
     
     # calculate the concordance per the grouping parameters
     conc_prop<- visit_specs %>%
@@ -98,7 +109,7 @@ compute_conc <- function(cohort,
       summarise(num_visits=n()) %>%
       ungroup()%>%
       mutate(codeset_name=codeset_name)
-    if(length(visit_type_tbl)>1){
+    if(is.data.frame(visit_type_tbl)){
       grp_vis_type <- grp_spec[!grp_spec=='visit_concept_id']
       grp_vis_type <- grp_vis_type %>% append(c('visit_type','codeset_name'))
 
@@ -166,115 +177,29 @@ find_fact_spec_conc <- function(cohort,
   
 }
 
-
-#' loops through visit types and sites to compute concordance - NOT functional yet
-#' 
-#' @param cohort_tbl the tbl that comes from `prepare_pf`
-#' @param one_site_output a logical that tells the program to either loop through sites or run it once for all sites combined, 
-#' or if it is just one site
-#' @param visit_type_tbl The visit_concept_ids of interest for the analysis. `all` may be used in this field
-#'                      to select every visit type; defaults to `pf_visit_types` in specs folder
-#' @param visit_tbl the cdm visit_occurrence tbl; defaults to `cdm_tbl('visit_occurrence')`
-#' @param site_list the sites to iterate through
-#' @param visit_list the list of visit types to iterate through
-#' @param grouped_list the input for which to group variables
-#' @param domain_tbl defaults to `pf_domains` in the specs folder; 
-#'      @domain: the domain name; output will have this domain
-#'      @default_tbl: the table to pull from 
-#'      @field_name the field name to filter by; leave null if no filter
-#'      @field_filter: the filtered codes
-#' 
-#' @return a returned list stratified by visit type
-#' 
-
-loop_through_visits_conc <- function(cohort_tbl,
-                                     time=FALSE,
-                                     collapse_sites=FALSE,
-                                     #combine_sites = TRUE,
-                                     visit_type_tbl=read_codeset('conc_visit_types','ic'),
-                                     visit_tbl=cdm_tbl('visit_occurrence'),
-                                     site_list=list('stanford',
-                                                    'colorado'),
-                                     visit_list=c('inpatient','outpatient'),
-                                     grouped_list=c('person_id','start_date','end_date',
-                                                    'site'),
-                                     domain_tbl=read_codeset('pf_domains_short','cccc')) {
-  
-  # iterates through visits
-  visit_output <- list()
-  for(j in 1:length(visit_list)) {
-    
-    # iterates through sites
-    site_output <- list()
-    for(k in 1:length(site_list)) {
-      
-      if(collapse_sites) {
-        site_list_thisrnd <- unlist(site_list)
-      } else {site_list_thisrnd <- site_list[[k]]}
-      
-      # filters by site
-      cohort_site <- cohort_tbl %>% filter(site%in%c(site_list_thisrnd))
-      
-      # pulls the visit_concept_id's that correspond to the visit_list
-      visit_types <- 
-        visit_type_tbl %>% 
-        filter(visit_type %in% c(visit_list[[j]])) %>% 
-        select(visit_concept_id) %>% pull()
-      
-      # narrows the visit time to cohort_entry and end date
-      visits <- 
-        cohort_site %>% 
-        inner_join(
-          select(visit_tbl,
-                 person_id,
-                 visit_occurrence_id,
-                 visit_concept_id,
-                 visit_start_date)
-        ) %>% 
-        filter(visit_concept_id %in% c(visit_types)) %>% 
-        filter(visit_start_date >= start_date,
-               visit_start_date <= end_date) %>% 
-        compute_new(temporary=TRUE,
-                    indexes=list('person_id'))
-      
-      # calls function `compute_pf` and adds site, with cohort_tbl filtered by site as input
-      if(!time) {
-        domain_compute <- compute_pf(cohort=cohort_site, pf_input_tbl=visits,
-                                     grouped_list=grouped_list,
-                                     domain_tbl=domain_tbl) %>% add_site()
-      } else {
-        domain_compute <- compute_pf_for_fot(cohort=cohort_site, pf_input_tbl=visits,
-                                             grouped_list=grouped_list,
-                                             domain_tbl=domain_tbl) %>% add_site()
-      }
-      
-      
-      
-      site_output[[k]] <- domain_compute
-      
-      if(collapse_sites) break;
-      
-    }
-    
-    
-    all_site <- reduce(.x=site_output,
-                       .f=dplyr::union)
-    
-    #visit_output[[paste0('pf_',config('cohort'),'_',(visit_list[j]))]] <- all_site
-    visit_output[[visit_list[j]]] <- all_site
-    
-  }
-  
-  visit_output
-  
-}
-
 #' Function to generate a table of concept_id + concept_name for a set of concepts
 #' @param tbl table with a specialty_concept_id column
 #' @param vocab table with a concept_id and concept_name column, defaulting to the vocabulary_tbl `concept`
 #' @return table with distinct specialty_concept_id | concept_name
 find_distinct_concepts <- function(tbl,
                                    vocab=vocabulary_tbl('concept')){
-  tbl %>% distinct(specialty_concept_id) %>%
-    inner_join(select(vocab, c(concept_id, concept_name)), by = c('specialty_concept_id'='concept_id'))
+    
+  tbl_distinct <- tbl %>% distinct(specialty_concept_id) 
+  
+  vocab%>%select(concept_id, concept_name)%>%
+    inner_join(tbl_distinct, by = c('concept_id'='specialty_concept_id'), copy=TRUE)%>%
+    rename(specialty_concept_id=concept_id,
+           specialty_concept_name=concept_name)
+}
+
+#' Function to build plot based on specifications for output
+#' @param multi_site `TRUE` if should be stratified by multiple sites,
+#'                    `FALSE` if should be treated as single site
+#' @param detection_method vector one or both of `exploratory` or `anomaly`
+#' @param time_dimension `TRUE` if time dimension should be considered
+#'                        `FALSE` if time dimension should not be considered
+plot_conc_spec <- function(multi_site,
+                           detection_method,
+                           time_dimension){
+  
 }

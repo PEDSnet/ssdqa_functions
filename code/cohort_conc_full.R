@@ -1,50 +1,170 @@
-
-conc_process <- function(cohort = cohort,
-                         site_list = c('seattle','cchmc'),
-                         study_name = 'glom',
-                         intermediate_tbl = 'r_dataframe',
-                         visit_types = c('outpatient','inpatient'),
-                         multi_or_single_site = 'multi',
-                         collapse_sites = FALSE,
-                         time = FALSE,
-                         time_span = c('2014-01-01', '2023-01-01'),
-                         age_groups = NULL,
-                         codeset_fact = read_codeset("conc_codesets", col_types = 'cccc'),
-                         #codeset_spec = NULL,
-                         anomaly_or_exploratory='anomaly',
-                         domain_name, # idea here is to have them provide a string that we then match to a cdm_tbl
-                         #domain_tbl=read_codeset('pf_domains_short','cccc'),
-                         visit_type_table=read_codeset('pf_visit_types','ic')){
+#' Concordance: Clinical Events and Specialties
+#' 
+#' This is a check that will assess quality of specialty data in a study sample
+#' The user will provide clinical codesets of interest with associated domains
+#' and will be able to stratify results by:
+#'                age group (user will provide groupings)
+#'                visit type (user will provide groupings)
+#'                time (by year)
+#' @param cohort - A dataframe with the cohort of patients for your study. Should include the columns:
+#'                       - @person_id
+#' @param grouped_list a list containing the variables to group by:
+#'                can contain:
+#'                  `site` if want to stratify by site (and there is a `site` column in the input data)
+#'                  `year` if want to stratify by year of visit
+#'@param age_groups- If you would like to stratify the results by age group, fill out the provided `age_group_definitions.csv` file
+#'                     with the following information:
+#'                     - @min_age: the minimum age for the group (i.e. 10)
+#'                     - @max_age: the maximum age for the group (i.e. 20)
+#'                     - @group: a string label for the group (i.e. 10-20, Young Adult, etc.)
+#'                     
+#'                     Then supply this csv file as the age_groups argument (i.e. read.csv('path/to/age_group_definitions.csv'))
+#'                     If you do not wish to stratify by age, keep as NULL
+#' @param codeset_tbl table in the specs directory with the columns:
+#'                        domain: name of the domain
+#'                        default_tbl: name of the cdm_tbl
+#'                        field_name: column name in the default_tbl for which to search the codeset concept_ids
+#'                        codeset_name: name of a codeset in the specs directory
+#' @param care_site TRUE if want to look at care_site specialty
+#'                  FALSE if do not want to look at care_site specialty
+#' @param provider TRUE if want to look at provider specialty
+#'                  FALSE if do not want to look at provider specialty
+#'                  IF both `provider` and `care_site` are both TRUE,
+#'                        provider specialty will be prioritized if provider and care_site are discordant for the visit
+#' @param visit_type_table - a csv file that defines available visit types that are called in @visit_types. defaults to the provided
+#'                           `conc_visit_types.csv` file, which contains the following fields:
+#'                           - @visit_concept_id: the visit_concept_id that represents the visit type of interest (i.e. 9201)
+#'                           - @visit_type: the string label to describe the visit type; this label can be used multiple times
+#'                                          within the file if multiple visit_concept_ids represent the visit type
+#'                          
+#'                           This CSV can be altered to fit the users needs, or another csv with the same columns and formatting can be supplied.
+#'
+#' @return a table with 
+#'        
+conc_process <- function(cohort,
+                         grouped_list=c('site'),
+                         age_groups=NULL,
+                         codeset_tbl=NULL,
+                         care_site,
+                         provider,
+                         visit_type_tbl=NULL){
   ## Step 0: Set cohort name for table output
-  config('cohort', study_name)
+  #config('cohort', study_name)
   
   ## Step 1: Prepare cohort
-  # cohort_prep <- prepare_pf(cohort = cohort, age_groups = age_groups, codeset = codeset)
+  if(is.data.frame(age_groups)){
+    grouped_list_prep<-grouped_list%>%
+      append('age_grp')
+  }else{grouped_list_prep<-grouped_list}
+  
+  if(is.data.frame(visit_type_tbl)){
+    grouped_list_prep<-grouped_list_prep%>%
+      append('visit_concept_id')
+  }
   
   ## Step 2: Run function
-  grouped_list <- c('site')
-  if(is.data.frame(age_groups)){grouped_list<-grouped_list%>%append('age_grp')}
-  if(is.data.frame(codeset)){grouped_list<-grouped_list%>%append('flag')}
+  conc_final <- compute_conc(cohort=cohort,
+                             grouped_list=grouped_list_prep,
+                             codeset_tbl=codeset_tbl,
+                             care_site=care_site,
+                             provider=provider,
+                             visit_type_tbl=visit_type_tbl,
+                             age_gp_tbl=age_groups)
   
-  if(time){
-    grouped_list <- grouped_list[!grouped_list%in% 'fu']
-    
-    conc_final <- compute_fot_conc(cohort=cohort,
-                                   time_period='year',
-                                   time_span=time_span,
-                                   collapse_sites,
-                                   visit_type_tbl=visit_type_table,
-                                   site_list=site_list,
-                                   visit_list=visit_types,
-                                   domain_tbl=domain_tbl)
+  spec_concept_names <- find_distinct_concepts(test_compute_conc_full)
+  output_tbl(spec_concept_names,
+             name='specialty_concept_names',
+             db=FALSE,
+             file=TRUE)
+  
+}
+
+
+#' Concordance: Clinical Events and Specialties -- 
+#' @param conc_process_output output from the `conc_process` function
+#' @param conc_process_names classified names from the output from `find_distinct_concepts`
+#'                            with specialties grouped based on a `specialty_name` column,
+#'                            which can be generated by assigning groupings to `specialty_concept_names` or by renaming the `specialty_concept_names` column to `specialty_name` if no grouping is required
+#' @param single_site TRUE if should be a single site analysis
+#' @param multi_site TRUE if should be multi site analysis
+#' @param exploratory TRUE if should be exploratory analysis
+#' @param anomaly TRUE if should be anomoly detection
+#' @param time_dimension TRUE if should have a time dimension
+#' @param facet_vars vector of variable names to facet by
+#' @param color_var variable in conc_process_output to color/fill by
+#'                            
+conc_output_gen <- function(conc_process_output,
+                            conc_process_names,
+                            single_site,
+                            multi_site,
+                            exploratory,
+                            anomaly,
+                            time_dimension,
+                            facet_vars,
+                            color_var){
+  message('Preparing data for visualization')
+  if(length(facet_vars)>1){
+    vars_no_cs<-facet_vars[!facet_vars=='codeset_name']
+    gp_vars <- c('codeset_name')%>%append(vars_no_cs)
+  }else{
+    gp_vars<-c('codeset_name')
   }
-  else{
-    # doesn't involve looping through visits yet
-    conc_final <- compute_conc(cohort=cohort,
-                               grouped_list=grouped_list,
-                               codeset_tbl=codeset_fact)
+  
+  spec_gp_vars <- gp_vars %>% append(c('specialty_name'))
+  # compute proportions
+  conc_output_denom <- conc_process_output %>%
+    inner_join(conc_process_names, by = 'specialty_concept_id')%>%
+    group_by(!!!syms(gp_vars))%>%
+    summarise(total=sum(num_visits, na.rm=TRUE))%>%
+    ungroup()
+  
+  conc_output_pp <- conc_process_output %>%
+    inner_join(conc_process_names, by = 'specialty_concept_id')%>%
+    group_by(!!!syms(spec_gp_vars))%>%
+    summarise(n=sum(num_visits, na.rm = TRUE))%>%
+    ungroup()%>%
+    inner_join(conc_output_denom)%>%
+    mutate(prop=n/total)
+
+  # generate color palette for color variable
+  color_list <- (conc_output_pp%>%distinct(!!sym(color_var)))%>%pull()
+  conc_colors <- generate_color_pal(color_list)
+  
+  message('Building visualization')
+  if(single_site&exploratory){
+    if(time_dimension){
+      
+    }else{
+      # single site, exploratory, no time
+      # NOTE will want to change this function name, just kept it this way to show that it is an adaptation of the pf_ss_exp_nt check
+      conc_output_plot <- pf_ss_exp_nt_v2(data_tbl=conc_output_pp,
+                                          facet=facet_vars,
+                                          x_var='specialty_name',
+                                          y_var='prop',
+                                          fill_var=color_var,
+                                          pal_map=conc_colors)
+    }
+    
+  }else if(single_site&anomaly){
+    if(time_dimension){
+      
+    }else{
+    }
+    
+  }else if(multi_site&exploratory){
+    if(time_dimension){
+      
+    }else{
+      
+    }
+    
+  }else if(multi_site&anomaly){
+    if(time_dimension){
+      
+    }else{
+      
+    }
     
   }
-  
-  
+  return(conc_output_plot)
 }
