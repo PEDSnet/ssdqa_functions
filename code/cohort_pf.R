@@ -206,7 +206,7 @@ compute_pf <- function(cohort,
 
 loop_through_visits <- function(cohort_tbl,
                                 time=FALSE,
-                                collapse_sites=FALSE,
+                                #collapse_sites=FALSE,
                                 #combine_sites = TRUE,
                                 visit_type_tbl=read_codeset('pf_visit_types','ic'),
                                 visit_tbl=cdm_tbl('visit_occurrence'),
@@ -225,9 +225,7 @@ loop_through_visits <- function(cohort_tbl,
     site_output <- list()
     for(k in 1:length(site_list)) {
       
-      if(collapse_sites) {
-        site_list_thisrnd <- unlist(site_list)
-      } else {site_list_thisrnd <- site_list[[k]]}
+      site_list_thisrnd <- site_list[[k]]
       
       # filters by site
       cohort_site <- cohort_tbl %>% filter(site%in%c(site_list_thisrnd))
@@ -268,8 +266,6 @@ loop_through_visits <- function(cohort_tbl,
       
       
       site_output[[k]] <- domain_compute
-
-      if(collapse_sites) break;
       
     }
     

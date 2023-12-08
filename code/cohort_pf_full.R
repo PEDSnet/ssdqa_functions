@@ -85,7 +85,7 @@ pf_process <- function(cohort = cohort,
                        intermediate_tbl = 'r_dataframe',
                        visit_types = c('outpatient','inpatient'),
                        multi_or_single_site = 'multi',
-                       collapse_sites = FALSE,
+                       #collapse_sites = FALSE,
                        time = FALSE,
                        time_span = c('2014-01-01', '2023-01-01'),
                        age_groups = NULL,
@@ -116,7 +116,7 @@ pf_process <- function(cohort = cohort,
                              grouped_list=grouped_list,
                              time_period='year',
                              time_span= time_span,
-                             collapse_sites = collapse_sites,
+                             #collapse_sites = collapse_sites,
                              visit_type_tbl=visit_type_table,
                              site_list=site_list,
                              visit_list=visit_types,
@@ -126,7 +126,7 @@ pf_process <- function(cohort = cohort,
     pf_tbl <- loop_through_visits(
       cohort_tbl=cohort_prep,
       time = FALSE,
-      collapse_sites=collapse_sites,
+      #collapse_sites=collapse_sites,
       site_list=site_list,
       visit_list=visit_types,
       visit_type_tbl=visit_type_table,
@@ -149,7 +149,7 @@ pf_process <- function(cohort = cohort,
         output_tbl(pf_final, 'pf_intermediate_results')
     }else if(intermediate_tbl == 'csv'){
       output_tbl(pf_final, 'pf_intermediate_results', file = TRUE)}
-    }else{pf_intermediate_results <- NULL}
+  }else{pf_intermediate_results <- NULL}
   
   param_csv_summary(site_list = site_list,
                     visit_list = visit_types,
