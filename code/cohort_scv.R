@@ -12,11 +12,11 @@
 
 
 check_code_dist <- function(cohort,
-                            #grouped_list,
                             concept_set,
                             code_type,
                             code_domain,
-                            domain_tbl){
+                            time = FALSE,
+                            domain_tbl = read_codeset('scv_domains', 'cccc')){
   
   # pick the right domain/columns
   domain_filter <- domain_tbl %>% filter(domain == code_domain)
@@ -27,11 +27,23 @@ check_code_dist <- function(cohort,
      final_col = source_col
   } else {final_col = concept_col}
   
+  if(time){
+    
+    domain_tbl <- cohort %>%
+      inner_join(cdm_tbl(code_domain)) %>%
+      filter(!!sym(domain_filter$date_col) >= start_date,
+             !!sym(domain_filter$date_col) <= end_date)
+      
+  }else{
+    
+    domain_tbl <- cohort %>%
+      inner_join(cdm_tbl(code_domain))
+    }
+  
   fact_tbl <- 
-    cohort %>% 
-    inner_join(cdm_tbl(code_domain)) %>% 
+    domain_tbl %>% 
     inner_join(concept_set,
-               by=setNames('concept_id',source_col)) %>% 
+               by=setNames('concept_id',final_col)) %>% 
     select(all_of(group_vars(cohort)),
            all_of(concept_col),
            all_of(source_col)) %>% 
@@ -88,187 +100,99 @@ check_code_dist <- function(cohort,
 #'    sparse looking
 #' -- how does this look in other source <--> concept mappings
 
-ss_exp_nt <- function(process_output = scv_final,
+ss_exp_nt <- function(process_output,
                       output,
-                      facet){
+                      facet,
+                      num_codes){
   
   # picking columns / titles 
-  if(output == 'code_prop'){
-    denom <-  'code_denom'
-    title <-  'Proportion of Code Representation'
-  }else if(output == 'site_code_prop'){
-    denom <- 'site_code_denom'
-    title <- 'Proportion of Code Representation by Site'
+  if(output == 'concept_prop'){
+    denom <-  'denom_concept_ct'
+    col <- 'concept_id'
+    title <-  'Proportion of CDM Code Mappings'
+    facet <- facet %>% append('concept_id')
+  }else if(output == 'source_prop'){
+    denom <- 'denom_source_ct'
+    col <- 'source_concept_id'
+    title <- 'Proportion of Source Code Mappings'
   }
   
   # sorting output to select the most commonly occurring codes and using those in the output
   # is this the best way to filter down the output?
-  if(source){
     if(!is.null(facet)){
       filter <- process_output %>%
-        select(icd_concept, denom) %>%
+        select(col, denom, all_of(facet)) %>%
         distinct() %>%
         group_by(!!! syms(facet)) %>%
         arrange(desc(!! sym(denom))) %>%
-        slice(1:10)
+        slice(1:num_codes)
     }else{
       filter <- process_output %>%
-        select(icd_concept, denom) %>%
+        select(col, denom) %>%
         distinct() %>%
         arrange(desc(!! sym(denom))) %>%
-        slice(1:20)
-    }
-  }else{
-    if(!is.null(facet)){
-      filter <- process_output %>%
-        select(snomed_concept, denom) %>%
-        distinct() %>%
-        group_by(!!! syms(facet)) %>%
-        arrange(desc(!! sym(denom))) %>%
-        slice(1:10)
-    }else{
-      filter <- process_output %>%
-        select(snomed_concept, denom) %>%
-        distinct() %>%
-        arrange(desc(!! sym(denom))) %>%
-        slice(1:10)
+        slice(1:num_codes)
     }
     
     final <- process_output %>% 
       inner_join(filter) 
-    }
   
   # option 1: heatmap, option to facet by group, not legible for snomed --> icd mappings
-  final %>% ggplot(aes(x = as.character(snomed_concept), y = as.character(icd_concept), fill = code_prop)) + 
+  final %>% ggplot(aes(x = as.character(source_concept_id), y = as.character(concept_id), fill = !!sym(output))) + 
     geom_tile() + 
-    geom_text(aes(label = code_prop), size = 2, color = 'black') +
+    geom_text(aes(label = !!sym(output)), size = 2, color = 'black') +
     scale_fill_gradient2(low = 'pink', high = 'maroon') + 
-    facet_wrap((facet))
-  
-  # option 2: heatmap, already facets by snomed code (how to account for group?), would look very empty
-  #           for icd --> snomed mappings
-  final %>% ggplot(aes(x = as.character(snomed_concept), y = as.character(icd_concept), fill = code_prop)) + 
-    geom_tile() + 
-    geom_text(aes(label = code_prop), size = 2, color = 'black') +
-    scale_fill_gradient2(low = 'pink', high = 'maroon') + 
-    facet_wrap(~as.character(snomed_concept), scales = 'free')
-  
-  
+    facet_wrap((facet), scales = 'free')
 }
 
-
-
-#' loops through visit types and sites to compute patient facts
-#' 
-#' @param cohort_tbl the tbl that comes from `prepare_pf`
-#' @param one_site_output a logical that tells the program to either loop through sites or run it once for all sites combined, 
-#' or if it is just one site
-#' @param visit_type_tbl The visit_concept_ids of interest for the analysis. `all` may be used in this field
-#'                      to select every visit type; defaults to `pf_visit_types` in specs folder
-#' @param visit_tbl the cdm visit_occurrence tbl; defaults to `cdm_tbl('visit_occurrence')`
-#' @param site_list the sites to iterate through
-#' @param visit_list the list of visit types to iterate through
-#' @param grouped_list the input for which to group variables
-#' @param domain_tbl defaults to `pf_domains` in the specs folder; 
-#'      @domain: the domain name; output will have this domain
-#'      @default_tbl: the table to pull from 
-#'      @field_name the field name to filter by; leave null if no filter
-#'      @field_filter: the filtered codes
-#' 
-#' @return a returned list stratified by visit type
-#' 
-
-loop_through_visits2 <- function(cohort_tbl,
-                                 code_type,
-                                 code_domain,
-                                 concept_set,
-                                 grouped_list,
-                                 time=FALSE,
-                                 collapse_sites=FALSE,
-                                 visit_type_tbl=read_codeset('pf_visit_types','ic'),
-                                 visit_tbl=cdm_tbl('visit_occurrence'),
-                                 site_list=list('stanford','colorado'),
-                                 visit_list=c('inpatient','outpatient'),
-                                 domain_tbl=read_codeset('scv_domains', 'ccc')) {
+scv_ss_anom_nt <- function(process_output,
+                           code_type,
+                           facet){
   
-  # iterates through visits
-  visit_output <- list()
-  for(j in 1:length(visit_list)) {
-    
-    visit_type_name <- visit_list[j]
-
-    # iterates through sites
-    site_output <- list()
-    for(k in 1:length(site_list)) {
-      
-      if(collapse_sites) {
-        site_list_thisrnd <- unlist(site_list)
-      } else {site_list_thisrnd <- site_list[[k]]}
-      
-      # filters by site
-      cohort_site <- cohort_tbl %>% filter(site%in%c(site_list_thisrnd))
-      
-      # pulls the visit_concept_id's that correspond to the visit_list
-      visit_types <- 
-        visit_type_tbl %>% 
-        filter(visit_type %in% c(visit_list[[j]])) %>% 
-        select(visit_concept_id) %>% pull()
-      
-      # narrows the visit time to cohort_entry and end date
-      visits <- 
-        cohort_site %>% 
-        inner_join(
-          select(visit_tbl,
-                 person_id,
-                 visit_occurrence_id,
-                 visit_concept_id,
-                 visit_start_date)
-        ) %>% 
-        filter(visit_concept_id %in% c(visit_types)) %>% 
-        filter(visit_start_date >= start_date,
-               visit_start_date <= end_date) %>% 
-        mutate(visit_type=visit_type_name) %>% 
-        group_by(!!! syms(grouped_list)) %>% 
-        compute_new(temporary=TRUE,
-                    indexes=list('person_id'))
-      
-      # calls function `compute_pf` and adds site, with cohort_tbl filtered by site as input
-      if(!time) {
-        domain_compute <- check_code_dist(cohort = visits,
-                                          code_type = code_type,
-                                          code_domain = code_domain,
-                                          concept_set = concept_set,
-                                          grouped_list = grouped_list) #%>% add_site()
-      } else {
-        'time function tbd'
-      }
-      
-      site_output[[k]] <- domain_compute
-
-      if(collapse_sites) break;
-
-    }
-    
-    visit_type <- visit_list[j]
-
-    all_site <- reduce(.x=site_output,
-                       .f=dplyr::union) %>% mutate(visit_type = visit_type)
-
-    #visit_output[[paste0('pf_',config('cohort'),'_',(visit_list[j]))]] <- all_site
-    visit_output[[visit_list[j]]] <- all_site
-
+  if(code_type == 'source'){
+    col <- 'source_concept_id'
+    prop_col <- 'source_prop'
+  } else {
+    col <- 'concept_id'
+    prop_col <- 'concept_prop'
   }
   
-  all_visit <- reduce(.x = visit_output,
-                      .f = dplyr::union)
-
-  all_visit
-  #visit_output
+  mappings_per_code <- process_output %>%
+    group_by(!!!syms(facet), !!sym(col)) %>%
+    summarise(n_mappings = n()) %>%
+    mutate(median = median(n_mappings),
+           q1 = quantile(n_mappings, 0.25),
+           q3 = quantile(n_mappings, 0.75)) 
+  
+  # mapping_pairs <- process_output %>%
+  #   group_by(!!!syms(facet), concept_id, source_concept_id) %>%
+  #   mutate(median = median(!!sym(prop_col)),
+  #          q1 = quantile(!!sym(prop_col), 0.25),
+  #          q3 = quantile(!!sym(prop_col), 0.75)) 
+  
+  # plot1 <- id_outliers %>% filter(concept_prop > median) %>%
+  #   ggplot(aes(x = as.character(concept_id), y = as.character(source_concept_id), fill = !!sym(output))) + 
+  #   geom_tile() + 
+  #   coord_flip() +
+  #   geom_text(aes(label = !!sym(output)), size = 2, color = 'black') +
+  #   scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+  #   facet_wrap((facet), scales = 'free') +
+  #   theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1, vjust = 1)) +
+  #   labs(title = 'Mapping Pairs with Representative Proportions +/- 2 MAD away from Median')
+  
+  
+  plot <- mappings_per_code %>%
+    filter(n_mappings > median) %>%
+    ggplot(aes(x = as.character(!!sym(col)), y = n_mappings)) +
+    geom_col() +
+    geom_hline(aes(yintercept = median)) +
+    geom_hline(aes(yintercept = q1), linetype = 'dotted') +
+    geom_hline(aes(yintercept = q3), linetype = 'dotted') +
+    facet_wrap((facet), scales = 'free') +
+    theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1, vjust = 1)) +
+    labs(title = 'Codes with Above-Median Number of Unique Mappings')
   
 }
-
-
-
 
 
 
@@ -276,21 +200,16 @@ loop_through_visits2 <- function(cohort_tbl,
 
 scv_process <- function(cohort = cohort,
                         site_list = c('seattle','cchmc'),
-                        domain_tbl=read_codeset('scv_domains', 'ccc'),
-                        #study_name = 'glom',
-                        code_type = 'source',
+                        domain_tbl=read_codeset('scv_domains', 'cccc'),
                         concept_set = dplyr::union(load_codeset('jia_codes'),
                                                    load_codeset('jia_codes_icd')),
+                        code_type = 'source',
                         code_domain = 'condition_occurrence',
                         multi_or_single_site = 'single',
-                        collapse_sites = FALSE,
                         anomaly_or_exploratory='exploratory',
+                        age_groups = read_csv('specs/age_group_definitions.csv'),
                         time = FALSE,
-                        time_span = c('2014-01-01', '2023-01-01'),
-                        #visit_types = c('outpatient','inpatient'),
-                        age_groups = NULL
-                        #codeset = NULL,
-                        #visit_type_table=read_codeset('pf_visit_types','ic'),
+                        time_span = c('2014-01-01', '2023-01-01')
                         ){
   
   # Set up grouped list
@@ -298,29 +217,23 @@ scv_process <- function(cohort = cohort,
   grouped_list <- c('site', 'domain')
   
   if(is.data.frame(age_groups)){grouped_list <- grouped_list %>% append('age_grp')}
-  if(is.data.frame(codeset)){grouped_list <- grouped_list %>% append('flag')}
-  #if(is.vector(visit_types)) {grouped_list <- grouped_list %>% append('visit_type')}
   
   # Prep cohort
   
-  cohort_prep <- prepare_pf(cohort = cohort, age_groups = age_groups, codeset = codeset) %>% 
+  cohort_prep <- prepare_pf(cohort_tbl = cohort, age_groups = age_groups, codeset = NULL) %>% 
     mutate(domain = code_domain) %>% 
-    group_by(!!! syms(grouped_list)) %>% 
-    group_by(domain, .add = TRUE)
+    group_by(!!! syms(grouped_list))
   
   site_output <- list()
   
   if(! time) {
-    if(anomaly_or_exploratory == 'exploratory') {
+    
+    for(k in 1:length(site_list)) {
       
-      for(k in 1:length(site_list)) {
-        
-        if(collapse_sites) {
-          site_list_thisrnd <- unlist(site_list)
-        } else {site_list_thisrnd <- site_list[[k]]}
-        
-        # filters by site
-        cohort_site <- cohort_prep %>% filter(site%in%c(site_list_thisrnd))
+      site_list_thisrnd <- site_list[[k]]
+      
+      # filters by site
+      cohort_site <- cohort_prep %>% filter(site%in%c(site_list_thisrnd))
       
       domain_compute <- check_code_dist(cohort = cohort_site,
                                         code_type = code_type,
@@ -332,18 +245,25 @@ scv_process <- function(cohort = cohort,
       
       all_site <- reduce(.x=site_output,
                          .f=dplyr::union) 
-    
       
-      if(collapse_sites) break;
-      
-      }
-    
-      scv_tbl <- reduce(.x=site_output,
-                         .f=dplyr::union)
     }
     
-    else {'Anomaly TBD'}
-  } else {'Time Stuff Here'}
+    scv_tbl <- reduce(.x=site_output,
+                      .f=dplyr::union)
+  
+  } else if(time){
+    
+    scv_tbl <- compute_fot_scv(cohort = cohort_prep,
+                               code_type = code_type,
+                               code_domain = code_domain,
+                               concept_set = concept_set,
+                               time_span = time_span,
+                               domain_tbl = domain_tbl)
+    
+  }
+  
+  
+  return(scv_tbl)
   
  
 }
