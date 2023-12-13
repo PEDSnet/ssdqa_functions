@@ -71,12 +71,12 @@ conc_process <- function(cohort,
                              visit_type_tbl=visit_type_tbl,
                              age_gp_tbl=age_groups)
   
-  spec_concept_names <- find_distinct_concepts(test_compute_conc_full)
+  spec_concept_names <- find_distinct_concepts(conc_final)
   output_tbl(spec_concept_names,
              name='specialty_concept_names',
              db=FALSE,
              file=TRUE)
-  
+  return(conc_final)
 }
 
 
@@ -109,6 +109,12 @@ conc_output_gen <- function(conc_process_output,
   }else{
     gp_vars<-c('codeset_name')
   }
+  if(time_dimension){
+    gp_vars <- gp_vars %>%append('year')
+  }
+  if(multi_site){
+    gp_vars <- gp_vars %>% append('site')
+  }
   
   spec_gp_vars <- gp_vars %>% append(c('specialty_name'))
   # compute proportions
@@ -133,6 +139,11 @@ conc_output_gen <- function(conc_process_output,
   message('Building visualization')
   if(single_site&exploratory){
     if(time_dimension){
+      # single site, exploratory, over time
+      conc_output_plot <- plot_ss_exp_ot(data_tbl=conc_output_pp,
+                                         facet=facet_vars,
+                                         color_var=color_var,
+                                         pal_map=conc_colors)
       
     }else{
       # single site, exploratory, no time
@@ -155,7 +166,12 @@ conc_output_gen <- function(conc_process_output,
     if(time_dimension){
       
     }else{
-      
+      # multi-site, exploratory, no time
+      conc_output_plot <- plot_ms_exp_nt(data_tbl=conc_output_pp,
+                                         x_var='site',
+                                         y_var='specialty_name',
+                                         fill_var='prop',
+                                         facet=facet_vars)
     }
     
   }else if(multi_site&anomaly){
