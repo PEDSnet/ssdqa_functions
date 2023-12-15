@@ -197,17 +197,19 @@ scv_ss_anom_nt <- function(process_output,
 
 
 #' putting it all together
+#' HR QUESTION --- if building a single site test, will we allow for more than 
+#' one site to be built into the parameter site_list()?
 
 scv_process <- function(cohort = cohort,
                         site_list = c('seattle','cchmc'),
                         domain_tbl=read_codeset('scv_domains', 'cccc'),
-                        concept_set = dplyr::union(load_codeset('jia_codes'),
-                                                   load_codeset('jia_codes_icd')),
+                        concept_set = dplyr::union(load_codeset('jia_codes','iccccc'),
+                                                   load_codeset('jia_codes_icd','iccccc')),
                         code_type = 'source',
                         code_domain = 'condition_occurrence',
                         multi_or_single_site = 'single',
                         anomaly_or_exploratory='exploratory',
-                        age_groups = read_csv('specs/age_group_definitions.csv'),
+                        age_groups = read_codeset('age_group_definitions'),
                         time = FALSE,
                         time_span = c('2014-01-01', '2023-01-01')
                         ){
