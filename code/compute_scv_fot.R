@@ -202,25 +202,27 @@ scv_ss_anom_at <- function(scv_process,
   
   facet <- facet %>% append(col)
   
-  n_mappings_yr <- scv_process_test %>%
+  n_mappings_yr <- scv_test_at %>%
     group_by(!!!syms(facet), start_date) %>%
     summarise(n_mappings = n())
   
-  code_list <- n_mappings_yr %>% ungroup() %>% distinct(!!sym(col)) %>% pull()
-  
-
-  qicharts2::qic(x = start_date,
-                 y = n_mappings,
-                 data = n_mappings_yr,
-                 chart = 'c',
-                 facets = ~ concept_id)
-  
-  ggplot(n_mappings_yr, aes(x = start_date, y = n_mappings)) +  
-    geom_point() + geom_line() + 
+  n_mappings_yr %>% 
+    group_by(!!!syms(facet)) %>%
+    group_modify(
+      ~spc_calculate(
+        data = .x, 
+        x = start_date,
+        y = n_mappings,
+        chart = "c"
+      )
+    ) %>% 
+    ungroup() %>%
+    # plot
+    spc_plot(engine = "ggplot") + 
     facet_wrap((facet)) + 
-    ggQC::stat_QC(method = 'c',
-                  color.qc_limits = '#ad131d',
-                  color.qc_center = '#19753f') + 
-    theme_bw()
+    theme(panel.background = element_rect("white", "grey80")) +
+    labs(title = 'Control Chart: Number of Mappings per Code Over Time')
+  
+  
   
 }
