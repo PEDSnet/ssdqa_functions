@@ -103,24 +103,26 @@ check_code_dist <- function(cohort,
 ss_exp_nt <- function(process_output,
                       output,
                       facet,
-                      num_codes){
+                      num_codes = 10){
   
   # picking columns / titles 
   if(output == 'concept_prop'){
     denom <-  'denom_concept_ct'
     col <- 'concept_id'
-    title <-  'Proportion of CDM Code Mappings'
-    facet <- facet %>% append('concept_id')
+    map_col <- 'source_concept_id'
+    title <- paste0('Top 5 Mappings for Top ', num_codes, ' CDM Codes')
   }else if(output == 'source_prop'){
     denom <- 'denom_source_ct'
     col <- 'source_concept_id'
-    title <- 'Proportion of Source Code Mappings'
+    map_col <- 'concept_id'
+    title <- paste0('Top 5 Mappings for Top ', num_codes, ' Source Codes')
   }
   
   # sorting output to select the most commonly occurring codes and using those in the output
   # is this the best way to filter down the output?
     if(!is.null(facet)){
       filter <- process_output %>%
+        ungroup() %>%
         select(col, denom, all_of(facet)) %>%
         distinct() %>%
         group_by(!!! syms(facet)) %>%
@@ -128,6 +130,7 @@ ss_exp_nt <- function(process_output,
         slice(1:num_codes)
     }else{
       filter <- process_output %>%
+        ungroup() %>%
         select(col, denom) %>%
         distinct() %>%
         arrange(desc(!! sym(denom))) %>%
@@ -135,62 +138,144 @@ ss_exp_nt <- function(process_output,
     }
     
     final <- process_output %>% 
-      inner_join(filter) 
+      inner_join(filter)
+    
+    graph <- final %>% 
+      select(concept_id, source_concept_id, output, all_of(facet)) %>%
+      group_by(!!sym(col), !!!syms(facet)) %>%
+      arrange(desc(!!sym(output))) %>%
+      slice(1:5)
   
   # option 1: heatmap, option to facet by group, not legible for snomed --> icd mappings
-  final %>% ggplot(aes(x = as.character(source_concept_id), y = as.character(concept_id), fill = !!sym(output))) + 
+  plot <- graph %>% ggplot(aes(x = as.character(!!sym(col)), y = as.character(!!sym(map_col)), 
+                               fill = !!sym(output))) + 
     geom_tile() + 
     geom_text(aes(label = !!sym(output)), size = 2, color = 'black') +
     scale_fill_gradient2(low = 'pink', high = 'maroon') + 
-    facet_wrap((facet), scales = 'free')
+    facet_wrap2((facet %>% append(col)), scales = 'free', strip = strip) +
+    theme(axis.text.x = element_blank()) +
+    labs(title = title,
+         x = col,
+         y = map_col)
+  
+  table <- final %>%
+    ungroup() %>%
+    select(site, all_of(facet), source_concept_id, concept_id, ct, output) %>%
+    mutate(pct = !!sym(output)) %>%
+    arrange(site, !!!syms(facet), desc(ct)) %>%
+    gt(groupname_col = col) %>%
+    gt_plt_bar_pct(column = pct) %>%
+    fmt_number(columns = ct, decimals = 0) %>%
+    fmt_percent(columns = output, decimals = 0) %>%
+    data_color(palette = "Dark2", columns = c(site, all_of(facet))) %>%
+    tab_options(row_group.background.color = 'linen',
+                row_group.font.weight = 'bold') %>%
+    tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) 
+  
+  table_v2 <- final %>%
+    ungroup() %>%
+    select(site, all_of(facet), source_concept_id, concept_id, ct, output) %>%
+    mutate(pct = !!sym(output)) %>%
+    select(-!!sym(output)) %>%
+    reactable::reactable(groupBy = c(col, 'site'),
+                         bordered = TRUE,
+                         striped = TRUE,
+                         theme = reactableTheme(
+                           cellPadding = "8px 12px",
+                           style = list(
+                             fontFamily = "-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif"
+                           )),
+                         columns = list(site = colDef(aggregate = "unique"),
+                                        pct = colDef(cell = data_bars(., fill_color = '#12047d', 
+                                                                      bar_height = 30,
+                                                                      number_fmt = scales::percent,
+                                                                      text_position = 'above')),
+                                        ct = colDef(format = colFormat(separators = TRUE))),
+                         pagination = FALSE) %>% 
+    add_title(paste0('All Available Mappings for Top ', num_codes, ' Codes'))
+  
+  output <- list(plot, table)
+  
+  return(output)
+    
 }
 
-scv_ss_anom_nt <- function(process_output,
-                           code_type,
+
+
+scv_ss_anom_nt <- function(scv_process,
+                           output,
                            facet){
   
-  if(code_type == 'source'){
+  if(output == 'source_prop'){
     col <- 'source_concept_id'
-    prop_col <- 'source_prop'
   } else {
     col <- 'concept_id'
-    prop_col <- 'concept_prop'
   }
   
-  mappings_per_code <- process_output %>%
+  mappings_per_code <- scv_process %>%
     group_by(!!!syms(facet), !!sym(col)) %>%
     summarise(n_mappings = n()) %>%
     mutate(median = median(n_mappings),
            q1 = quantile(n_mappings, 0.25),
-           q3 = quantile(n_mappings, 0.75)) 
-  
-  # mapping_pairs <- process_output %>%
-  #   group_by(!!!syms(facet), concept_id, source_concept_id) %>%
-  #   mutate(median = median(!!sym(prop_col)),
-  #          q1 = quantile(!!sym(prop_col), 0.25),
-  #          q3 = quantile(!!sym(prop_col), 0.75)) 
-  
-  # plot1 <- id_outliers %>% filter(concept_prop > median) %>%
-  #   ggplot(aes(x = as.character(concept_id), y = as.character(source_concept_id), fill = !!sym(output))) + 
-  #   geom_tile() + 
-  #   coord_flip() +
-  #   geom_text(aes(label = !!sym(output)), size = 2, color = 'black') +
-  #   scale_fill_gradient2(low = 'pink', high = 'maroon') + 
-  #   facet_wrap((facet), scales = 'free') +
-  #   theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1, vjust = 1)) +
-  #   labs(title = 'Mapping Pairs with Representative Proportions +/- 2 MAD away from Median')
-  
+           q3 = quantile(n_mappings, 0.75))
   
   plot <- mappings_per_code %>%
-    filter(n_mappings > median) %>%
-    ggplot(aes(x = as.character(!!sym(col)), y = n_mappings)) +
+    filter(n_mappings > median | n_mappings < q1) %>%
+    ggplot(aes(x = as.character(!!sym(col)), y = n_mappings, color = as.character(!!sym(col)))) +
     geom_col() +
     geom_hline(aes(yintercept = median)) +
     geom_hline(aes(yintercept = q1), linetype = 'dotted') +
     geom_hline(aes(yintercept = q3), linetype = 'dotted') +
     facet_wrap((facet), scales = 'free') +
-    theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1, vjust = 1)) +
+    theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1, vjust = 1),
+          legend.position = 'none') +
     labs(title = 'Codes with Above-Median Number of Unique Mappings')
+  
+  return(plot)
+  
+}
+
+
+scv_ms_anom_nt <- function(scv_process,
+                           output,
+                           facet,
+                           mad_dev = 2){
+  
+  if(output == 'source'){
+    col <- 'source_concept_id'
+    map_col <- 'concept_id'
+  } else {
+    col <- 'concept_id'
+    map_col <- 'source_concept_id'
+  }
+  
+  mappings_total <- process_output %>%
+    group_by(!!sym(col)) %>%
+    summarise(n_mappings = n()) %>%
+    mutate(median = median(n_mappings)) %>%
+    select(col, median) %>% ungroup()
+  
+  mappings_group <- process_output %>%
+    group_by(!!!syms(facet), !!sym(col)) %>%
+    summarise(n_mappings = n()) %>%
+    inner_join(mappings_total) %>%
+    distinct() %>%
+    mutate(mad = mad(n_mappings, center = median)) %>%
+    ungroup() %>%
+    mutate(dist_median = abs(n_mappings - median),
+           n_mad = dist_median/mad)
+  
+  
+  plot <- mappings_group %>%
+    filter(n_mappings > median) %>%
+    ggplot(aes(y = as.character(!!sym(col)), x = site, fill = n_mad)) +
+    geom_tile() +
+    facet_wrap((facet), scales = 'free', ncol = 1) +
+    #theme(axis.text.y = element_text(size = 4)) +
+    labs(title = 'MAD from Median Number of Mappings per Code',
+         subtitle = 'Filtered to codes where n > median')
+  
+  return(plot)
   
 }
 
@@ -256,6 +341,7 @@ scv_process <- function(cohort = cohort,
   } else if(time){
     
     scv_tbl <- compute_fot_scv(cohort = cohort_prep,
+                               site_list = site_list,
                                code_type = code_type,
                                code_domain = code_domain,
                                concept_set = concept_set,

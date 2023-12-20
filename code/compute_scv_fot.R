@@ -74,17 +74,29 @@ compute_fot_scv <- function(cohort,
 
 
 ## single site exploratory (use as multi site and just facet by site?)
-
-test <- time_test %>% filter(site == 'chop') %>%
-  mutate(concept_id = as.character(concept_id),
-         source_concept_id = as.character(source_concept_id)) %>%
-  ggplot(aes(y = source_prop, x = start_date, color = concept_id)) +
-  geom_line() +
-  facet_wrap(~ source_concept_id) +
-  labs(title = 'Code Mapping Pairs Over Time')
-
-ggplotly(test)
+scv_ss_exp_at <- function(scv_process,
+                          output,
+                          facet){
   
+  if(output == 'source_prop'){
+    facet <- facet %>% append('source_concept_id')
+    color <- 'concept_id'
+  }else if(output == 'concept_prop'){
+    facet <- facet %>% append('concept_id')
+    color <- 'source_concept_id'
+  }else{stop(paste0('invalid output selected: column ', output, ' does not exist'))}
+  
+  p <- scv_process %>%
+    mutate(concept_id = as.character(concept_id),
+           source_concept_id = as.character(source_concept_id)) %>%
+    ggplot(aes(y = !!sym(output), x = start_date, color = !!sym(color))) +
+    geom_line() +
+    facet_wrap((facet)) +
+    labs(title = 'Code Mapping Pairs Over Time')
+  
+  ggplotly(p)
+  
+}
 
 
 ## need to figure out how to plot multi site anomaly
@@ -147,20 +159,68 @@ produce_multisite_mad_scv <- function(multisite_tbl,
   
 }
 
-test_fot <- fot_check(tblx = time_test %>% ungroup(),
-                      target_col = 'source_prop',
-                      facet_var = c('concept_id', 'source_concept_id'))
+scv_ms_anom_at <- function(scv_process,
+                           output,
+                           facet,
+                           mad_dev){
+  
+  facet <- facet %>% append(c('concept_id', 'source_concept_id'))
+  
+  if(output == 'source_prop'){
+    y_col <- 'source_concept_id'
+    code_type <- 'source'
+  }else{y_col <- 'concept_id'
+  code_type <- 'cdm'}
+  
+  fot <- fot_check(tblx = scv_process %>% ungroup(),
+                   target_col = output,
+                   facet_var = !!syms(facet))
+  
+  fot2 <- check_fot_all_dist(fot_check_output = fot$fot_heuristic)
+  
+  mad <- produce_multisite_mad_scv(multisite_tbl = fot2,
+                                   code_type = code_type,
+                                   mad_dev = mad_dev)
+  
+  r <- ggplot(mad, aes(x=site, y=as.character(!!sym(y_col)), fill=grp_outlier_prop)) +
+    geom_tile() +
+    facet_wrap((facet)) +
+    theme_classic() +
+    coord_flip() +
+    labs(title = 'Codes with Representative Proportions of Mappings +/- 2 MAD away from Median',
+         y = 'Code')
+}
 
-test_fot2 <- check_fot_all_dist(fot_check_output = test_fot$fot_heuristic)
 
-test_mad <- produce_multisite_mad_scv(multisite_tbl = test_fot2,
-                                      code_type = 'source',
-                                      mad_dev = 2)
-r <- ggplot(test_mad, aes(x=site, y=as.character(source_concept_id), fill=grp_outlier_prop)) +
-  geom_tile() +
-  #facet_wrap((facet)) +
-  theme_classic() +
-  coord_flip() +
-  labs(title = 'Codes with Representative Proportions of Mappings +/- 2 MAD away from Median',
-       y = 'Code')
-    
+scv_ss_anom_at <- function(scv_process,
+                           output,
+                           facet){
+  
+  if(output == 'source'){
+    col <- 'source_concept_id'
+  }else{(col <- 'concept_id')}
+  
+  facet <- facet %>% append(col)
+  
+  n_mappings_yr <- scv_process_test %>%
+    group_by(!!!syms(facet), start_date) %>%
+    summarise(n_mappings = n())
+  
+  code_list <- n_mappings_yr %>% ungroup() %>% distinct(!!sym(col)) %>% pull()
+  
+
+  qicharts2::qic(x = start_date,
+                 y = n_mappings,
+                 data = n_mappings_yr,
+                 chart = 'c',
+                 facets = ~ concept_id)
+  
+  ggplot(n_mappings_yr, aes(x = start_date, y = n_mappings)) +  
+    geom_point() + geom_line() + 
+    facet_wrap((facet)) + 
+    ggQC::stat_QC(method = 'c',
+                  color.qc_limits = '#ad131d',
+                  color.qc_center = '#19753f') + 
+    theme_bw()
+  
+}
