@@ -35,8 +35,7 @@ pf_ss_exp_nt_v2 <- function(data_tbl,
     coord_flip() +
     theme_classic() +
     theme(panel.grid.major = element_line(size=0.4, linetype = 'solid'),
-          panel.grid.minor = element_line(size=0.2, linetype = 'dashed'),
-          legend.position = "none")
+          panel.grid.minor = element_line(size=0.2, linetype = 'dashed'))
   
   
 }
@@ -109,4 +108,109 @@ generate_color_pal <- function(distinct_list){
   ramp_palette <- colorRampPalette(brewer.pal(8, "Dark2"))(length(distinct_list))
   randomized_palette <- ramp_palette[sample(1:length(ramp_palette))]
   setNames(randomized_palette, distinct_list)
+}
+
+#' Should be able to use this for other checks,
+#' but naming this way to differentiate from
+#' the existing `compute_dist_mean` function
+#' @param tbl table with at least the vars specified in `grp_vars` and `var_col`
+#' @param grp_vars variables to group by when computing summary statistics
+#' @param var_col column to compute summary statistics on
+#' @param num_sd (integer) number of standard deviations away from the mean
+#'               from which to compute the sd_lower and sd_upper columns
+#' @return a table with the `grp_vars` | mean | sd | sd_lower | sd_upper
+compute_dist_mean_conc <- function(tbl,
+                                   grp_vars,
+                                   var_col,
+                                   num_sd){
+  stats <- tbl %>%
+    group_by(!!!syms(grp_vars))%>%
+    summarise(mean=mean(!!!syms(var_col)),
+              sd=sd(!!!syms(var_col), na.rm=TRUE)) %>%
+    ungroup() %>%
+    mutate(sd_lower=mean-num_sd*sd,
+           sd_upper=mean+num_sd*sd)
+  
+  tbl %>%
+    inner_join(stats)
+    
+  
+}
+#' Function to generate a plot for anomaly detection with no time component
+#' @param data_tbl table with at least the variables specified in:
+#'          x_var, y_var, fill_var, facet (if applicable)
+#' @param x_var variable to plot on the x axis
+#'                should be a qualitative variable
+#' @param y_var variable to plot on the y axis 
+#'                should be a quantitative variable
+#' @param fill_var variable to fill bars with
+#' @param facet vector of strings of variable names to facet by
+#' @param pal_map map matching fill variables to colors to fill by
+#' @return bar plot filled and faceted as specified with error bars with lower and upper bounds and mean marked
+plot_an_nt <- function(data_tbl,
+                          x_var,
+                          y_var,
+                          fill_var,
+                          facet=NULL,
+                          pal_map){
+  if(!is.null(facet)){
+  plt<-ggplot(data_tbl,
+         aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var))) +
+    geom_bar(stat='identity', position="dodge") +
+    scale_fill_manual(values=pal_map)+
+    geom_errorbar(aes(x=!!sym(x_var),ymin=sd_lower,ymax=sd_upper))+
+    geom_point(aes(x=!!sym(x_var),y=mean), shape=4)+
+    coord_flip()+
+    facet_wrap((facet), scales="free_y")+
+    theme_classic()
+  }else{
+    plt<-ggplot(data_tbl,
+                aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var))) +
+      geom_bar(stat='identity', position="dodge")+
+      scale_fill_manual(values=pal_map)+
+      geom_errorbar(aes(x=!!sym(x_var),ymin=sd_lower,ymax=sd_upper))+
+      geom_point(aes(x=!!sym(x_var),y=mean), shape=4)+
+      coord_flip()+
+      theme_classic()
+  }
+  return(plt)
+}
+
+#' Function to limit output from `compute_dist_mean_conc`
+#'     to only the specialties where there is at least
+#'     one site with anomolous distance from the mean
+#' @param tbl table with at least the columns:
+#'              codeset_name | specialty_name
+#' @param facet_vars variables to facet the plot by
+#'                    if one of the facet vars is visit_type, will group by visit_type
+#' @param distinct_vars variables to 
+#' @return table with codeset_name | specialty_name | all columns in `tbl`
+#'          for only the specialties with at least one anomaly
+flag_anomaly<- function(tbl,
+                        facet_vars,
+                        distinct_vars){
+  anomaly_tbl <- tbl %>%
+    filter(prop<sd_lower|prop>sd_upper) %>%
+    distinct(!!!syms(distinct_vars))
+  anomaly_all <- anomaly_tbl %>%
+    inner_join(tbl)
+  # if('visit_type'%in%facet_vars){
+  #   anomaly_tbl <- tbl %>%
+  #     filter(prop<sd_lower|prop>sd_upper) %>%
+  #     distinct(codeset_name, specialty_name, visit_type)
+  #   anomaly_all <- anomaly_tbl %>%
+  #     inner_join(tbl, by = c('codeset_name', 'specialty_name', 'visit_type'))
+  # }else{
+  #   anomaly_tbl <- tbl %>%
+  #     filter(prop<sd_lower|prop>sd_upper) %>%
+  #     distinct(codeset_name, specialty_name)
+  #   anomaly_all <- anomaly_tbl %>%
+  #     inner_join(tbl, by = c('codeset_name', 'specialty_name'))
+  # }
+  # return(anomaly_all)
+}
+
+
+plot_ss_an_nt <- function(){
+  
 }

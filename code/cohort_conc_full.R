@@ -50,7 +50,7 @@ conc_process <- function(cohort,
                          visit_type_tbl=NULL){
   ## Step 0: Set cohort name for table output
   #config('cohort', study_name)
-  
+  message('Preparing cohort')
   ## Step 1: Prepare cohort
   if(is.data.frame(age_groups)){
     grouped_list_prep<-grouped_list%>%
@@ -63,6 +63,7 @@ conc_process <- function(cohort,
   }
   
   ## Step 2: Run function
+  message('Computing specialty concordance')
   conc_final <- compute_conc(cohort=cohort,
                              grouped_list=grouped_list_prep,
                              codeset_tbl=codeset_tbl,
@@ -71,6 +72,7 @@ conc_process <- function(cohort,
                              visit_type_tbl=visit_type_tbl,
                              age_gp_tbl=age_groups)
   
+  message('Outputting specialty names to specs directory')
   spec_concept_names <- find_distinct_concepts(conc_final)
   output_tbl(spec_concept_names,
              name='specialty_concept_names',
@@ -92,7 +94,20 @@ conc_process <- function(cohort,
 #' @param time_dimension TRUE if should have a time dimension
 #' @param facet_vars vector of variable names to facet by
 #' @param color_var variable in conc_process_output to color/fill by
-#'                            
+#'                    
+#' suggestions:
+#' if single_site, exploratory: 
+#'        facet_vars: codeset_name and/or age_grp
+#'        color_var: specialty_name
+#' if single_site, anomaly:
+#'        facet_vars: codeset_name
+#'        color_var: specialty_name
+#' if multi_site, exploratory:
+#'        facet_vars: codeset_name and/or age_grp and/or visit_type
+#'        color_var: keep NULL (i.e. do not pass anything in)
+#' if multi_site, anomaly:
+#'        facet_vars: codeset_name and/or age_grp and/or visit_type
+#'        color_var: site           
 conc_output_gen <- function(conc_process_output,
                             conc_process_names,
                             single_site,
@@ -101,7 +116,7 @@ conc_output_gen <- function(conc_process_output,
                             anomaly,
                             time_dimension,
                             facet_vars,
-                            color_var){
+                            color_var=NULL){
   message('Preparing data for visualization')
   if(length(facet_vars)>1){
     vars_no_cs<-facet_vars[!facet_vars=='codeset_name']
@@ -114,6 +129,9 @@ conc_output_gen <- function(conc_process_output,
   }
   if(multi_site){
     gp_vars <- gp_vars %>% append('site')
+  }
+  if(single_site&anomaly){
+    gp_vars <- gp_vars %>% append('concept_id')
   }
   
   spec_gp_vars <- gp_vars %>% append(c('specialty_name'))
@@ -131,10 +149,48 @@ conc_output_gen <- function(conc_process_output,
     ungroup()%>%
     inner_join(conc_output_denom)%>%
     mutate(prop=n/total)
+  
+  if('concept_id'%in%colnames(conc_output_pp)){
+    conc_output_pp <- select(vocabulary_tbl('concept'),c(concept_id, concept_name))%>%
+      inner_join(conc_output_pp,by='concept_id', copy=TRUE) %>%
+      collect()
+  }
+  
+  # compute means and sd for anomaly detection
+  if(anomaly&multi_site){
+    gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site']
+    message('Computing mean and distance to mean')
+    conc_output_pp <- compute_dist_mean_conc(conc_output_pp,
+                                             grp_vars=gp_vars_no_site,
+                                             var_col='prop',
+                                             num_sd=2L)
+    
+    message('Flagging the anomalies')
+    # only select the specialties where at least one site is an anomaly
+    conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
+                                   facet_vars=facet_vars,
+                                   distinct_vars=c('codeset_name', 'specialty_name'))
+  }
+  if(anomaly&single_site){
+    gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site'&!spec_gp_vars=='concept_id']
+    message('Computing mean and distance to mean')
+    conc_output_pp <- compute_dist_mean_conc(conc_output_pp,
+                                             grp_vars=gp_vars_no_site,
+                                             var_col='prop',
+                                             num_sd=2L)
+      
+      message('Flagging the anomalies')
+    # only select the specialties where at least one specialty is an anomaly
+    conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
+                                           facet_vars=facet_vars,
+                                           distinct_vars=c('codeset_name','concept_id', 'concept_name'))
+  }
 
   # generate color palette for color variable
+  if(!is.null(color_var)){
   color_list <- (conc_output_pp%>%distinct(!!sym(color_var)))%>%pull()
   conc_colors <- generate_color_pal(color_list)
+  }
   
   message('Building visualization')
   if(single_site&exploratory){
@@ -160,6 +216,13 @@ conc_output_gen <- function(conc_process_output,
     if(time_dimension){
       
     }else{
+      # single site, anomaly, no time
+      conc_output_plot <- plot_an_nt(data_tbl=conc_output_pp,
+                                        x_var='concept_name',
+                                        y_var='prop',
+                                        fill_var=color_var,
+                                        facet=facet_vars,
+                                        pal_map=conc_colors)
     }
     
   }else if(multi_site&exploratory){
@@ -178,7 +241,12 @@ conc_output_gen <- function(conc_process_output,
     if(time_dimension){
       
     }else{
-      
+      # multi-site, anomaly, no time
+      conc_output_plot <- plot_an_nt(data_tbl=conc_output_pp,
+                                        x_var='specialty_name',
+                                        fill_var=color_var,
+                                        facet=facet_vars,
+                                        pal_map=conc_colors)
     }
     
   }

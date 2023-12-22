@@ -64,7 +64,7 @@ compute_conc <- function(cohort,
   
   codeset_results <- list()
   codeset_list <- split(codeset_tbl, seq(nrow(codeset_tbl)))
-  grp_vis <- grouped_list %>% append('visit_occurrence_id')
+  grp_vis <- grouped_list %>% append(c('visit_occurrence_id'))
   grp_vis_spec <- grp_vis %>% append(c('spec_flag','total_gp_ct'))
   grp_spec <- grouped_list%>%append(c('specialty_concept_id'))
   
@@ -76,10 +76,10 @@ compute_conc <- function(cohort,
     
     message(paste0('Starting codeset ', codeset_list[[i]][4]))
     
-    domain_tbl_use <- cdm_tbl(paste0(codeset_list[[i]][[2]]))
-    # name the concept_id column in the codeset so it matches the cdm_tbl
-    codes_to_use <- load_codeset(codeset_name) %>%
-      rename(!!fact_col_name:=concept_id)
+    domain_tbl_use <- cdm_tbl(paste0(codeset_list[[i]][[2]]))%>%
+      rename(concept_id=!!fact_col_name)
+    
+    codes_to_use <- load_codeset(codeset_name) 
     # find occurrences of codeset codes with specialty
     visit_specs <- find_fact_spec_conc(cohort,
                                        fact_codes=codes_to_use,
@@ -105,7 +105,7 @@ compute_conc <- function(cohort,
     
     # calculate the concordance per the grouping parameters
     conc_prop<- visit_specs %>%
-      group_by(!!!syms(grp_spec))%>%
+      group_by(!!!syms(grp_spec),concept_id)%>%
       summarise(num_visits=n()) %>%
       ungroup()%>%
       mutate(codeset_name=codeset_name)
@@ -190,16 +190,4 @@ find_distinct_concepts <- function(tbl,
     inner_join(tbl_distinct, by = c('concept_id'='specialty_concept_id'), copy=TRUE)%>%
     rename(specialty_concept_id=concept_id,
            specialty_concept_name=concept_name)
-}
-
-#' Function to build plot based on specifications for output
-#' @param multi_site `TRUE` if should be stratified by multiple sites,
-#'                    `FALSE` if should be treated as single site
-#' @param detection_method vector one or both of `exploratory` or `anomaly`
-#' @param time_dimension `TRUE` if time dimension should be considered
-#'                        `FALSE` if time dimension should not be considered
-plot_conc_spec <- function(multi_site,
-                           detection_method,
-                           time_dimension){
-  
 }
