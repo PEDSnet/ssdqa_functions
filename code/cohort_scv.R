@@ -233,7 +233,7 @@ scv_ss_exp_nt <- function(scv_process,
     geom_tile() + 
     geom_text(aes(label = !!sym(output)), size = 2, color = 'black') +
     scale_fill_gradient2(low = 'pink', high = 'maroon') + 
-    facet_wrap2((facet %>% append(col)), scales = 'free') +
+    facet_wrap((facet %>% append(col)), scales = 'free') +
     theme(axis.text.x = element_blank()) +
     labs(title = title,
          x = col,
@@ -246,13 +246,15 @@ scv_ss_exp_nt <- function(scv_process,
     select(site, all_of(facet), source_concept_id, concept_id, ct, output) %>%
     mutate(pct = !!sym(output)) %>%
     arrange(site, !!!syms(facet), desc(ct)) %>%
-    gt(groupname_col = col) %>%
+    gt::gt(groupname_col = col) %>%
     gt_plt_bar_pct(column = pct) %>%
     fmt_number(columns = ct, decimals = 0) %>%
     fmt_percent(columns = output, decimals = 0) %>%
     data_color(palette = "Dark2", columns = c(site, all_of(facet))) %>%
     tab_options(row_group.background.color = 'linen',
-                row_group.font.weight = 'bold') %>%
+                row_group.font.weight = 'bold',
+                container.height = '750px',
+                container.overflow.y = TRUE) %>%
     tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) 
   
   ## option 2: interactive, compresses the table into accordion sections which makes it a little
@@ -277,7 +279,7 @@ scv_ss_exp_nt <- function(scv_process,
                                                                       text_position = 'above')),
                                         ct = colDef(format = colFormat(separators = TRUE))),
                          pagination = FALSE) %>% 
-    add_title(paste0('All Available Mappings for Top ', num_codes, ' Codes'))
+    reactablefmtr::add_title(paste0('All Available Mappings for Top ', num_codes, ' Codes'))
   
   ## will pick one of the table options for final version of the function
   output <- list(plot, table, table_v2)
