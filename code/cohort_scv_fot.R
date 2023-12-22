@@ -73,7 +73,20 @@ compute_fot_scv <- function(cohort,
 }
 
 
-## single site exploratory (use as multi site and just facet by site?)
+
+
+
+#' OUTPUT GENERATION
+
+
+#' *Single Site, Anomaly, Across Time*
+#' 
+#' Facets by main code (cdm or source) by default, with each line representing
+#' a mapping code. using plotly so the legend is interactive and codes can be isolated
+#' 
+#' Use this same thing for multi site and just facet by site? or do we need another
+#' visualization
+
 scv_ss_exp_at <- function(scv_process,
                           output,
                           facet){
@@ -84,7 +97,7 @@ scv_ss_exp_at <- function(scv_process,
   }else if(output == 'concept_prop'){
     facet <- facet %>% append('concept_id')
     color <- 'source_concept_id'
-  }else{stop(paste0('invalid output selected: column ', output, ' does not exist'))}
+  }else{stop('Please select a valid output')}
   
   p <- scv_process %>%
     mutate(concept_id = as.character(concept_id),
@@ -99,15 +112,26 @@ scv_ss_exp_at <- function(scv_process,
 }
 
 
-## need to figure out how to plot multi site anomaly
-## need to figure out what to do for single site anomaly
+#' *Multi Site, Anomaly, Across Time*
+#' 
+#' Similar to PF -- 
+#' 
+#' codes where a mapping represents a proportion of all mappings for that code which
+#' is +/- 2 MAD away from median. 
+#' 
+#' graph displays the proportion of mappings per code 
+#' that are outliers.
+#' 
+
 produce_multisite_mad_scv <- function(multisite_tbl,
                                       code_type,
                                       facet_var = NULL,
                                       mad_dev) {
   if(code_type == 'source'){
     concept_col <- 'source_concept_id'
-  }else(concept_col <- 'concept_id')
+  }else if(code_type == 'cdm'){
+    concept_col <- 'concept_id'
+  }else{stop('Please select a valid code type')}
   
   
   if(is.null(facet_var)){
@@ -162,15 +186,17 @@ produce_multisite_mad_scv <- function(multisite_tbl,
 scv_ms_anom_at <- function(scv_process,
                            output,
                            facet,
-                           mad_dev){
+                           mad_dev = 2){
   
   facet <- facet %>% append(c('concept_id', 'source_concept_id'))
   
   if(output == 'source_prop'){
     y_col <- 'source_concept_id'
     code_type <- 'source'
-  }else{y_col <- 'concept_id'
-  code_type <- 'cdm'}
+  }else if(output == 'concept_prop'){
+    y_col <- 'concept_id'
+    code_type <- 'cdm'
+  }else{stop('Please select a valid output')}
   
   fot <- fot_check(tblx = scv_process %>% ungroup(),
                    target_col = output,
@@ -192,6 +218,13 @@ scv_ms_anom_at <- function(scv_process,
 }
 
 
+#' *Single Site, Anomaly, Across Time*
+#' 
+#' Control chart looking at number of mappings over time
+#' 
+#' using the CHOP-developed package called `rocqi` 
+#' 
+
 scv_ss_anom_at <- function(scv_process,
                            output,
                            facet){
@@ -202,7 +235,7 @@ scv_ss_anom_at <- function(scv_process,
   
   facet <- facet %>% append(col)
   
-  n_mappings_yr <- scv_test_at %>%
+  n_mappings_yr <- scv_process %>%
     group_by(!!!syms(facet), start_date) %>%
     summarise(n_mappings = n())
   
