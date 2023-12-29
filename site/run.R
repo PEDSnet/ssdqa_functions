@@ -111,7 +111,7 @@ config('site_info', file.path(base_dir, 'site', 'site_info.R'))
 #' This Boolean value can be used to override the `default_retain_intermediates`
 #' setting from site_info.R.  If it is NA, the default is not overridden.
 #' @md
-config('retain_intermediates', NA)
+config('retain_intermediates', FALSE)
 
 #' Please edit: Request-specific results schema
 #'
@@ -119,7 +119,7 @@ config('retain_intermediates', NA)
 #' during processing of the request.
 #' If it is `NA`, the default value from site_info.R is used.
 #' @md
-config('results_schema', 'ssdqa_output')
+config('results_schema', 'weiss_jspa_ssdqa')
 config('cohort','glom')
 
 #' Request-specific suffix for output
@@ -129,7 +129,7 @@ config('cohort','glom')
 #' more readable result.  Keep the tag short, given Oracle limits on
 #' table name length.
 #' @md
-config('results_name_tag', '_stud_1279')
+config('results_name_tag', '_stud_1340')
 config('local_name_tag', '_loc')
 
 #' Execution mode
