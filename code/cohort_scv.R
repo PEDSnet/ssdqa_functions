@@ -95,15 +95,16 @@ check_code_dist <- function(cohort,
 scv_process <- function(cohort = cohort,
                         site_list = c('seattle','cchmc'),
                         domain_tbl=read_codeset('scv_domains', 'cccc'),
-                        concept_set = dplyr::union(load_codeset('jia_codes','iccccc'),
-                                                   load_codeset('jia_codes_icd','iccccc')),
+                        concept_set = c(45567437, 45553188),
+                          #dplyr::union(load_codeset('jia_codes','iccccc'),
+                                                  # load_codeset('jia_codes_icd','iccccc')) 
                         code_type = 'source',
                         code_domain = 'condition_occurrence',
                         multi_or_single_site = 'single',
                         anomaly_or_exploratory='exploratory',
-                        age_groups = read_codeset('age_group_definitions'),
-                        time = FALSE,
-                        time_span = c('2014-01-01', '2023-01-01')
+                        age_groups = FALSE, #read_codeset('age_group_definitions'),
+                        time = TRUE,
+                        time_span = c('2012-01-01', '2020-01-01')
                         ){
   
   # Set up grouped list
@@ -119,6 +120,11 @@ scv_process <- function(cohort = cohort,
     group_by(!!! syms(grouped_list))
   
   site_output <- list()
+  
+  #' HR COMMENT: I think we should do a check in here --
+  #' if single site, then we combine the data into 
+  #' one site and replace the different site names 
+  #' with something generic like `combined`
   
   if(! time) {
     
@@ -137,6 +143,7 @@ scv_process <- function(cohort = cohort,
       
       site_output[[k]] <- domain_compute
       
+      ### HR COMMENT: WHAT IS THE PURPOSE OF THIS STEP IF WE REDUCE IN SCV_TBL
       all_site <- reduce(.x=site_output,
                          .f=dplyr::union) 
       
@@ -147,6 +154,9 @@ scv_process <- function(cohort = cohort,
   
   } else if(time){
     
+    #' HR COMMENT: I think we need to also filter by the `time_period` parameter here
+    #' and add it to the main function parameter. We can default it
+    #' to a year, but we need the user to be able to change it if they want. 
     scv_tbl <- compute_fot_scv(cohort = cohort_prep,
                                site_list = site_list,
                                code_type = code_type,
@@ -168,6 +178,19 @@ scv_process <- function(cohort = cohort,
 
 
 #' OUTPUT GENERATION 
+#' 
+#' 
+#' 
+
+
+#' HR COMMENTS: I reviewed the output, and I like the 
+#' option 1 table better for the multi-site analysis, 
+#' and the heatmap best for single site, particularly 
+#' if we are enforcing a single site for the single site 
+#' exploratory. For all of them, wondering if we can somehow make
+#' it easy to view the concept names with the concept id's
+#' 
+
 
 #' *Single Site, Exploratory, No Time*
 #' 
@@ -185,6 +208,7 @@ scv_ss_exp_nt <- function(scv_process,
                           facet,
                           num_codes = 10){
   
+  ## HR COMMENT: SHOULD WE AUTOMATE THESE CHOICES?
   # picking columns / titles 
   if(output == 'concept_prop'){
     denom <-  'denom_concept_ct'
@@ -200,6 +224,8 @@ scv_ss_exp_nt <- function(scv_process,
   
   
   ## filter output down to most common codes, selecting a user-provided number
+  ## HR COMMENT: CHANGE FILTER FROM THE OBJECT NAME HERE
+  ## HR COMMENT: CAN REMOVE FACET IF IT IS NULL
   if(!is.null(facet)){
     filter <- scv_process %>%
       ungroup() %>%
@@ -220,7 +246,9 @@ scv_ss_exp_nt <- function(scv_process,
   final <- scv_process %>% 
     inner_join(filter)
   
-  graph <- final %>% 
+  #' HR COMMENT: I ungrouped here because `final` has some grouped variables, 
+  #' and it doesn't seem like new groupings are being *added* here.
+  graph <- final %>% ungroup() %>% 
     select(concept_id, source_concept_id, output, all_of(facet)) %>%
     group_by(!!sym(col), !!!syms(facet)) %>%
     arrange(desc(!!sym(output))) %>%
@@ -241,6 +269,10 @@ scv_ss_exp_nt <- function(scv_process,
   
   ## option 1 for table: more of a standard html table, can mess around with colors, 
   ## probably easier to save as an object
+  
+  #' HR COMMENT: I got an error when trying to run this, as 
+  #' I think the function `tab_header` is part of a package that was not downloaded 
+  #' to execute. That package should go in the `driver` file.
   table <- final %>%
     ungroup() %>%
     select(site, all_of(facet), source_concept_id, concept_id, ct, output) %>%
@@ -259,6 +291,9 @@ scv_ss_exp_nt <- function(scv_process,
   
   ## option 2: interactive, compresses the table into accordion sections which makes it a little
   ## easier to read, not sure how well it will save, not as pretty as the other one lol
+  
+  #' HR COMMENT: Also received an error for this one, 
+  #' this time with the function `reactablefmtr`
   table_v2 <- final %>%
     ungroup() %>%
     select(site, all_of(facet), source_concept_id, concept_id, ct, output) %>%
@@ -315,6 +350,13 @@ scv_ss_anom_nt <- function(scv_process,
            q1 = quantile(n_mappings, 0.25),
            q3 = quantile(n_mappings, 0.75))
   
+  #' HR COMMENT: The output here is a little confusing. 
+  #' The number of mappings all seem to exceed the median in 
+  #' both the graph outputs. I think we should review
+  #' the output of this graph - there might be a better way 
+  #' to do this - maybe number of mappings in the bottom and top quartiles
+  #' and just a graph with the top 5 and bottom 5, and then paired with a table
+  #' that lists the rest. 
   plot <- mappings_per_code %>%
     filter(n_mappings > median | n_mappings < q1) %>%
     ggplot(aes(x = as.character(!!sym(col)), y = n_mappings, color = as.character(!!sym(col)))) +
@@ -347,6 +389,10 @@ scv_ms_anom_nt <- function(scv_process,
                            facet,
                            mad_dev = 2){
   
+  #' HR COMMENT: In the single-site graphs, the output
+  #' is `source_prop` or `concept_prop`... why 
+  #' is it changed here? It doesn't matter which we keep, 
+  #' but we should try to be consistent. 
   if(output == 'source'){
     col <- 'source_concept_id'
     map_col <- 'concept_id'
@@ -371,7 +417,14 @@ scv_ms_anom_nt <- function(scv_process,
     mutate(dist_median = abs(n_mappings - median),
            n_mad = dist_median/mad)
   
-  
+  #' HR COMMENTS: This works well, but a couple of questions:
+  #' 1: Is it possible to have a list of the codes pop up if you hover your 
+  #' mouse over it? 
+  #' 2: I know this is nitpicky, but is it possible to have multiple 
+  #' gradients in the heatmap? The blue just makes it kind of hard to 
+  #' see the differences unless they are really big
+  #' 3: Should we do n > median as well as n < median? Should we have that 
+  #' as a potential option?
   plot <- mappings_group %>%
     filter(n_mappings > median) %>%
     ggplot(aes(y = as.character(!!sym(col)), x = site, fill = n_mad)) +

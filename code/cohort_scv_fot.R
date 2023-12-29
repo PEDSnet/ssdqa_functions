@@ -1,5 +1,10 @@
 
 
+#' HR COMMENTS: To discuss with Charlie --- is there a way 
+#' to take out the DQ specific function from this time function 
+#' so that the time function can be more reusable across 
+#' different check types?
+
 compute_fot_scv <- function(cohort,
                             code_type,
                             concept_set,
@@ -78,6 +83,9 @@ compute_fot_scv <- function(cohort,
 
 #' OUTPUT GENERATION
 
+#' HR COMMENT: The parameter to this function `scv_process` is
+#' the name of a function in the other file. I changed it in the
+#' table below. 
 
 #' *Single Site, Anomaly, Across Time*
 #' 
@@ -87,7 +95,11 @@ compute_fot_scv <- function(cohort,
 #' Use this same thing for multi site and just facet by site? or do we need another
 #' visualization
 
-scv_ss_exp_at <- function(scv_process,
+#' HR COMMENT: For this, too, can we hover over codes to see what the concept
+#' name is? Also, what is the anomaly here? I think this is exploratory, correct?
+#' Should we create a caption that explains the content of this graph? 
+#' 
+scv_ss_exp_at <- function(scv_process_tbl,
                           output,
                           facet){
   
@@ -99,7 +111,7 @@ scv_ss_exp_at <- function(scv_process,
     color <- 'source_concept_id'
   }else{stop('Please select a valid output')}
   
-  p <- scv_process %>%
+  p <- scv_process_tbl %>%
     mutate(concept_id = as.character(concept_id),
            source_concept_id = as.character(source_concept_id)) %>%
     ggplot(aes(y = !!sym(output), x = start_date, color = !!sym(color))) +
@@ -107,6 +119,7 @@ scv_ss_exp_at <- function(scv_process,
     facet_wrap((facet)) +
     labs(title = 'Code Mapping Pairs Over Time')
   
+  #' HR COMMENT: Need to add plotly as a library to call
   ggplotly(p)
   
 }
@@ -121,6 +134,8 @@ scv_ss_exp_at <- function(scv_process,
 #' 
 #' graph displays the proportion of mappings per code 
 #' that are outliers.
+#' 
+#' 
 #' 
 
 produce_multisite_mad_scv <- function(multisite_tbl,
