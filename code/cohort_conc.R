@@ -142,38 +142,86 @@ find_fact_spec_conc <- function(cohort,
                                 provider){
   
   
-  fact_occurrences <- fact_tbl %>%
-    inner_join(fact_codes) %>% # should join on the joincol since it was renamed, but may want to find a way to specify
-    inner_join(select(cohort,person_id), by = 'person_id') %>%# may want to specify join columns
-    select(-c(provider_id, site_id)) %>%# keeping out since may not match visit_occurrence
-    inner_join(cdm_tbl('visit_occurrence'))
+  fact_occurrences <- 
+    fact_tbl %>%
+    inner_join(cohort) %>% 
+    select(person_id, concept_id,
+           visit_occurrence_id, site) %>% 
+    inner_join(select(fact_codes,
+                      concept_id, concept_name,
+                      category, cluster)) %>% 
+    compute_new(temporary=TRUE,
+                indexes=list('person_id',
+                             'visit_occurrence_id'))#%>% # should join on the joincol since it was renamed, but may want to find a way to specify
+    #inner_join(select(cohort,person_id), by = 'person_id') %>%# may want to specify join columns
+    #select(-c(provider_id, site_id)) %>%# keeping out since may not match visit_occurrence
+    #inner_join(cdm_tbl('visit_occurrence')) 
+  
+  visits <- 
+    cdm_tbl('visit_occurrence') %>% 
+    select(person_id, visit_occurrence_id,
+           provider_id, care_site_id, visit_start_date)
+    
   
   if(care_site&provider){
-    pv_spec <- fact_occurrences %>%
+    pv_spec <-  visits %>%
       left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id)),
                 by = 'provider_id')%>%
       rename(specialty_concept_id_pv=specialty_concept_id)
-    cs_spec <- fact_occurrences %>%
+    cs_spec <- visits %>% 
       left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id)),
                 by = 'care_site_id')%>%
       rename(specialty_concept_id_cs=specialty_concept_id)
     
-    spec_full <- pv_spec %>%
-      full_join(cs_spec) %>%
+    spec_full <- 
+      cdm_tbl('visit_occurrence_id') %>% 
+      left_join(pv_spec) %>%
+      left_join(cs_spec) %>%
       mutate(specialty_concept_id=case_when(!is.na(specialty_concept_id_pv)~specialty_concept_id_pv,
                                             !is.na(specialty_concept_id_cs)~specialty_concept_id_cs,
                                             TRUE~NA_integer_))
     
   }else if(provider&!care_site){
-    spec_full <- fact_occurrences %>%
+    spec_full <- visits %>%
       left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id)),
                 by = 'provider_id')
   }else if(care_site&!provider){
-    spec_full <- fact_occurrences %>%
+    spec_full <- visits %>%
       left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id)),
                 by = 'care_site_id')
   }
-  return(spec_full)
+  
+  spec_final <- 
+    inner_join(
+      spec_full,
+      fact_occurrences
+    )
+  # if(care_site&provider){
+  #   pv_spec <- fact_occurrences %>%
+  #     left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id)),
+  #               by = 'provider_id')%>%
+  #     rename(specialty_concept_id_pv=specialty_concept_id)
+  #   cs_spec <- fact_occurrences %>%
+  #     left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id)),
+  #               by = 'care_site_id')%>%
+  #     rename(specialty_concept_id_cs=specialty_concept_id)
+  # 
+  #   spec_full <- pv_spec %>%
+  #     full_join(cs_spec) %>%
+  #     mutate(specialty_concept_id=case_when(!is.na(specialty_concept_id_pv)~specialty_concept_id_pv,
+  #                                           !is.na(specialty_concept_id_cs)~specialty_concept_id_cs,
+  #                                           TRUE~NA_integer_))
+  # 
+  # }else if(provider&!care_site){
+  #   spec_full <- fact_occurrences %>%
+  #     left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id)),
+  #               by = 'provider_id')
+  # }else if(care_site&!provider){
+  #   spec_full <- fact_occurrences %>%
+  #     left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id)),
+  #               by = 'care_site_id')
+  # }
+  return(spec_final)
   
 }
 
