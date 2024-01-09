@@ -236,26 +236,26 @@ scv_process <- function(cohort = cohort,
 #' visualization
 
 scv_ss_exp_nt <- function(process_output,
-                          output,
+                          code_type,
                           facet,
                           vocab_tbl = vocabulary_tbl('concept'),
                           num_codes = 10,
                           num_mappings = 25){
   
   # picking columns / titles 
-  if(output == 'cdm'){
+  if(code_type == 'cdm'){
     denom <-  'denom_concept_ct'
     col <- 'concept_id'
     map_col <- 'source_concept_id'
     prop <- 'concept_prop'
     title <- paste0('Top ', num_mappings, ' Mappings for Top ', num_codes, ' CDM Codes')
-  }else if(output == 'source'){
+  }else if(code_type == 'source'){
     denom <- 'denom_source_ct'
     col <- 'source_concept_id'
     map_col <- 'concept_id'
     prop <- 'source_prop'
     title <- paste0('Top ', num_mappings, ' Mappings for Top ', num_codes, ' Source Codes')
-  }else{stop('Please select a valid output - `source` or `cdm`')}
+  }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
   
   ## filter output down to most common codes, selecting a user-provided number
@@ -349,23 +349,23 @@ scv_ss_exp_nt <- function(process_output,
 #' 
 
 scv_ms_exp_nt <- function(process_output,
-                          output,
+                          code_type,
                           facet,
                           vocab_tbl = vocabulary_tbl('concept'),
                           num_codes = 10){
   
   # picking columns / titles 
-  if(output == 'cdm'){
+  if(code_type == 'cdm'){
     denom <-  'denom_concept_ct'
     col <- 'concept_id'
     map_col <- 'source_concept_id'
     prop <- 'concept_prop'
-  }else if(output == 'source'){
+  }else if(code_type == 'source'){
     denom <- 'denom_source_ct'
     col <- 'source_concept_id'
     map_col <- 'concept_id'
     prop <- 'source_prop'
-  }else{stop('Please select a valid output - `source` or `cdm`')}
+  }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
   
   ## filter output down to most common codes, selecting a user-provided number
@@ -389,7 +389,7 @@ scv_ms_exp_nt <- function(process_output,
       gt::gt(groupname_col = col) %>%
       gtExtras::gt_plt_bar_pct(column = pct) %>%
       fmt_number(columns = ct, decimals = 0) %>%
-      fmt_percent(columns = output, decimals = 0) %>%
+      fmt_percent(columns = prop, decimals = 0) %>%
       data_color(palette = "Dark2", columns = c(site, all_of(facet))) %>%
       tab_options(row_group.background.color = 'linen',
                   row_group.font.weight = 'bold',
@@ -445,16 +445,16 @@ scv_ms_exp_nt <- function(process_output,
 #' 
 
 scv_ss_anom_nt <- function(process_output,
-                           output,
+                           code_type,
                            facet,
                            vocab_tbl = vocabulary_tbl('concept'),
                            rel_to_median = 'greater'){
   
-  if(output == 'source'){
+  if(code_type == 'source'){
     col <- 'source_concept_id'
-  }else if(output == 'cdm'){
+  }else if(code_type == 'cdm'){
     col <- 'concept_id'
-  }else{stop('Please select a valid output - `source` or `cdm`')}
+  }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
   mappings_per_code <- process_output %>%
     group_by(!!!syms(facet), !!sym(col)) %>%
@@ -525,18 +525,18 @@ scv_ss_anom_nt <- function(process_output,
 #' 
 
 scv_ms_anom_nt <- function(process_output,
-                           output,
+                           code_type,
                            facet,
                            rel_to_median = 'greater',
                            mad_dev = 2){
   
-  if(output == 'source'){
+  if(code_type == 'source'){
     col <- 'source_concept_id'
     map_col <- 'concept_id'
-  }else if(output == 'cdm'){
+  }else if(code_type == 'cdm'){
     col <- 'concept_id'
     map_col <- 'source_concept_id'
-  }else{stop('Please select a valid output - `source` or `cdm`')}
+  }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
   mappings_total <- process_output %>%
     group_by(!!sym(col)) %>%
@@ -606,5 +606,73 @@ scv_ms_anom_nt <- function(process_output,
            height = 10)
     
   }
+  
+}
+
+
+
+
+
+
+scv_output <- function(process_output,
+                       output_function,
+                       code_type,
+                       facet,
+                       num_codes = 10,
+                       num_mappings = 25,
+                       rel_to_median = 'greater',
+                       mad_dev = 2,
+                       vocab_tbl = vocabulary_tbl('concept'),
+                       save_as_png = FALSE,
+                       file_path = NULL){
+  
+  ## Run output functions
+  if(output_function == 'scv_ms_anom_nt'){
+    scv_output <- scv_ms_anom_nt(process_output = process_output,
+                                 code_type = code_type,
+                                 facet = facet,
+                                 rel_to_median = rel_to_median,
+                                 mad_dev = mad_dev)
+  }else if(output_function == 'scv_ss_anom_nt'){
+    scv_output <- scv_ss_anom_nt(process_output = process_output,
+                                 code_type = code_type,
+                                 facet = facet,
+                                 rel_to_median = rel_to_median,
+                                 vocab_tbl = vocab_tbl)
+  }else if(output_function == 'scv_ms_exp_nt'){
+    scv_output <- scv_ms_exp_nt(process_output = process_output,
+                                code_type = code_type,
+                                facet = facet,
+                                num_codes = num_codes,
+                                vocab_tbl = vocab_tbl)
+  }else if(output_function == 'scv_ss_exp_nt'){
+    scv_output <- scv_ss_exp_nt(process_output = process_output,
+                                code_type = code_type,
+                                facet = facet,
+                                num_codes = num_codes,
+                                num_mappings = num_mappings,
+                                vocab_tbl = vocab_tbl)
+  }else if(output_function == 'scv_ms_anom_at'){
+    scv_output <- scv_ms_anom_at(process_output = process_output,
+                                 code_type = code_type,
+                                 facet = facet,
+                                 mad_dev = mad_dev)
+  }else if(output_function == 'scv_ss_anom_at'){
+    scv_output <- scv_ss_anom_at(process_output = process_output,
+                                 code_type = code_type,
+                                 facet = facet)
+  }else if(output_function == 'scv_ms_exp_at'){
+    scv_output <- scv_ss_ms_exp_at(process_output = process_output,
+                                   code_type = code_type,
+                                   facet = facet,
+                                   vocab_tbl = vocab_tbl)
+  }else if(output_function == 'scv_ss_exp_at'){
+    scv_output <- scv_ss_ms_exp_at(process_output = process_output,
+                                   code_type = code_type,
+                                   facet = facet,
+                                   vocab_tbl = vocab_tbl)
+  }
+  
+  return(scv_output)
   
 }

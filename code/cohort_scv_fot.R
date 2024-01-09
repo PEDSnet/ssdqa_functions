@@ -18,19 +18,19 @@
 #' Should we create a caption that explains the content of this graph? 
 #' 
 scv_ss_ms_exp_at <- function(process_output,
-                          output,
+                          code_type,
                           facet,
                           vocab_tbl = vocabulary_tbl('concept')){
   
-  if(output == 'source'){
+  if(code_type == 'source'){
     facet <- facet %>% append('source_concept_id')
     color <- 'concept_id'
     prop <- 'source_prop'
-  }else if(output == 'cdm'){
+  }else if(code_type == 'cdm'){
     facet <- facet %>% append('concept_id')
     color <- 'source_concept_id'
     prop <- 'concept_prop'
-  }else{stop('Please select a valid output - `source` or `cdm`')}
+  }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
   
   if(is.null(vocab_tbl)){
@@ -144,19 +144,19 @@ produce_multisite_mad_scv <- function(multisite_tbl,
 }
 
 scv_ms_anom_at <- function(process_output,
-                           output,
+                           code_type,
                            facet,
                            mad_dev = 2){
   
   facet <- facet %>% append(c('concept_id', 'source_concept_id'))
   
-  if(output == 'source'){
+  if(code_type == 'source'){
     y_col <- 'source_concept_id'
     prop <- 'source_prop'
-  }else if(output == 'cdm'){
+  }else if(code_type == 'cdm'){
     y_col <- 'concept_id'
     prop <- 'concept_prop'
-  }else{stop('Please select a valid output - `source` or `cdm`')}
+  }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
   fot <- fot_check(tblx = process_output %>% ungroup() %>%
                      mutate(start_date = time_start),
@@ -166,7 +166,7 @@ scv_ms_anom_at <- function(process_output,
   fot2 <- check_fot_all_dist(fot_check_output = fot$fot_heuristic)
   
   mad <- produce_multisite_mad_scv(multisite_tbl = fot2,
-                                   code_type = output,
+                                   code_type = code_type,
                                    mad_dev = mad_dev)
   
   r <- ggplot(mad, aes(x=site, y=as.character(!!sym(y_col)), fill=grp_outlier_prop)) +
@@ -188,12 +188,12 @@ scv_ms_anom_at <- function(process_output,
 #' 
 
 scv_ss_anom_at <- function(process_output,
-                           output,
+                           code_type,
                            facet){
   
-  if(output == 'source'){
+  if(code_type == 'source'){
     col <- 'source_concept_id'
-  }else if(output == 'cdm'){
+  }else if(code_type == 'cdm'){
     col <- 'concept_id'}
   
   facet <- facet %>% append(col)
