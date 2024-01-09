@@ -33,14 +33,15 @@ compute_fot <- function(cohort,
     
     
     cohort_narrow_prepped <- cohort_narrowed %>%
-      filter(site %in% site_list_v) %>% mutate(time_start=start_date,
-                                               time_increment=time_period)
+      filter(site %in% site_list_v) %>% 
+      mutate(time_start=start_date,
+             time_increment=time_period)
     
     output <- check_func(dat = cohort_narrow_prepped)
     
     if(is.list(output)){
     output_reduced <- dplyr::bind_rows(output, .id= reduce_id) 
-    }else(output_reduced <- output)
+    }else{output_reduced <- output}
     
     final_results[[k]] <- output_reduced
     
@@ -92,9 +93,9 @@ compute_fot <- function(cohort,
     
     stnd <- 
       ct %>% 
-      mutate(fu = round((end_date - start_date + 1)/365.25,3)) %>% 
-      select(person_id, start_date, end_date, fu) %>% 
-      add_site()
+      mutate(fu = round((end_date - start_date + 1)/365.25,3)) #%>% 
+      #select(site, person_id, start_date, end_date, fu) #%>% 
+      #add_site()
     
     if(!is.data.frame(age_groups)){
       final_age <- stnd
@@ -117,3 +118,51 @@ compute_fot <- function(cohort,
     return(final)
     
   }
+  
+  
+  
+## Function to check correct inputs for multi/single site argument
+  
+check_site_type <- function(cohort,
+                            multi_or_single_site,
+                            site_list){
+  
+  if('site' %in% colnames(cohort)){
+    
+    # count number of sites in site list that also exist in the cohort
+    n_site <- cohort %>% filter(site %in% site_list) %>% 
+      summarise(n_distinct(site)) %>% pull()
+    
+    if(multi_or_single_site == 'single' && n_site > 1){
+    # create new "summary" site column / name, add that to grouped list
+    # instead of site, and create new site list to account for new site name
+      cohort_final <- cohort %>%
+        filter(site %in% site_list) %>%
+        mutate(site_summ = 'combined')
+      
+      grouped_list <- c('site_summ')
+      site_list_adj <- 'combined'
+      
+    }else if(multi_or_single_site == 'multi' && n_site == 1){
+      
+      stop('Please include data from multiple sites in your cohort to 
+           conduct a multi-site analysis.')
+      
+    }else if((multi_or_single_site == 'single' && n_site == 1) ||
+             (multi_or_single_site == 'multi' && n_site > 1)){
+      
+      cohort_final <- cohort %>%
+        filter(site %in% site_list)
+      
+      grouped_list <- c('site')
+      site_list_adj <- site_list
+      
+    }else{stop('Invalid argument for multi_or_single_site. Please select either `single` or `multi`')}
+  }else{stop('Please include a `site` column in your cohort.')}
+  
+  final <- list('cohort' = cohort_final, 
+                'grouped_list' = grouped_list, 
+                'site_list_adj' = site_list_adj)
+  
+  return(final)
+}
