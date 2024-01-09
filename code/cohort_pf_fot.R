@@ -86,7 +86,6 @@ compute_fot_pf <- function(cohort,
                                                time_increment=time_period)
     
     pf <- loop_through_visits(cohort_tbl = cohort_narrow_prepped,
-                              #collapse_sites=collapse_sites,
                               time = TRUE,
                               visit_type_tbl=visit_type_tbl,
                               site_list=site_list,

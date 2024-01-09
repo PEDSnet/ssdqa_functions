@@ -205,6 +205,7 @@ compute_pf <- function(cohort,
 #' 
 
 loop_through_visits <- function(cohort_tbl,
+                                site_col,
                                 time=FALSE,
                                 #collapse_sites=FALSE,
                                 #combine_sites = TRUE,
@@ -228,7 +229,7 @@ loop_through_visits <- function(cohort_tbl,
       site_list_thisrnd <- site_list[[k]]
       
       # filters by site
-      cohort_site <- cohort_tbl %>% filter(site%in%c(site_list_thisrnd))
+      cohort_site <- cohort_tbl %>% filter(!!sym(site_col)%in%c(site_list_thisrnd))
       
       # pulls the visit_concept_id's that correspond to the visit_list
       visit_types <- 

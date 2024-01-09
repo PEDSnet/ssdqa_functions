@@ -26,10 +26,11 @@
 #' @param multi_or_single_site - Option to run the function on a single vs multiple sites
 #'                               - @single - run the function for a single site
 #'                               - @multi - run the function for multiple sites
-#' @param collapse_sites - a logical that tells the function to either loop through sites or run it once for all sites
 #' @param time - a logical that tells the function whether you would like to look at the output over time
 #' @param time_span - when time = TRUE, this argument defines the start and end dates for the time period of interest. should be
 #'                    formatted as c(start date, end date) in yyyy-mm-dd date format.
+#' @param time_period - when time = TRUE, this argument defines the distance between dates within the specified time period. defaults
+#'                      to `year`, but other time periods such as `month` or `week` are also acceptable
 #' @param age_groups - If you would like to stratify the results by age group, fill out the provided `age_group_definitions.csv` file
 #'                     with the following information:
 #'                     - @min_age: the minimum age for the group (i.e. 10)
@@ -85,9 +86,9 @@ pf_process <- function(cohort = cohort,
                        intermediate_tbl = 'r_dataframe',
                        visit_types = c('outpatient','inpatient'),
                        multi_or_single_site = 'multi',
-                       #collapse_sites = FALSE,
                        time = FALSE,
                        time_span = c('2014-01-01', '2023-01-01'),
+                       time_period = 'year',
                        age_groups = NULL,
                        codeset = NULL,
                        anomaly_or_exploratory='anomaly',
@@ -97,13 +98,22 @@ pf_process <- function(cohort = cohort,
   ## Step 0: Set cohort name for table output
   config('cohort', study_name)
   
-  ## Step 1: Prepare cohort
+  ## Step 1: Check Sites
+  site_filter <- check_site_type(cohort = cohort,
+                                 multi_or_single_site = multi_or_single_site,
+                                 site_list = site_list)
+  cohort_filter <- site_filter$cohort
+  grouped_list <- site_filter$grouped_list
+  site_col <- site_filter$grouped_list
+  site_list_adj <- site_filter$site_list_adj
   
-  cohort_prep <- prepare_pf(cohort = cohort, age_groups = age_groups, codeset = codeset)
+  ## Step 2: Prep cohort
   
-  ## Step 2: Run Function
+  cohort_prep <- prepare_cohort(cohort = cohort_filter, age_groups = age_groups, codeset = codeset)
   
-  grouped_list <- c('site','person_id','start_date','end_date','fu')
+  ## Step 3: Run Function
+  
+  grouped_list <- grouped_list %>% append(c('person_id','start_date','end_date','fu'))
   
   if(is.data.frame(age_groups)){grouped_list <- grouped_list %>% append('age_grp')}
   if(is.data.frame(codeset)){grouped_list <- grouped_list %>% append('flag')}
@@ -112,22 +122,28 @@ pf_process <- function(cohort = cohort,
     
     grouped_list <- grouped_list[! grouped_list %in% 'fu']
     
-    pf_final <- compute_fot_pf(cohort = cohort_prep,
-                             grouped_list=grouped_list,
-                             time_period='year',
-                             time_span= time_span,
-                             #collapse_sites = collapse_sites,
-                             visit_type_tbl=visit_type_table,
-                             site_list=site_list,
-                             visit_list=visit_types,
-                             domain_tbl=domain_tbl)
+    pf_final <- compute_fot(cohort = cohort_prep,
+                            reduce_id = 'visit_type',
+                            time_period = time_period,
+                            time_span = time_span,
+                            site_list = site_list_adj,
+                            check_func = function(dat){
+                              loop_through_visits(cohort_tbl = dat,
+                                                  site_col = site_col,
+                                                  time = TRUE,
+                                                  visit_type_tbl=visit_type_table,
+                                                  site_list=site_list_adj,
+                                                  visit_list=visit_types,
+                                                  grouped_list=grouped_list,
+                                                  domain_tbl=domain_tbl)
+                            })
     
   } else {
     pf_tbl <- loop_through_visits(
       cohort_tbl=cohort_prep,
+      site_col = site_col, 
       time = FALSE,
-      #collapse_sites=collapse_sites,
-      site_list=site_list,
+      site_list=site_list_adj,
       visit_list=visit_types,
       visit_type_tbl=visit_type_table,
       grouped_list=grouped_list,
@@ -160,7 +176,7 @@ pf_process <- function(cohort = cohort,
                     age = age_groups,
                     cs = codeset) %>% output_tbl('parameter_summary', file = TRUE)
   
-  ## Step 3: Summarise (Medians, SD)
+  ## Step 4: Summarise (Medians, SD)
   if(!time) {
     if(anomaly_or_exploratory=='anomaly' && multi_or_single_site=='single') {
       pf_output <- compute_dist_mean(pf_final,
