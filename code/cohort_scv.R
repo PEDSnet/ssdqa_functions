@@ -35,22 +35,38 @@ check_code_dist <- function(cohort,
       inner_join(cdm_tbl(code_domain)) %>%
       filter(!!sym(domain_filter$date_col) >= start_date,
              !!sym(domain_filter$date_col) <= end_date)
+    
+    
+    fact_tbl <- 
+      domain_tbl %>% 
+      inner_join(concept_set,
+                 by=setNames('concept_id',final_col)) %>% 
+      select(all_of(group_vars(cohort)),
+             all_of(concept_col),
+             all_of(source_col),
+             time_start,
+             time_increment) %>% 
+      rename('concept_id' = concept_col,
+             'source_concept_id' = source_col) %>%
+      group_by(time_start, time_increment, .add = TRUE)
       
   }else{
     
     domain_tbl <- cohort %>%
       inner_join(cdm_tbl(code_domain))
+    
+    
+    fact_tbl <- 
+      domain_tbl %>% 
+      inner_join(concept_set,
+                 by=setNames('concept_id',final_col)) %>% 
+      select(all_of(group_vars(cohort)),
+             all_of(concept_col),
+             all_of(source_col)) %>% 
+      rename('concept_id' = concept_col,
+             'source_concept_id' = source_col)
+    
     }
-  
-  fact_tbl <- 
-    domain_tbl %>% 
-    inner_join(concept_set,
-               by=setNames('concept_id',final_col)) %>% 
-    select(all_of(group_vars(cohort)),
-           all_of(concept_col),
-           all_of(source_col)) %>% 
-    rename('concept_id' = concept_col,
-           'source_concept_id' = source_col)
   
   grouped_output <- 
     fact_tbl %>% 
@@ -104,36 +120,42 @@ scv_process <- function(cohort = cohort,
                         anomaly_or_exploratory='exploratory',
                         age_groups = FALSE, #read_codeset('age_group_definitions'),
                         time = TRUE,
-                        time_span = c('2012-01-01', '2020-01-01')
+                        time_span = c('2012-01-01', '2020-01-01'),
+                        time_period = 'year'
                         ){
+  
+  # Add site check
+  site_filter <- check_site_type(cohort = cohort,
+                                 multi_or_single_site = multi_or_single_site,
+                                 site_list = site_list)
+  cohort_filter <- site_filter$cohort
+  grouped_list <- site_filter$grouped_list
+  site_col <- site_filter$grouped_list
+  site_list_adj <- site_filter$site_list_adj
   
   # Set up grouped list
   
-  grouped_list <- c('site', 'domain')
+  grouped_list <- grouped_list %>% append('domain')
   
   if(is.data.frame(age_groups)){grouped_list <- grouped_list %>% append('age_grp')}
   
-  # Prep cohort
-  
-  cohort_prep <- prepare_pf(cohort_tbl = cohort, age_groups = age_groups, codeset = NULL) %>% 
-    mutate(domain = code_domain) %>% 
-    group_by(!!! syms(grouped_list))
-  
   site_output <- list()
   
-  #' HR COMMENT: I think we should do a check in here --
-  #' if single site, then we combine the data into 
-  #' one site and replace the different site names 
-  #' with something generic like `combined`
+  # Prep cohort
   
+  cohort_prep <- prepare_cohort(cohort_tbl = cohort_filter, age_groups = age_groups, codeset = NULL) %>% 
+    mutate(domain = code_domain) %>% 
+    group_by(!!! syms(grouped_list))
+
+  # Execute function
   if(! time) {
     
-    for(k in 1:length(site_list)) {
+    for(k in 1:length(site_list_adj)) {
       
-      site_list_thisrnd <- site_list[[k]]
+      site_list_thisrnd <- site_list_adj[[k]]
       
       # filters by site
-      cohort_site <- cohort_prep %>% filter(site%in%c(site_list_thisrnd))
+      cohort_site <- cohort_prep %>% filter(!!sym(site_col)%in%c(site_list_thisrnd))
       
       domain_compute <- check_code_dist(cohort = cohort_site,
                                         code_type = code_type,
@@ -143,27 +165,37 @@ scv_process <- function(cohort = cohort,
       
       site_output[[k]] <- domain_compute
       
-      ### HR COMMENT: WHAT IS THE PURPOSE OF THIS STEP IF WE REDUCE IN SCV_TBL
-      all_site <- reduce(.x=site_output,
-                         .f=dplyr::union) 
-      
     }
     
     scv_tbl <- reduce(.x=site_output,
                       .f=dplyr::union)
   
   } else if(time){
+    ## Do we need a loop here? works because it groups by site as a default, not sure if
+    ## its necessary (which one is faster/more efficient)
+    if(!is.vector(concept_set)){stop('For an over time output, please select 1-5 codes from your
+                                   concept set and include them as a vector in the concept_set argument.')}
+    if(is.vector(concept_set) && length(concept_set) > 5){stop('For an over time output, please select 1-5 
+                                                              codes from your concept set and include them as
+                                                             a vector in the concept_set argument.')}
     
-    #' HR COMMENT: I think we need to also filter by the `time_period` parameter here
-    #' and add it to the main function parameter. We can default it
-    #' to a year, but we need the user to be able to change it if they want. 
-    scv_tbl <- compute_fot_scv(cohort = cohort_prep,
-                               site_list = site_list,
-                               code_type = code_type,
-                               code_domain = code_domain,
-                               concept_set = concept_set,
-                               time_span = time_span,
-                               domain_tbl = domain_tbl)
+    concept_set_prep <- as.data.frame(concept_set) %>% rename('concept_id' = concept_set) %>%
+      mutate(concept_id = as.integer(concept_id))
+    concept_set_prep <- copy_to_new(df = concept_set_prep)
+    
+    scv_tbl <- compute_fot(cohort = cohort_prep,
+                           site_list = site_list_adj,
+                           time_span = time_span,
+                           time_period = time_period,
+                           reduce_id = NULL,
+                           check_func = function(dat){
+                                 check_code_dist(cohort = dat,
+                                                 concept_set = concept_set_prep,
+                                                 code_type = code_type,
+                                                 code_domain = code_domain,
+                                                 domain_tbl = domain_tbl,
+                                                 time = TRUE)
+                               })
     
   }
   
@@ -203,123 +235,202 @@ scv_process <- function(cohort = cohort,
 #' Use this same thing for multi site and just facet by site? or do we need another
 #' visualization
 
-scv_ss_exp_nt <- function(scv_process,
+scv_ss_exp_nt <- function(process_output,
                           output,
                           facet,
-                          num_codes = 10){
+                          vocab_tbl = vocabulary_tbl('concept'),
+                          num_codes = 10,
+                          num_mappings = 25){
   
-  ## HR COMMENT: SHOULD WE AUTOMATE THESE CHOICES?
   # picking columns / titles 
-  if(output == 'concept_prop'){
+  if(output == 'cdm'){
     denom <-  'denom_concept_ct'
     col <- 'concept_id'
     map_col <- 'source_concept_id'
-    title <- paste0('Top 5 Mappings for Top ', num_codes, ' CDM Codes')
-  }else if(output == 'source_prop'){
+    prop <- 'concept_prop'
+    title <- paste0('Top ', num_mappings, ' Mappings for Top ', num_codes, ' CDM Codes')
+  }else if(output == 'source'){
     denom <- 'denom_source_ct'
     col <- 'source_concept_id'
     map_col <- 'concept_id'
-    title <- paste0('Top 5 Mappings for Top ', num_codes, ' Source Codes')
-  }else{stop('Please select a valid output')}
+    prop <- 'source_prop'
+    title <- paste0('Top ', num_mappings, ' Mappings for Top ', num_codes, ' Source Codes')
+  }else{stop('Please select a valid output - `source` or `cdm`')}
   
   
   ## filter output down to most common codes, selecting a user-provided number
-  ## HR COMMENT: CHANGE FILTER FROM THE OBJECT NAME HERE
-  ## HR COMMENT: CAN REMOVE FACET IF IT IS NULL
-  if(!is.null(facet)){
-    filter <- scv_process %>%
+  topcodes <- process_output %>%
       ungroup() %>%
       select(col, denom, all_of(facet)) %>%
       distinct() %>%
       group_by(!!! syms(facet)) %>%
       arrange(desc(!! sym(denom))) %>%
       slice(1:num_codes)
-  }else{
-    filter <- scv_process %>%
-      ungroup() %>%
-      select(col, denom) %>%
-      distinct() %>%
-      arrange(desc(!! sym(denom))) %>%
-      slice(1:num_codes)
-  }
   
-  final <- scv_process %>% 
-    inner_join(filter)
+  ref <- process_output %>% 
+    ungroup() %>%
+    inner_join(topcodes) 
   
-  #' HR COMMENT: I ungrouped here because `final` has some grouped variables, 
-  #' and it doesn't seem like new groupings are being *added* here.
-  graph <- final %>% ungroup() %>% 
-    select(concept_id, source_concept_id, output, all_of(facet)) %>%
+  nmap_total <- ref %>%
     group_by(!!sym(col), !!!syms(facet)) %>%
-    arrange(desc(!!sym(output))) %>%
-    slice(1:5)
+    summarise(nmap = n())
   
-  ## new graph: shows top 5 mappings for however many codes are selected by the user; definitely
-  ## much easier to look at when the number of mappings gets high
-  plot <- graph %>% ggplot(aes(x = as.character(!!sym(col)), y = as.character(!!sym(map_col)), 
-                               fill = !!sym(output))) + 
-    geom_tile() + 
-    geom_text(aes(label = !!sym(output)), size = 2, color = 'black') +
-    scale_fill_gradient2(low = 'pink', high = 'maroon') + 
-    facet_wrap((facet %>% append(col)), scales = 'free') +
-    theme(axis.text.x = element_blank()) +
-    labs(title = title,
-         x = col,
-         y = map_col)
+  nmap_top <- ref %>%
+    select(col, map_col, all_of(facet), prop) %>%
+    distinct() %>% 
+    group_by(!!sym(col), !!!syms(facet)) %>%
+    arrange(desc(!!sym(prop))) %>%
+    slice(1:num_mappings)
   
-  ## option 1 for table: more of a standard html table, can mess around with colors, 
-  ## probably easier to save as an object
+  if(is.null(vocab_tbl)){
+    final <- ref %>%
+      inner_join(nmap_top) %>%
+      left_join(nmap_total) %>%
+      mutate(xaxis = paste0(!!sym(col), '\n Total Mappings: ', nmap))
+    
+    facet <- facet %>% append('xaxis')
+    
+    plot <- final %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
+                                 fill = !!sym(prop))) + 
+      geom_tile() + 
+      geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
+      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+      facet_wrap((facet), scales = 'free') +
+      theme(axis.text.x = element_blank()) +
+      labs(title = title,
+           x = col,
+           y = map_col)
+    
+    return(plot)
+    
+  }else{
+    
+    final_filt <- ref %>%
+      inner_join(nmap_top) %>%
+      left_join(nmap_total)
+    
+    final_db <- copy_to_new(df = final_filt)
+    
+    final <- final_db %>%
+      rename('join_col' = map_col) %>%
+      left_join(select(vocab_tbl, concept_id, concept_name), 
+                by = c('join_col' = 'concept_id')) %>%
+      mutate(xaxis = paste0(!!sym(col), '\n Total Mappings: ', nmap))
+    
+    
+    facet <- facet %>% append('xaxis')
+    
+    ## ggiraph interactive
+    plot <- final %>% ggplot(aes(x = xaxis, y = as.character(join_col), 
+                                fill = !!sym(prop))) +
+      geom_tile_interactive(aes(tooltip = concept_name)) +
+      geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
+      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+      facet_wrap((facet), scales = 'free') +
+      theme(axis.text.x = element_blank()) +
+      labs(title = title,
+           x = col,
+           y = map_col)
+    
+    girafe(ggobj = plot,
+           width = 10,
+           height = 10)
+    
+    return(plot_int)
+    
+  }
+}
+
+
+#'
+#' *Multi Site, Exploratory, No Time*
+#' 
+#' Table
+#' 
+
+scv_ms_exp_nt <- function(process_output,
+                          output,
+                          facet,
+                          vocab_tbl = vocabulary_tbl('concept'),
+                          num_codes = 10){
   
-  #' HR COMMENT: I got an error when trying to run this, as 
-  #' I think the function `tab_header` is part of a package that was not downloaded 
-  #' to execute. That package should go in the `driver` file.
-  table <- final %>%
+  # picking columns / titles 
+  if(output == 'cdm'){
+    denom <-  'denom_concept_ct'
+    col <- 'concept_id'
+    map_col <- 'source_concept_id'
+    prop <- 'concept_prop'
+  }else if(output == 'source'){
+    denom <- 'denom_source_ct'
+    col <- 'source_concept_id'
+    map_col <- 'concept_id'
+    prop <- 'source_prop'
+  }else{stop('Please select a valid output - `source` or `cdm`')}
+  
+  
+  ## filter output down to most common codes, selecting a user-provided number
+  topcodes <- process_output %>%
     ungroup() %>%
-    select(site, all_of(facet), source_concept_id, concept_id, ct, output) %>%
-    mutate(pct = !!sym(output)) %>%
-    arrange(site, !!!syms(facet), desc(ct)) %>%
-    gt::gt(groupname_col = col) %>%
-    gt_plt_bar_pct(column = pct) %>%
-    fmt_number(columns = ct, decimals = 0) %>%
-    fmt_percent(columns = output, decimals = 0) %>%
-    data_color(palette = "Dark2", columns = c(site, all_of(facet))) %>%
-    tab_options(row_group.background.color = 'linen',
-                row_group.font.weight = 'bold',
-                container.height = '750px',
-                container.overflow.y = TRUE) %>%
-    tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) 
+    select(col, denom, all_of(facet)) %>%
+    distinct() %>%
+    group_by(!!! syms(facet)) %>%
+    arrange(desc(!! sym(denom))) %>%
+    slice(1:num_codes)
   
-  ## option 2: interactive, compresses the table into accordion sections which makes it a little
-  ## easier to read, not sure how well it will save, not as pretty as the other one lol
+  if(is.null(vocab_tbl)){
+    final <- process_output %>% 
+      inner_join(topcodes)
   
-  #' HR COMMENT: Also received an error for this one, 
-  #' this time with the function `reactablefmtr`
-  table_v2 <- final %>%
-    ungroup() %>%
-    select(site, all_of(facet), source_concept_id, concept_id, ct, output) %>%
-    mutate(pct = !!sym(output)) %>%
-    select(-!!sym(output)) %>%
-    reactable::reactable(groupBy = c(col, 'site'),
-                         bordered = TRUE,
-                         striped = TRUE,
-                         theme = reactableTheme(
-                           cellPadding = "8px 12px",
-                           style = list(
-                             fontFamily = "-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif"
-                           )),
-                         columns = list(site = colDef(aggregate = "unique"),
-                                        pct = colDef(cell = data_bars(., fill_color = '#12047d', 
-                                                                      bar_height = 30,
-                                                                      number_fmt = scales::percent,
-                                                                      text_position = 'above')),
-                                        ct = colDef(format = colFormat(separators = TRUE))),
-                         pagination = FALSE) %>% 
-    reactablefmtr::add_title(paste0('All Available Mappings for Top ', num_codes, ' Codes'))
+    table <- final %>%
+      ungroup() %>%
+      select(site, all_of(facet), source_concept_id, concept_id, ct, prop) %>%
+      mutate(pct = !!sym(prop)) %>%
+      arrange(site, !!!syms(facet), desc(ct)) %>%
+      gt::gt(groupname_col = col) %>%
+      gtExtras::gt_plt_bar_pct(column = pct) %>%
+      fmt_number(columns = ct, decimals = 0) %>%
+      fmt_percent(columns = output, decimals = 0) %>%
+      data_color(palette = "Dark2", columns = c(site, all_of(facet))) %>%
+      tab_options(row_group.background.color = 'linen',
+                  row_group.font.weight = 'bold',
+                  container.height = '750px',
+                  container.overflow.y = TRUE) %>%
+      tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) 
   
-  ## will pick one of the table options for final version of the function
-  output <- list(plot, table, table_v2)
+    return(table)
   
-  return(output)
+  }else{
+    
+    final_filt <- process_output %>% 
+      inner_join(topcodes) %>%
+      rename('join_col' = map_col)
+    
+    final_db <- copy_to_new(df = final_filt)
+    
+    final <- final_db %>%
+      left_join(select(vocab_tbl, concept_id, concept_name),
+                by = c('join_col' = 'concept_id')) %>%
+      collect_new()
+    
+    table <- final %>%
+      ungroup() %>%
+      select(site, all_of(facet), col, join_col, concept_name, ct, prop) %>%
+      mutate(pct = !!sym(prop)) %>%
+      arrange(site, !!!syms(facet), desc(ct)) %>%
+      gt::gt(groupname_col = col) %>%
+      gtExtras::gt_plt_bar_pct(column = pct) %>%
+      fmt_number(columns = ct, decimals = 0) %>%
+      fmt_percent(columns = prop, decimals = 0) %>%
+      data_color(palette = "Dark2", columns = c(site, all_of(facet))) %>%
+      tab_options(row_group.background.color = 'linen',
+                  row_group.font.weight = 'bold',
+                  container.height = '750px',
+                  container.overflow.y = TRUE) %>%
+      cols_label(join_col = map_col) %>%
+      tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) 
+    
+    return(table)
+  }
   
 }
 
@@ -333,43 +444,72 @@ scv_ss_exp_nt <- function(scv_process,
 #' Q1 median and Q3 shown on graph
 #' 
 
-scv_ss_anom_nt <- function(scv_process,
+scv_ss_anom_nt <- function(process_output,
                            output,
-                           facet){
+                           facet,
+                           vocab_tbl = vocabulary_tbl('concept'),
+                           rel_to_median = 'greater'){
   
-  if(output == 'source_prop'){
+  if(output == 'source'){
     col <- 'source_concept_id'
-  }else if(output == 'concept_prop'){
+  }else if(output == 'cdm'){
     col <- 'concept_id'
-  }else{stop('Please select a valid output')}
+  }else{stop('Please select a valid output - `source` or `cdm`')}
   
-  mappings_per_code <- scv_process %>%
+  mappings_per_code <- process_output %>%
     group_by(!!!syms(facet), !!sym(col)) %>%
     summarise(n_mappings = n()) %>%
     mutate(median = median(n_mappings),
            q1 = quantile(n_mappings, 0.25),
            q3 = quantile(n_mappings, 0.75))
   
-  #' HR COMMENT: The output here is a little confusing. 
-  #' The number of mappings all seem to exceed the median in 
-  #' both the graph outputs. I think we should review
-  #' the output of this graph - there might be a better way 
-  #' to do this - maybe number of mappings in the bottom and top quartiles
-  #' and just a graph with the top 5 and bottom 5, and then paired with a table
-  #' that lists the rest. 
-  plot <- mappings_per_code %>%
-    filter(n_mappings > median | n_mappings < q1) %>%
-    ggplot(aes(x = as.character(!!sym(col)), y = n_mappings, color = as.character(!!sym(col)))) +
-    geom_col() +
-    geom_hline(aes(yintercept = median)) +
-    geom_hline(aes(yintercept = q1), linetype = 'dotted') +
-    geom_hline(aes(yintercept = q3), linetype = 'dotted') +
-    facet_wrap((facet), scales = 'free') +
-    theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1, vjust = 1),
-          legend.position = 'none') +
-    labs(title = 'Codes with Anomalous Number of Unique Mappings')
+  if(rel_to_median == 'greater'){
+    tbl_filt <- mappings_per_code %>%
+      filter(n_mappings > median)
+  }else if(rel_to_median == 'less'){
+    tbl_filt <- mappings_per_code %>%
+      filter(n_mappings < median)
+  }else(stop('Invalid selection for rel_to_median: please select `greater` or `less`'))
   
-  return(plot)
+  if(is.null(vocab_tbl)){
+    tbl <- tbl_filt
+    
+    plot <- tbl %>%
+      ggplot(aes(x = as.character(join_col), y = n_mappings, fill = as.character(join_col))) +
+      geom_col() +
+      geom_hline(aes(yintercept = median)) +
+      geom_hline(aes(yintercept = q1), linetype = 'dotted') +
+      geom_hline(aes(yintercept = q3), linetype = 'dotted') +
+      facet_wrap((facet), scales = 'free') +
+      theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1, vjust = 1),
+            legend.position = 'none') +
+      labs(title = 'Codes with Anomalous Number of Unique Mappings',
+           x = col)
+  }else{
+    
+    tbl_db <- copy_to_new(df = tbl_filt)
+    
+    tbl <- tbl_db %>%
+      rename('join_col' = col) %>%
+      left_join(select(vocab_tbl, concept_id, concept_name), 
+                by = c('join_col' = 'concept_id'))
+    
+    plot <- tbl %>%
+      ggplot(aes(x = as.character(join_col), y = n_mappings, fill = as.character(join_col))) +
+      geom_col_interactive(aes(tooltip = concept_name)) +
+      geom_hline(aes(yintercept = median)) +
+      geom_hline(aes(yintercept = q1), linetype = 'dotted') +
+      geom_hline(aes(yintercept = q3), linetype = 'dotted') +
+      facet_wrap((facet), scales = 'free') +
+      theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1, vjust = 1),
+            legend.position = 'none') +
+      labs(title = 'Codes with Anomalous Number of Unique Mappings',
+           x = col)
+    
+    girafe(ggobj = plot,
+           width = 10,
+           height = 10)
+  }
   
 }
 
@@ -384,30 +524,27 @@ scv_ss_anom_nt <- function(scv_process,
 #' (i.e. not the MAD away from site specific median)
 #' 
 
-scv_ms_anom_nt <- function(scv_process,
+scv_ms_anom_nt <- function(process_output,
                            output,
                            facet,
+                           rel_to_median = 'greater',
                            mad_dev = 2){
   
-  #' HR COMMENT: In the single-site graphs, the output
-  #' is `source_prop` or `concept_prop`... why 
-  #' is it changed here? It doesn't matter which we keep, 
-  #' but we should try to be consistent. 
   if(output == 'source'){
     col <- 'source_concept_id'
     map_col <- 'concept_id'
   }else if(output == 'cdm'){
     col <- 'concept_id'
     map_col <- 'source_concept_id'
-  }else{stop('Please select a valid output')}
+  }else{stop('Please select a valid output - `source` or `cdm`')}
   
-  mappings_total <- scv_process %>%
+  mappings_total <- process_output %>%
     group_by(!!sym(col)) %>%
     summarise(n_mappings = n()) %>%
     mutate(median = median(n_mappings)) %>%
     select(col, median) %>% ungroup()
   
-  mappings_group <- scv_process %>%
+  mappings_group <- process_output %>%
     group_by(!!!syms(facet), !!sym(col)) %>%
     summarise(n_mappings = n()) %>%
     inner_join(mappings_total) %>%
@@ -423,17 +560,51 @@ scv_ms_anom_nt <- function(scv_process,
   #' 2: I know this is nitpicky, but is it possible to have multiple 
   #' gradients in the heatmap? The blue just makes it kind of hard to 
   #' see the differences unless they are really big
-  #' 3: Should we do n > median as well as n < median? Should we have that 
-  #' as a potential option?
-  plot <- mappings_group %>%
-    filter(n_mappings > median) %>%
-    ggplot(aes(y = as.character(!!sym(col)), x = site, fill = n_mad)) +
-    geom_tile() +
-    facet_wrap((facet), scales = 'free', ncol = 1) +
-    #theme(axis.text.y = element_text(size = 4)) +
-    labs(title = 'MAD from Median Number of Mappings per Code',
-         subtitle = 'Filtered to codes where n > median')
   
-  return(plot)
+  if(rel_to_median == 'greater'){
+    tbl_filt <- mappings_group %>%
+      filter(n_mappings > median)
+  }else if(rel_to_median == 'less'){
+    tbl_filt <- mappings_group %>%
+      filter(n_mappings < median)
+  }else(stop('Invalid selection for rel_to_median: please select `greater` or `less`'))
+  
+  if(is.null(vocab_tbl)){
+    
+    tbl <- tbl_filt
+    
+    plot <- tbl %>%
+      ggplot(aes(y = as.character(!!sym(col)), x = site, fill = n_mad)) +
+      geom_tile() +
+      facet_wrap((facet), scales = 'free', ncol = 1) +
+      scale_fill_viridis_c(option = 'turbo') +
+      labs(title = 'MAD from Median Number of Mappings per Code',
+           y = col)
+    
+    return(plot)
+    
+  }else{
+    
+    tbl_db <- copy_to_new(df = tbl_filt)
+  
+    tbl <- tbl_db %>%
+      rename('join_col' = col) %>%
+      left_join(select(vocab_tbl, concept_id, concept_name), 
+                by = c('join_col' = 'concept_id'))
+    
+    plot <- tbl %>%
+      ggplot(aes(y = as.character(join_col), x = site, fill = n_mad)) +
+      geom_tile_interactive(aes(tooltip = concept_name)) +
+      facet_wrap((facet), scales = 'free', ncol = 1) +
+      #scale_fill_gradientn(colors = viridis::turbo(10))
+      scale_fill_viridis_c(option = 'turbo') +
+      labs(title = 'MAD from Median Number of Mappings per Code',
+           y = col)
+    
+    girafe(ggobj = plot,
+           width = 10,
+           height = 10)
+    
+  }
   
 }
