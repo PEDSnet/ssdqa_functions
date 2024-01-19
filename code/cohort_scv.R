@@ -223,6 +223,79 @@ scv_process <- function(cohort = cohort,
 #' it easy to view the concept names with the concept id's
 #' 
 
+generate_ref_table <- function(tbl,
+                               vocab_tbl,
+                               col,
+                               denom,
+                               time = FALSE){
+  if(!time){
+  
+  if(!is.null(vocab_tbl)){
+    
+    t <- tbl %>%
+      rename('join_col' = col,
+             'denom_col' = denom) %>%
+      left_join(select(vocab_tbl, concept_id, concept_name), 
+                by = c('join_col' = 'concept_id')) %>%
+      distinct(site, join_col, concept_name, denom_col) %>%
+      rename_with(~col, 'join_col') %>%
+      gt::gt() %>%
+      fmt_number(denom_col, decimals = 0) %>%
+      data_color(palette = "Dark2", columns = c(site)) %>%
+      cols_label(denom_col = 'Total Count') %>%
+      tab_header('Concept Reference Table')
+    
+  }else{
+    
+    t <- tbl %>%
+      rename('denom_col' = denom) %>%
+      distinct(site, !!sym(col), denom_col) %>%
+      gt::gt() %>%
+      fmt_number(denom_col, decimals = 0) %>%
+      data_color(palette = "Dark2", columns = c(site)) %>%
+      cols_label(denom_col = 'Total Count') %>%
+      tab_header('Concept Reference Table')
+    
+   }
+  }else{
+    
+    time_inc <- tbl %>% distinct(time_increment) %>% pull()
+    
+    if(!is.null(vocab_tbl)){
+      
+      t <- tbl %>%
+        rename('join_col' = col,
+               'denom_col' = denom) %>%
+        left_join(select(vocab_tbl, concept_id, concept_name), 
+                  by = c('join_col' = 'concept_id')) %>%
+        distinct(site, time_start, join_col, concept_name, denom_col) %>%
+        rename_with(~col, 'join_col') %>%
+        arrange(time_start, !!sym(col)) %>%
+        gt::gt() %>%
+        fmt_number(denom_col, decimals = 0) %>%
+        data_color(palette = "Dark2", columns = c(site)) %>%
+        cols_label(denom_col = 'Total Count',
+                   time_start = time_inc) %>%
+        tab_header('Concept Reference Table')
+      
+    }else{
+      
+      t <- tbl %>%
+        rename('denom_col' = denom) %>%
+        distinct(site, time_start, !!sym(col), denom_col) %>%
+        gt::gt() %>%
+        fmt_number(denom_col, decimals = 0) %>%
+        data_color(palette = "Dark2", columns = c(site)) %>%
+        cols_label(denom_col = 'Total Count',
+                   time_start = time_inc) %>%
+        tab_header('Concept Reference Table')
+      
+    }
+  }
+  
+  return(t)
+  
+}
 
 #' *Single Site, Exploratory, No Time*
 #' 
@@ -290,7 +363,7 @@ scv_ss_exp_nt <- function(process_output,
     
     facet <- facet %>% append('xaxis')
     
-    plot <- final %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
+    p <- final %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
                                  fill = !!sym(prop))) + 
       geom_tile() + 
       geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
@@ -301,7 +374,11 @@ scv_ss_exp_nt <- function(process_output,
            x = col,
            y = map_col)
     
-    return(plot)
+    # Summary Reference Table
+    ref_tbl <- generate_ref_table(tbl = final,
+                                  col = col,
+                                  denom = denom,
+                                  vocab_tbl = vocab_tbl)
     
   }else{
     
@@ -332,13 +409,20 @@ scv_ss_exp_nt <- function(process_output,
            x = col,
            y = map_col)
     
-    girafe(ggobj = plot,
-           width = 10,
-           height = 10)
+    p <- girafe(ggobj = plot,
+                width = 10,
+                height = 10)
     
-    return(plot_int)
-    
+    # Summary Reference Table
+    ref_tbl <- generate_ref_table(tbl = final_db,
+                                  col = col,
+                                  denom = denom,
+                                  vocab_tbl = vocab_tbl)
   }
+  
+  output <- list(p, ref_tbl)
+  
+  return(output)
 }
 
 
@@ -452,8 +536,10 @@ scv_ss_anom_nt <- function(process_output,
   
   if(code_type == 'source'){
     col <- 'source_concept_id'
+    denom <- 'denom_source_ct'
   }else if(code_type == 'cdm'){
     col <- 'concept_id'
+    denom <- 'denom_concept_ct'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
   mappings_per_code <- process_output %>%
@@ -461,22 +547,25 @@ scv_ss_anom_nt <- function(process_output,
     summarise(n_mappings = n()) %>%
     mutate(median = median(n_mappings),
            q1 = quantile(n_mappings, 0.25),
-           q3 = quantile(n_mappings, 0.75))
+           q3 = quantile(n_mappings, 0.75)) %>%
+    left_join(process_output %>% distinct(!!sym(col), !!sym(denom)))
   
   if(rel_to_median == 'greater'){
     tbl_filt <- mappings_per_code %>%
-      filter(n_mappings > median)
+      filter(n_mappings >= median)
   }else if(rel_to_median == 'less'){
     tbl_filt <- mappings_per_code %>%
-      filter(n_mappings < median)
+      filter(n_mappings <= median)
   }else(stop('Invalid selection for rel_to_median: please select `greater` or `less`'))
   
   if(is.null(vocab_tbl)){
-    tbl <- tbl_filt
+    tbl <- tbl_filt %>%
+      mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
+             tooltip = paste0('Total Concept Mappings: ', n_mappings, '\nTotal Concept Rows: ', denom_fmt))
     
     plot <- tbl %>%
-      ggplot(aes(x = as.character(join_col), y = n_mappings, fill = as.character(join_col))) +
-      geom_col() +
+      ggplot(aes(x = as.character(!!sym(col)), y = n_mappings, fill = as.character(!!sym(col)))) +
+      geom_col_interactive(aes(tooltip = tooltip)) +
       geom_hline(aes(yintercept = median)) +
       geom_hline(aes(yintercept = q1), linetype = 'dotted') +
       geom_hline(aes(yintercept = q3), linetype = 'dotted') +
@@ -485,6 +574,10 @@ scv_ss_anom_nt <- function(process_output,
             legend.position = 'none') +
       labs(title = 'Codes with Anomalous Number of Unique Mappings',
            x = col)
+    
+    girafe(ggobj = plot,
+           width = 10,
+           height = 10)
   }else{
     
     tbl_db <- copy_to_new(df = tbl_filt)
@@ -492,11 +585,15 @@ scv_ss_anom_nt <- function(process_output,
     tbl <- tbl_db %>%
       rename('join_col' = col) %>%
       left_join(select(vocab_tbl, concept_id, concept_name), 
-                by = c('join_col' = 'concept_id'))
+                by = c('join_col' = 'concept_id')) %>%
+      collect_new() %>%
+      mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
+             tooltip = paste0('Concept Name: ', concept_name, '\nTotal Concept Mappings: ', n_mappings, 
+                              '\nTotal Concept Rows: ', denom_fmt))
     
     plot <- tbl %>%
       ggplot(aes(x = as.character(join_col), y = n_mappings, fill = as.character(join_col))) +
-      geom_col_interactive(aes(tooltip = concept_name)) +
+      geom_col_interactive(aes(tooltip = tooltip)) +
       geom_hline(aes(yintercept = median)) +
       geom_hline(aes(yintercept = q1), linetype = 'dotted') +
       geom_hline(aes(yintercept = q3), linetype = 'dotted') +
@@ -510,7 +607,7 @@ scv_ss_anom_nt <- function(process_output,
            width = 10,
            height = 10)
   }
-  
+
 }
 
 #' 
@@ -528,21 +625,25 @@ scv_ms_anom_nt <- function(process_output,
                            code_type,
                            facet,
                            rel_to_median = 'greater',
-                           mad_dev = 2){
+                           mad_dev = 2,
+                           vocab_tbl = vocabulary_tbl('concept')){
   
   if(code_type == 'source'){
     col <- 'source_concept_id'
     map_col <- 'concept_id'
+    denom <- 'denom_source_ct'
   }else if(code_type == 'cdm'){
     col <- 'concept_id'
     map_col <- 'source_concept_id'
+    denom <- 'denom_concept_ct'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
   mappings_total <- process_output %>%
     group_by(!!sym(col)) %>%
     summarise(n_mappings = n()) %>%
     mutate(median = median(n_mappings)) %>%
-    select(col, median) %>% ungroup()
+    select(col, median) %>% ungroup() %>%
+    left_join(process_output %>% distinct(!!sym(col), !!sym(denom)))
   
   mappings_group <- process_output %>%
     group_by(!!!syms(facet), !!sym(col)) %>%
@@ -563,25 +664,31 @@ scv_ms_anom_nt <- function(process_output,
   
   if(rel_to_median == 'greater'){
     tbl_filt <- mappings_group %>%
-      filter(n_mappings > median)
+      filter(n_mappings >= median)
   }else if(rel_to_median == 'less'){
     tbl_filt <- mappings_group %>%
-      filter(n_mappings < median)
+      filter(n_mappings <= median)
   }else(stop('Invalid selection for rel_to_median: please select `greater` or `less`'))
   
   if(is.null(vocab_tbl)){
     
-    tbl <- tbl_filt
+    tbl <- tbl_filt %>%
+      mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
+             tooltip = paste0('MAD from Median: ', n_mad, '\nTotal Concept Mappings: ', n_mappings, 
+                              '\nTotal Concept Rows: ', denom_fmt))
     
     plot <- tbl %>%
       ggplot(aes(y = as.character(!!sym(col)), x = site, fill = n_mad)) +
-      geom_tile() +
+      geom_tile_interactive(aes(tooltip = tooltip)) +
       facet_wrap((facet), scales = 'free', ncol = 1) +
       scale_fill_viridis_c(option = 'turbo') +
       labs(title = 'MAD from Median Number of Mappings per Code',
-           y = col)
+           y = col,
+           x = '')
     
-    return(plot)
+    girafe(ggobj = plot,
+           width = 10,
+           height = 10)
     
   }else{
     
@@ -590,16 +697,22 @@ scv_ms_anom_nt <- function(process_output,
     tbl <- tbl_db %>%
       rename('join_col' = col) %>%
       left_join(select(vocab_tbl, concept_id, concept_name), 
-                by = c('join_col' = 'concept_id'))
+                by = c('join_col' = 'concept_id')) %>%
+      collect_new() %>%
+      mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
+             tooltip = paste0('Concept Name: ', concept_name, '\nMAD from Median: ', n_mad, 
+                              '\nTotal Concept Mappings: ', n_mappings, 
+                              '\nTotal Concept Rows: ', denom_fmt))
     
     plot <- tbl %>%
       ggplot(aes(y = as.character(join_col), x = site, fill = n_mad)) +
-      geom_tile_interactive(aes(tooltip = concept_name)) +
+      geom_tile_interactive(aes(tooltip = tooltip)) +
       facet_wrap((facet), scales = 'free', ncol = 1) +
       #scale_fill_gradientn(colors = viridis::turbo(10))
       scale_fill_viridis_c(option = 'turbo') +
       labs(title = 'MAD from Median Number of Mappings per Code',
-           y = col)
+           y = col,
+           x = '')
     
     girafe(ggobj = plot,
            width = 10,
@@ -632,7 +745,8 @@ scv_output <- function(process_output,
                                  code_type = code_type,
                                  facet = facet,
                                  rel_to_median = rel_to_median,
-                                 mad_dev = mad_dev)
+                                 mad_dev = mad_dev,
+                                 vocab_tbl = vocab_tbl)
   }else if(output_function == 'scv_ss_anom_nt'){
     scv_output <- scv_ss_anom_nt(process_output = process_output,
                                  code_type = code_type,
@@ -656,7 +770,8 @@ scv_output <- function(process_output,
     scv_output <- scv_ms_anom_at(process_output = process_output,
                                  code_type = code_type,
                                  facet = facet,
-                                 mad_dev = mad_dev)
+                                 mad_dev = mad_dev,
+                                 vocab_tbl = vocab_tbl)
   }else if(output_function == 'scv_ss_anom_at'){
     scv_output <- scv_ss_anom_at(process_output = process_output,
                                  code_type = code_type,

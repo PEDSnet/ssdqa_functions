@@ -23,15 +23,18 @@ scv_ss_ms_exp_at <- function(process_output,
                           vocab_tbl = vocabulary_tbl('concept')){
   
   if(code_type == 'source'){
-    facet <- facet %>% append('source_concept_id')
+    col <- 'source_concept_id'
     color <- 'concept_id'
     prop <- 'source_prop'
+    denom <- 'denom_source_ct'
   }else if(code_type == 'cdm'){
-    facet <- facet %>% append('concept_id')
+    col <- 'concept_id'
     color <- 'source_concept_id'
     prop <- 'concept_prop'
+    denom <- 'denom_concept_ct'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
+  facet <- facet %>% append(col)
   
   if(is.null(vocab_tbl)){
     
@@ -43,7 +46,13 @@ scv_ss_ms_exp_at <- function(process_output,
       facet_wrap((facet)) +
       labs(title = 'Code Mapping Pairs Over Time')
 
-    ggplotly(p)
+    plot <- ggplotly(p)
+    
+    ref_tbl <- generate_ref_table(tbl = process_output,
+                                  col = col,
+                                  denom = denom,
+                                  vocab_tbl = vocab_tbl,
+                                  time = TRUE)
     
   }else{
     
@@ -64,8 +73,18 @@ scv_ss_ms_exp_at <- function(process_output,
       labs(title = 'Code Mapping Pairs Over Time',
            color = color)
     
-    ggplotly(p)
+    plot <- ggplotly(p)
+    
+    ref_tbl <- generate_ref_table(tbl = process_output_db,
+                                  col = col,
+                                  denom = denom,
+                                  vocab_tbl = vocab_tbl,
+                                  time = TRUE)
   }
+  
+  output <- list(plot, ref_tbl)
+  
+  return(output)
   
 }
 
@@ -95,11 +114,11 @@ produce_multisite_mad_scv <- function(multisite_tbl,
   
   
   if(is.null(facet_var)){
-    grp1 <- c('start_date', 'centroid', 'source_concept_id', 'concept_id')
+    grp1 <- c('start_date', 'centroid', 'source_concept_id', 'concept_id') 
     grp2 <- c('site', concept_col)
   }else{
-    grp1 <- c('start_date', 'centroid', 'source_concept_id', 'concept_id', facet_var)
-    grp2 <- c('site', concept_col, facet_var)
+    grp1 <- c('start_date', 'centroid', 'source_concept_id', 'concept_id', facet_var) %>% unique()
+    grp2 <- c('site', concept_col, facet_var) %>% unique()
   }
   
   mad_computation <- 
@@ -146,37 +165,74 @@ produce_multisite_mad_scv <- function(multisite_tbl,
 scv_ms_anom_at <- function(process_output,
                            code_type,
                            facet,
-                           mad_dev = 2){
-  
-  facet <- facet %>% append(c('concept_id', 'source_concept_id'))
+                           mad_dev = 2,
+                           vocab_tbl = vocabulary_tbl('concept')){
   
   if(code_type == 'source'){
-    y_col <- 'source_concept_id'
-    prop <- 'source_prop'
+    col <- 'source_concept_id'
+    denom <- 'denom_source_ct'
   }else if(code_type == 'cdm'){
-    y_col <- 'concept_id'
-    prop <- 'concept_prop'
+    col <- 'concept_id'
+    denom <- 'denom_concept_ct'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
   fot <- fot_check(tblx = process_output %>% ungroup() %>%
                      mutate(start_date = time_start),
-                   target_col = prop,
-                   facet_var = facet)
+                   target_col = 'ct',
+                   facet_var = facet %>% append(c('concept_id', 'source_concept_id')))
   
   fot2 <- check_fot_all_dist(fot_check_output = fot$fot_heuristic)
   
   mad <- produce_multisite_mad_scv(multisite_tbl = fot2,
                                    code_type = code_type,
+                                   facet_var = facet,
                                    mad_dev = mad_dev)
   
-  r <- ggplot(mad, aes(x=site, y=as.character(!!sym(y_col)), fill=grp_outlier_prop)) +
-    geom_tile() +
-    facet_wrap((facet)) +
-    scale_fill_viridis_c(option = 'turbo') +
-    theme_classic() +
-    coord_flip() +
-    labs(title = 'Codes with Representative Proportions of Mappings +/- 2 MAD away from Median',
-         y = 'Code')
+  final <- mad %>% left_join(process_output %>% distinct(site, !!sym(col), !!sym(denom)))
+  
+  if(is.null(vocab_tbl)){
+    
+    final <- final %>% mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
+                              tooltip = paste0('Total Concept Rows: ', denom_fmt))
+    
+    r <- ggplot(final, aes(x=site, y=as.character(!!sym(col)), fill=grp_outlier_prop)) +
+      geom_tile_interactive(aes(tooltip = tooltip)) +
+      facet_wrap((facet)) +
+      scale_fill_viridis_c(option = 'turbo') +
+      theme_classic() +
+      coord_flip() +
+      labs(title = 'Stability of Mappings Over Time',
+           y = 'Code',
+           fill = 'Proportion Unstable \nMappings')
+    
+    p <- girafe(ggobj = r)
+    
+  }else{
+    
+    final_db <- copy_to_new(df = final)
+    
+    final <- final_db %>% 
+      mutate(join_col = !!sym(col)) %>%
+      left_join(select(vocab_tbl, concept_id, concept_name), by = c('join_col' = 'concept_id')) %>%
+      collect_new() %>%
+      mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
+             tooltip = paste0('Concept Name: ', concept_name, '\nTotal Concept Rows: ', denom_fmt))
+    
+    r <- ggplot(final, aes(x=site, y=as.character(!!sym(col)), fill=grp_outlier_prop)) +
+      geom_tile_interactive(aes(tooltip = tooltip)) +
+      facet_wrap((facet)) +
+      scale_fill_viridis_c(option = 'turbo') +
+      theme_classic() +
+      coord_flip() +
+      labs(title = 'Stability of Mappings Over Time',
+           y = 'Code',
+           fill = 'Proportion Unstable \nMappings')
+    
+    p <- girafe(ggobj = r)
+  
+    }
+ 
+   return(p)
 }
 
 
@@ -199,7 +255,7 @@ scv_ss_anom_at <- function(process_output,
   facet <- facet %>% append(col)
   
   n_mappings_yr <- process_output %>%
-    group_by(!!!syms(facet), start_date) %>%
+    group_by(!!!syms(facet), time_start) %>%
     summarise(n_mappings = n())
   
   n_mappings_yr %>% 
@@ -207,7 +263,7 @@ scv_ss_anom_at <- function(process_output,
     group_modify(
       ~spc_calculate(
         data = .x, 
-        x = start_date,
+        x = time_start,
         y = n_mappings,
         chart = "c"
       )
