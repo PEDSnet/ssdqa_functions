@@ -66,7 +66,10 @@ compute_conc <- function(cohort,
   codeset_list <- split(codeset_tbl, seq(nrow(codeset_tbl)))
   grp_vis <- grouped_list %>% append(c('visit_occurrence_id'))
   grp_vis_spec <- grp_vis %>% append(c('spec_flag','total_gp_ct'))
-  grp_spec <- grouped_list%>%append(c('specialty_concept_id'))
+  grp_spec <- grouped_list%>%append(c('specialty_concept_id', 'cluster'))
+ # if(code_clusters){
+ #   grp_spec<-grp_spec%>%append(c('cluster'))
+  #}
   
   
   for (i in 1:length(codeset_list)) {
@@ -141,6 +144,8 @@ find_fact_spec_conc <- function(cohort,
                                 care_site,
                                 provider){
   
+  if(!'cluster'%in%colnames(fact_codes)){fact_codes<-fact_codes%>%mutate(cluster=concept_name)}
+  if(!'category'%in%colnames(fact_codes)){fact_codes<-fact_codes%>%mutate(category='all')}
   
   fact_occurrences <- 
     fact_tbl %>%
@@ -174,7 +179,7 @@ find_fact_spec_conc <- function(cohort,
       rename(specialty_concept_id_cs=specialty_concept_id)
     
     spec_full <- 
-      cdm_tbl('visit_occurrence_id') %>% 
+      cdm_tbl('visit_occurrence') %>% 
       left_join(pv_spec) %>%
       left_join(cs_spec) %>%
       mutate(specialty_concept_id=case_when(!is.na(specialty_concept_id_pv)~specialty_concept_id_pv,
@@ -195,7 +200,8 @@ find_fact_spec_conc <- function(cohort,
     inner_join(
       spec_full,
       fact_occurrences
-    )
+    ) %>%
+    compute_new(temporary = TRUE)
   # if(care_site&provider){
   #   pv_spec <- fact_occurrences %>%
   #     left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id)),

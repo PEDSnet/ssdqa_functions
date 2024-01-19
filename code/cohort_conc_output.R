@@ -13,22 +13,22 @@ plot_conc_ss_exp <- function(input,
   
 }
 
-pf_ss_exp_nt_v2 <- function(data_tbl,
+conc_ss_exp_nt <- function(data_tbl,
                             facet,
                             x_var,
                             y_var,
                             fill_var,
                             pal_map) {
   
-  # if(output=='median_site_with0s') {y_title='Median for All Patients'}
-  # if(output=='median_site_without0s') {y_title='Median for Patients with Fact'}
-  # if(output=='prop_all_w_fact') {y_title='Proportion of Patients with Fact'}
-  # 
-  
-  ggplot(data_tbl,
-         aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var))) +
+  data_tbl <- data_tbl %>%
+    mutate(text=paste("Specialty: ", specialty_name,
+                      "\nNumber of Visits: ",format(n,big.mark=","),
+                      "\nProportion: ",round(prop,2)))
+  plt <- ggplot(data_tbl,
+         aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var), text=text)) +
     geom_bar(stat='identity') + 
-    facet_wrap((facet), scales="free_y") + 
+    facet_wrap((facet))+
+    # facet_wrap((facet), scales="free_y") + 
     # labs(y=y_title,
     #      x='Domain') +
     scale_fill_manual(values=pal_map) +
@@ -36,6 +36,9 @@ pf_ss_exp_nt_v2 <- function(data_tbl,
     theme_classic() +
     theme(panel.grid.major = element_line(size=0.4, linetype = 'solid'),
           panel.grid.minor = element_line(size=0.2, linetype = 'dashed'))
+  
+  ggplotly(plt,
+           tooltip="text")
   
   
 }
@@ -70,8 +73,7 @@ plot_ss_exp_ot <- function(data_tbl,
       facet_wrap(facets = eval(facet), scales = 'free')+
       scale_color_manual(values=pal_map)
   }
-  return(plt)
-  
+  ggplotly(plot)
 }
 
 #' Function to plot multi-site exploratory with no time component
@@ -153,27 +155,31 @@ plot_an_nt <- function(data_tbl,
                           fill_var,
                           facet=NULL,
                           pal_map){
+  data_tbl <- data_tbl %>%
+    mutate(text=paste("Specialty: ",specialty_name,
+                      "\nAnomaly: ",anomaly,
+                      "\nProportion: ",round(prop,2)))
   if(!is.null(facet)){
   plt<-ggplot(data_tbl,
-         aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var))) +
-    geom_bar(stat='identity', position="dodge") +
+         aes(x=!!sym(x_var), y=!! sym(y_var), text=text))+
+    geom_bar(stat='identity', position="dodge", aes(fill=!!sym(fill_var))) +
     scale_fill_manual(values=pal_map)+
-    geom_errorbar(aes(x=!!sym(x_var),ymin=sd_lower,ymax=sd_upper))+
+    #geom_errorbar(aes(x=!!sym(x_var),ymin=sd_lower,ymax=sd_upper))+
     geom_point(aes(x=!!sym(x_var),y=mean), shape=4)+
     coord_flip()+
     facet_wrap((facet), scales="free_y")+
     theme_classic()
   }else{
     plt<-ggplot(data_tbl,
-                aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var))) +
-      geom_bar(stat='identity', position="dodge")+
+                aes(x=!!sym(x_var), y=!! sym(y_var), text=text)) +
+      geom_bar(stat='identity', position="dodge", aes(fill=!!sym(fill_var)))+
       scale_fill_manual(values=pal_map)+
-      geom_errorbar(aes(x=!!sym(x_var),ymin=sd_lower,ymax=sd_upper))+
+      #geom_errorbar(aes(x=!!sym(x_var),ymin=sd_lower,ymax=sd_upper))+
       geom_point(aes(x=!!sym(x_var),y=mean), shape=4)+
       coord_flip()+
       theme_classic()
   }
-  return(plt)
+  ggplotly(plt, tooltip="text")
 }
 
 #' Function to limit output from `compute_dist_mean_conc`
@@ -191,9 +197,12 @@ flag_anomaly<- function(tbl,
                         distinct_vars){
   anomaly_tbl <- tbl %>%
     filter(prop<sd_lower|prop>sd_upper) %>%
-    distinct(!!!syms(distinct_vars))
+    distinct(!!!syms(distinct_vars)) 
   anomaly_all <- anomaly_tbl %>%
-    inner_join(tbl)
+    inner_join(tbl)%>%
+    mutate(anomaly=case_when(prop<sd_lower|prop>sd_upper~TRUE,
+                             TRUE~FALSE))
+  
   # if('visit_type'%in%facet_vars){
   #   anomaly_tbl <- tbl %>%
   #     filter(prop<sd_lower|prop>sd_upper) %>%
@@ -212,5 +221,17 @@ flag_anomaly<- function(tbl,
 
 
 plot_ss_an_nt <- function(){
+  
+}
+
+plot_conc_ms_exp_dotplot <- function(data_tbl,
+                                     pal_map){
+  plt<-ggplot(data_tbl, aes(x=specialty_name,
+                  y=prop,
+                  colour=site))+
+    geom_point()+
+    scale_color_manual(values=pal_map)+
+    coord_flip()
+  ggplotly(plt)
   
 }

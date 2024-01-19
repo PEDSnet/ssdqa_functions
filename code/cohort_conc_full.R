@@ -11,7 +11,6 @@
 #' @param grouped_list a list containing the variables to group by:
 #'                can contain:
 #'                  `site` if want to stratify by site (and there is a `site` column in the input data)
-#'                  `year` if want to stratify by year of visit
 #'@param age_groups- If you would like to stratify the results by age group, fill out the provided `age_group_definitions.csv` file
 #'                     with the following information:
 #'                     - @min_age: the minimum age for the group (i.e. 10)
@@ -38,6 +37,7 @@
 #'                                          within the file if multiple visit_concept_ids represent the visit type
 #'                          
 #'                           This CSV can be altered to fit the users needs, or another csv with the same columns and formatting can be supplied.
+#' @param time TRUE if results should be over time. Defaults to FALSE
 #'
 #' @return a table with 
 #'        
@@ -47,16 +47,23 @@ conc_process <- function(cohort,
                          codeset_tbl=NULL,
                          care_site,
                          provider,
-                         visit_type_tbl=NULL){
+                         visit_type_tbl=NULL,
+                         time=FALSE){
   ## Step 0: Set cohort name for table output
   #config('cohort', study_name)
   message('Preparing cohort')
   ## Step 1: Prepare cohort
+  
+  ### Include time component, if desired
+  if(time){
+    grouped_list <- grouped_list%>%append('year')
+  }
+  ### Include age groups, if desired
   if(is.data.frame(age_groups)){
     grouped_list_prep<-grouped_list%>%
       append('age_grp')
   }else{grouped_list_prep<-grouped_list}
-  
+  ### Include visit types, if desired
   if(is.data.frame(visit_type_tbl)){
     grouped_list_prep<-grouped_list_prep%>%
       append('visit_concept_id')
@@ -118,6 +125,9 @@ conc_output_gen <- function(conc_process_output,
                             facet_vars,
                             color_var=NULL){
   message('Preparing data for visualization')
+  if('cluster'%in%facet_vars&'visit_type'%in%facet_vars){
+    stop("Can only stratify by visit_type or cluster, not both")
+  }
   if(length(facet_vars)>1){
     vars_no_cs<-facet_vars[!facet_vars=='codeset_name']
     gp_vars <- c('codeset_name')%>%append(vars_no_cs)
@@ -131,7 +141,7 @@ conc_output_gen <- function(conc_process_output,
     gp_vars <- gp_vars %>% append('site')
   }
   if(single_site&anomaly){
-    gp_vars <- gp_vars %>% append('concept_id')
+    gp_vars <- gp_vars %>% append('cluster')
   }
   
   spec_gp_vars <- gp_vars %>% append(c('specialty_name'))
@@ -172,7 +182,7 @@ conc_output_gen <- function(conc_process_output,
                                    distinct_vars=c('codeset_name', 'specialty_name'))
   }
   if(anomaly&single_site){
-    gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site'&!spec_gp_vars=='concept_id']
+    gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site'&!spec_gp_vars=='cluster']
     message('Computing mean and distance to mean')
     conc_output_pp <- compute_dist_mean_conc(conc_output_pp,
                                              grp_vars=gp_vars_no_site,
@@ -183,7 +193,7 @@ conc_output_gen <- function(conc_process_output,
     # only select the specialties where at least one specialty is an anomaly
     conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
                                            facet_vars=facet_vars,
-                                           distinct_vars=c('codeset_name','concept_id', 'concept_name'))
+                                           distinct_vars=c('codeset_name','cluster'))
   }
 
   # generate color palette for color variable
@@ -203,8 +213,7 @@ conc_output_gen <- function(conc_process_output,
       
     }else{
       # single site, exploratory, no time
-      # NOTE will want to change this function name, just kept it this way to show that it is an adaptation of the pf_ss_exp_nt check
-      conc_output_plot <- pf_ss_exp_nt_v2(data_tbl=conc_output_pp,
+      conc_output_plot <- conc_ss_exp_nt(data_tbl=conc_output_pp,
                                           facet=facet_vars,
                                           x_var='specialty_name',
                                           y_var='prop',
@@ -218,7 +227,7 @@ conc_output_gen <- function(conc_process_output,
     }else{
       # single site, anomaly, no time
       conc_output_plot <- plot_an_nt(data_tbl=conc_output_pp,
-                                        x_var='concept_name',
+                                        x_var='cluster',
                                         y_var='prop',
                                         fill_var=color_var,
                                         facet=facet_vars,
@@ -235,6 +244,8 @@ conc_output_gen <- function(conc_process_output,
                                          y_var='specialty_name',
                                          fill_var='prop',
                                          facet=facet_vars)
+      # conc_output_plot <- plot_conc_ms_exp_dotplot(data_tbl=conc_output_pp,
+      #                                              pal_map=conc_colors)
     }
     
   }else if(multi_site&anomaly){
@@ -244,6 +255,7 @@ conc_output_gen <- function(conc_process_output,
       # multi-site, anomaly, no time
       conc_output_plot <- plot_an_nt(data_tbl=conc_output_pp,
                                         x_var='specialty_name',
+                                     y_var='prop',
                                         fill_var=color_var,
                                         facet=facet_vars,
                                         pal_map=conc_colors)
@@ -251,4 +263,5 @@ conc_output_gen <- function(conc_process_output,
     
   }
   return(conc_output_plot)
+  #return(conc_output_pp)
 }

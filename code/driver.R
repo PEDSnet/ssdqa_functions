@@ -1,5 +1,5 @@
 # Vector of additional packages to load before executing the request
-config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','timetk','stringr'))
+config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','timetk','stringr','plotly'))
 
 #' Execute the request
 #'
