@@ -1,0 +1,256 @@
+---
+title: "SCV Check Output Library"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(ggiraph)
+require(gt)
+require(plotly)
+require(rocqi)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+no_time <- read_csv(file = paste0(config('base_dir'), '/results/ss_ms_nt.csv'))
+
+across_time <- read_csv(file = paste0(config('base_dir'), '/results/ss_ms_at.csv'))
+
+```
+
+All output was generated based on CDM (SNOMED) codes related to JIA. All single site analyses use Colorado as the primary site, while multi-site output contains results from Colorado, CHOP, and Stanford.
+
+## Single Site, Exploratory, No Time
+
+The number of codes and the number of mappings displayed per code are both flexible here. Defaults to 10 codes and 25 mappings, but 10 and 10 are shown here. If the vocabulary table is NULL, the graph will look the same but won't be interactive and you won't be able to see the concept_name.
+
+```{r ss_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
+
+op <- scv_output(process_output = no_time %>% filter(site == 'colorado'),
+           output_function = 'scv_ss_exp_nt',
+           code_type = 'cdm',
+           facet = NULL,
+           num_codes = 10,
+           num_mappings = 10,
+           vocab_tbl = vocabulary_tbl('concept'))
+
+op[[1]]
+
+op[[2]]
+
+```
+
+## Single Site, Anomaly Detection, No Time
+
+Here, the relationship to the median is flexible - choose either 'greater' (shown) or 'less' to contol what displays on the graph. If the vocabulary table is NULL, the graph will look the same but won't be interactive and you won't be able to see the concept_name.
+
+```{r ss_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
+
+scv_output(process_output = no_time %>% filter(site == 'colorado'),
+           output_function = 'scv_ss_anom_nt',
+           code_type = 'cdm',
+           facet = NULL,
+           rel_to_median = 'greater',
+           vocab_tbl = vocabulary_tbl('concept'))
+
+```
+
+## Multi Site, Exploratory, No Time
+
+The number of codes displayed here is flexible and defaults to 10. All mappings for those codes are displayed in this table. The table is long but limited to a specified area within a scroll box so it won't take up a lot of space. If the vocabulary table is NULL, the concept_name column will not be available.
+
+```{r ms_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
+
+scv_output(process_output = no_time,
+           output_function = 'scv_ms_exp_nt',
+           code_type = 'cdm',
+           facet = 'site',
+           num_codes = 10,
+           vocab_tbl = vocabulary_tbl('concept'))
+
+```
+
+```{r ms_exp_nt2, echo=FALSE, message=FALSE, warning=FALSE}
+
+topcodes <- no_time %>%
+    ungroup() %>%
+    select(concept_id, denom_concept_ct, site) %>%
+    distinct() %>%
+    group_by(site) %>%
+    arrange(desc(denom_concept_ct)) %>%
+    slice(1:10)
+
+cids <- topcodes %>% distinct(concept_id) %>% pull() 
+
+tbl_grp <- list()
+
+for(i in 1:length(cids)){
+  
+  tbl <- no_time %>%
+    filter(concept_id == cids[i])
+  
+  gt_tbl <- tbl %>%
+      ungroup() %>%
+      select(site, source_concept_id, concept_id, ct, concept_prop) %>%
+      mutate(pct = concept_prop) %>%
+      arrange(site, desc(ct)) %>%
+      gt::gt(groupname_col = 'concept_id') %>%
+      gtExtras::gt_plt_bar_pct(column = pct) %>%
+      fmt_number(columns = ct, decimals = 0) %>%
+      fmt_percent(columns = concept_prop, decimals = 0) %>%
+      data_color(palette = "Dark2", columns = c(site)) %>%
+      opt_interactive() %>%
+      tab_options(row_group.background.color = 'linen',
+                  row_group.font.weight = 'bold',
+                  container.height = '750px',
+                  container.overflow.y = TRUE) %>%
+      tab_header(title = paste0('All Available Mappings for ', cids[i])) 
+  
+  tbl_grp[[i]] <- gt_tbl
+  
+}
+
+#tbl_grp[1:10]
+
+gt_group(.list = tbl_grp)
+
+```
+
+```{r ms_exp_nt3, echo=FALSE, message=FALSE, warning=FALSE}
+
+final <- no_time %>% 
+      inner_join(topcodes)
+  
+    table <- final %>%
+      ungroup() %>%
+      select(site, source_concept_id, concept_id, ct, concept_prop) %>%
+      mutate(pct = concept_prop) %>%
+      arrange(#desc(ct), 
+              source_concept_id) %>%
+      gt::gt(groupname_col = 'concept_id') %>%
+      gtExtras::gt_plt_bar_pct(column = pct) %>%
+      fmt_number(columns = ct, decimals = 0) %>%
+      fmt_percent(columns = concept_prop, decimals = 0) %>%
+      data_color(palette = "Dark2", columns = c(site)) %>%
+      #data_color(palette = c('white', 'purple'), columns = source_concept_id, method = 'factor') %>%
+      tab_options(row_group.background.color = 'linen',
+                  row_group.font.weight = 'bold',
+                  container.height = '750px',
+                  container.overflow.y = TRUE) %>%
+      tab_header(title = paste0('All Available Mappings for Top 10 Codes')) 
+    
+    table
+
+
+```
+
+## Multi Site, Anomaly Detection, No Time
+
+Here, the relationship to the median is a parameter - choose either 'greater' (shown) or 'less' to contol what displays on the graph. The number of MAD away from the median is also a parameter and defaults to 2 (which is shown here). If the vocabulary table is NULL, the graph will look the same but won't be interactive and you won't be able to see the concept_name.
+
+```{r ms_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
+
+scv_output(process_output = no_time,
+           output_function = 'scv_ms_anom_nt',
+           code_type = 'cdm',
+           facet = 'site',
+           rel_to_median = 'greater',
+           mad_dev = 2,
+           vocab_tbl = vocabulary_tbl('concept'))
+
+```
+
+## Single Site, Exploratory, Across Time
+
+If the vocabulary table is NULL, the graph will look the same but you won't be able to see the concept_name.
+
+```{r ss_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
+
+op <- scv_output(process_output = across_time %>% filter(site == 'colorado'),
+           output_function = 'scv_ss_exp_at',
+           code_type = 'cdm',
+           facet = NULL,
+           vocab_tbl = vocabulary_tbl('concept'))
+
+op[[1]]
+op[[2]]
+
+```
+
+## Single Site, Anomaly Detection, Across Time
+
+No custom parameters for this function -- just need to select the code_type and the facet.
+
+```{r ss_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
+
+scv_output(process_output = across_time %>% filter(site == 'colorado'),
+           output_function = 'scv_ss_anom_at',
+           code_type = 'cdm',
+           facet = NULL)
+
+```
+
+## Multi Site, Exploratory, Across Time
+
+If the vocabulary table is NULL, the graph will look the same but you won't be able to see the concept_name.
+
+```{r ms_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
+
+op <- scv_output(process_output = across_time,
+           output_function = 'scv_ms_exp_at',
+           code_type = 'cdm',
+           facet = 'site',
+           vocab_tbl = vocabulary_tbl('concept'))
+
+op[[1]]
+op[[2]]
+
+```
+
+## Multi Site, Anomaly Detection, Across Time
+
+The number of MAD away from the median is a parameter -- defaults to 2 which is shown below. 
+
+```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
+
+scv_output(process_output = across_time,
+           output_function = 'scv_ms_anom_at',
+           code_type = 'cdm',
+           facet = NULL,
+           mad_dev = 2,
+           vocab_tbl = vocabulary_tbl('concept'))
+
+```
