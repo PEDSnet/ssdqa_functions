@@ -1,41 +1,4 @@
-#' Function to prepare cohort and data for the visit+specialty concordance check
-#' Not currently in use
-prepare_conc <- function(cohort_tbl,
-                         age_groups = NULL,
-                         codeset = NULL) {
-  
-  ct <- cohort_tbl
-  
-  stnd <- 
-    ct %>% 
-    # mutate(fu = round((end_date - start_date + 1)/365.25,3)) %>% 
-    # select(person_id, start_date, end_date, fu) %>% 
-    add_site()
-  
-  if(!is.data.frame(age_groups)){
-    final_age <- stnd
-  }else{
-    final_age <- compute_age_groups(cohort_tbl = stnd,
-                                    person_tbl = cdm_tbl('person'),
-                                    age_groups = age_groups)}
-  
-  if(!is.data.frame(codeset)){
-    final_cdst <- stnd
-  }else{
-    final_cdst <- cohort_codeset_label(cohort_tbl = stnd,
-                                       codeset_meta = codeset) %>%
-      add_site()}
-  
-  final <- stnd %>%
-    left_join(final_age) %>%
-    left_join(final_cdst)
-  
-  return(final)
-  
-}
-
-#' THIS is the main function I'm working with
-#' function to compute fact + visit specialty concordance
+#' Function to compute fact + visit specialty concordance
 #' @param cohort the cohort for which to look for events
 #' @param grouped_list a vector to group input by. Defaults to `site`.
 #'                      If `year` is in `grouped_list`, results are returned by year of `visit_start_date`
@@ -47,6 +10,11 @@ prepare_conc <- function(cohort_tbl,
 #' @param care_site boolean indicating whether to search care_site (at visit level) for specialty
 #' @param provider boolean indicating whether to search provider (at visit level) for specialty
 #' @param visit_type_tbl if provided, a map from visit_concept_id to a visit_type classification. if not required, should be `NULL`
+#' @param age_gp_tbl if provided, table with the columns: 
+#'                  min_age: minimum age, in years, for the given categorization
+#'                  max_age: maximum age, in years, for the given categorization
+#'                  group: label to be used for the categorization 
+#' @param time boolean indicating whether to compute over time or not
 #' @return table with cols:
 #'                        codeset_name: name of the codeset in the specs directory with event facts
 #'                        specialty_concept_id: concept_id of specialty from either care_site or provider
@@ -60,16 +28,15 @@ compute_conc <- function(cohort,
                          care_site,
                          provider,
                          visit_type_tbl=NULL,
-                         age_gp_tbl=NULL) {
+                         age_gp_tbl=NULL,
+                         time=FALSE) {
   
   codeset_results <- list()
   codeset_list <- split(codeset_tbl, seq(nrow(codeset_tbl)))
   grp_vis <- grouped_list %>% append(c('visit_occurrence_id'))
   grp_vis_spec <- grp_vis %>% append(c('spec_flag','total_gp_ct'))
   grp_spec <- grouped_list%>%append(c('specialty_concept_id', 'cluster'))
- # if(code_clusters){
- #   grp_spec<-grp_spec%>%append(c('cluster'))
-  #}
+  if(time){grp_spec<-grp_spec%>%append(c('time_start','time_increment'))}
   
   
   for (i in 1:length(codeset_list)) {
@@ -87,12 +54,9 @@ compute_conc <- function(cohort,
     visit_specs <- find_fact_spec_conc(cohort,
                                        fact_codes=codes_to_use,
                                        fact_tbl=domain_tbl_use,
-                                       care_site,
-                                       provider)
-    if('year'%in%grouped_list){
-      visit_specs <- visit_specs %>%
-        mutate(year=year(visit_start_date))
-    }
+                                       care_site=care_site,
+                                       provider=provider,
+                                       time=time)
     if(is.data.frame(age_gp_tbl)){
       
       visit_specs <- visit_specs %>%
@@ -109,7 +73,7 @@ compute_conc <- function(cohort,
     # calculate the concordance per the grouping parameters
     conc_prop<- visit_specs %>%
       group_by(!!!syms(grp_spec),concept_id)%>%
-      summarise(num_visits=n()) %>%
+      summarise(num_visits=n_distinct(visit_occurrence_id)) %>%
       ungroup()%>%
       mutate(codeset_name=codeset_name)
     if(is.data.frame(visit_type_tbl)){
@@ -142,7 +106,8 @@ find_fact_spec_conc <- function(cohort,
                                 fact_codes,
                                 fact_tbl,
                                 care_site,
-                                provider){
+                                provider,
+                                time=FALSE){
   
   if(!'cluster'%in%colnames(fact_codes)){fact_codes<-fact_codes%>%mutate(cluster=concept_name)}
   if(!'category'%in%colnames(fact_codes)){fact_codes<-fact_codes%>%mutate(category='all')}
@@ -157,10 +122,16 @@ find_fact_spec_conc <- function(cohort,
                       category, cluster)) %>% 
     compute_new(temporary=TRUE,
                 indexes=list('person_id',
-                             'visit_occurrence_id'))#%>% # should join on the joincol since it was renamed, but may want to find a way to specify
-    #inner_join(select(cohort,person_id), by = 'person_id') %>%# may want to specify join columns
-    #select(-c(provider_id, site_id)) %>%# keeping out since may not match visit_occurrence
-    #inner_join(cdm_tbl('visit_occurrence')) 
+                             'visit_occurrence_id'))
+  # if over time, need to have the time-related columns from the cohort tbl
+  if(time){
+    fact_occurrences<-fact_occurrences%>%
+      inner_join(select(cohort,c(person_id, time_start,time_increment)),
+                 by='person_id')%>% 
+      compute_new(temporary=TRUE,
+                  indexes=list('person_id',
+                               'visit_occurrence_id'))
+  }
   
   visits <- 
     cdm_tbl('visit_occurrence') %>% 

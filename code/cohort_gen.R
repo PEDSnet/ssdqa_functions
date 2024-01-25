@@ -39,8 +39,8 @@ compute_fot <- function(cohort,
     
     output <- check_func(dat = cohort_narrow_prepped)
     
-    if(is.list(output)){
-    output_reduced <- dplyr::bind_rows(output, .id= reduce_id) 
+    if(is.list(output)&!any(class(output)=='tbl_sql')){
+      output_reduced <- dplyr::bind_rows(output, .id= reduce_id)
     }else{output_reduced <- output}
     
     final_results[[k]] <- output_reduced

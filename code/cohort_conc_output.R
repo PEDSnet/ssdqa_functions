@@ -134,7 +134,9 @@ compute_dist_mean_conc <- function(tbl,
            sd_upper=mean+num_sd*sd)
   
   tbl %>%
-    inner_join(stats)
+    inner_join(stats)%>%
+    mutate(anomaly_yn=case_when(prop<sd_lower|prop>sd_upper~TRUE,
+                                TRUE~FALSE))
     
   
 }
@@ -220,9 +222,23 @@ flag_anomaly<- function(tbl,
 }
 
 
-plot_ss_an_nt <- function(){
-  
+plot_ss_an_nt_conc <- function(data_tbl){
+  data_tbl <- data_tbl %>%
+    mutate(text=paste("Specialty: ", specialty_name,
+                      "\nCluster: ", cluster,
+                      "\nProportion: ", round(prop,2),
+                      "\nAnomaly: ", anomaly_yn))
+  plt<-ggplot(data_tbl,
+              aes(x=cluster,
+                  y=specialty_name,
+                  fill=prop,
+                  text=text))+
+    geom_tile(aes(color=as.factor(anomaly_yn)),lwd=0.5,linetype=1)+
+    theme_classic()+
+    scale_colour_manual(values=c("white", "red"))
+ # ggplotly(plt, tooltip = "text")
 }
+
 
 plot_conc_ms_exp_dotplot <- function(data_tbl,
                                      pal_map){

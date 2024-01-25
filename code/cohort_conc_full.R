@@ -30,7 +30,7 @@
 #'                  FALSE if do not want to look at provider specialty
 #'                  IF both `provider` and `care_site` are both TRUE,
 #'                        provider specialty will be prioritized if provider and care_site are discordant for the visit
-#' @param visit_type_table - a csv file that defines available visit types that are called in @visit_types. defaults to the provided
+#' @param visit_type_tbl - a csv file that defines available visit types that are called in @visit_types. defaults to the provided
 #'                           `conc_visit_types.csv` file, which contains the following fields:
 #'                           - @visit_concept_id: the visit_concept_id that represents the visit type of interest (i.e. 9201)
 #'                           - @visit_type: the string label to describe the visit type; this label can be used multiple times
@@ -38,8 +38,9 @@
 #'                          
 #'                           This CSV can be altered to fit the users needs, or another csv with the same columns and formatting can be supplied.
 #' @param time TRUE if results should be over time. Defaults to FALSE
-#'
-#' @return a table with 
+#' @param time_period if time=TRUE, indicates time period (e.g. 'year', 'month') over which to measure
+#' @param time_span if time=TRUE, vector containing minimum and maximum dates over which to measure
+#' @param site_list if supplied, sites to filter the results to
 #'        
 conc_process <- function(cohort,
                          grouped_list=c('site'),
@@ -48,16 +49,19 @@ conc_process <- function(cohort,
                          care_site,
                          provider,
                          visit_type_tbl=NULL,
-                         time=FALSE){
+                         time=FALSE,
+                         time_span=c('2012-01-01', '2020-01-01'),
+                         time_period='year',
+                         site_list=NULL){
   ## Step 0: Set cohort name for table output
   #config('cohort', study_name)
   message('Preparing cohort')
   ## Step 1: Prepare cohort
   
   ### Include time component, if desired
-  if(time){
-    grouped_list <- grouped_list%>%append('year')
-  }
+  # if(time){
+  #   grouped_list <- grouped_list%>%append('year')
+  # }
   ### Include age groups, if desired
   if(is.data.frame(age_groups)){
     grouped_list_prep<-grouped_list%>%
@@ -71,13 +75,34 @@ conc_process <- function(cohort,
   
   ## Step 2: Run function
   message('Computing specialty concordance')
-  conc_final <- compute_conc(cohort=cohort,
-                             grouped_list=grouped_list_prep,
-                             codeset_tbl=codeset_tbl,
-                             care_site=care_site,
-                             provider=provider,
-                             visit_type_tbl=visit_type_tbl,
-                             age_gp_tbl=age_groups)
+  if(!time){
+    site_list_v <- unlist(site_list)
+    cohort<-cohort%>%filter(site%in%site_list_v)
+    conc_final <- compute_conc(cohort=cohort,
+                               grouped_list=grouped_list_prep,
+                               codeset_tbl=codeset_tbl,
+                               care_site=care_site,
+                               provider=provider,
+                               visit_type_tbl=visit_type_tbl,
+                               age_gp_tbl=age_groups)
+  }
+  else{
+    conc_final<-compute_fot(cohort=cohort,
+                            site_list=site_list,
+                            time_span=time_span,
+                            time_period=time_period,
+                            reduce_id=NULL,
+                            check_func=function(dat){
+                              compute_conc(cohort=dat,
+                                           grouped_list=grouped_list_prep,
+                                           codeset_tbl=codeset_tbl,
+                                           care_site=care_site,
+                                           provider=provider,
+                                           visit_type_tbl=visit_type_tbl,
+                                           age_gp_tbl=age_groups,
+                                           time=TRUE)
+                            })
+  }
   
   message('Outputting specialty names to specs directory')
   spec_concept_names <- find_distinct_concepts(conc_final)
@@ -188,18 +213,18 @@ conc_output_gen <- function(conc_process_output,
                                              grp_vars=gp_vars_no_site,
                                              var_col='prop',
                                              num_sd=2L)
-      
-      message('Flagging the anomalies')
+    
+    message('Flagging the anomalies')
     # only select the specialties where at least one specialty is an anomaly
-    conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
-                                           facet_vars=facet_vars,
-                                           distinct_vars=c('codeset_name','cluster'))
+    # conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
+    #                                        facet_vars=facet_vars,
+    #                                        distinct_vars=c('codeset_name','cluster'))
   }
-
+  
   # generate color palette for color variable
   if(!is.null(color_var)){
-  color_list <- (conc_output_pp%>%distinct(!!sym(color_var)))%>%pull()
-  conc_colors <- generate_color_pal(color_list)
+    color_list <- (conc_output_pp%>%distinct(!!sym(color_var)))%>%pull()
+    conc_colors <- generate_color_pal(color_list)
   }
   
   message('Building visualization')
@@ -214,11 +239,11 @@ conc_output_gen <- function(conc_process_output,
     }else{
       # single site, exploratory, no time
       conc_output_plot <- conc_ss_exp_nt(data_tbl=conc_output_pp,
-                                          facet=facet_vars,
-                                          x_var='specialty_name',
-                                          y_var='prop',
-                                          fill_var=color_var,
-                                          pal_map=conc_colors)
+                                         facet=facet_vars,
+                                         x_var='specialty_name',
+                                         y_var='prop',
+                                         fill_var=color_var,
+                                         pal_map=conc_colors)
     }
     
   }else if(single_site&anomaly){
@@ -226,12 +251,13 @@ conc_output_gen <- function(conc_process_output,
       
     }else{
       # single site, anomaly, no time
-      conc_output_plot <- plot_an_nt(data_tbl=conc_output_pp,
-                                        x_var='cluster',
-                                        y_var='prop',
-                                        fill_var=color_var,
-                                        facet=facet_vars,
-                                        pal_map=conc_colors)
+      # conc_output_plot <- plot_an_nt(data_tbl=conc_output_pp,
+      #                                   x_var='cluster',
+      #                                   y_var='prop',
+      #                                   fill_var=color_var,
+      #                                   facet=facet_vars,
+      #                                   pal_map=conc_colors)
+      conc_output_plot <- plot_ss_an_nt_conc(data_tbl=conc_output_pp)
     }
     
   }else if(multi_site&exploratory){
@@ -254,11 +280,11 @@ conc_output_gen <- function(conc_process_output,
     }else{
       # multi-site, anomaly, no time
       conc_output_plot <- plot_an_nt(data_tbl=conc_output_pp,
-                                        x_var='specialty_name',
+                                     x_var='specialty_name',
                                      y_var='prop',
-                                        fill_var=color_var,
-                                        facet=facet_vars,
-                                        pal_map=conc_colors)
+                                     fill_var=color_var,
+                                     facet=facet_vars,
+                                     pal_map=conc_colors)
     }
     
   }
