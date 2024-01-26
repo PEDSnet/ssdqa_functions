@@ -136,7 +136,8 @@ compute_dist_mean_conc <- function(tbl,
   tbl %>%
     inner_join(stats)%>%
     mutate(anomaly_yn=case_when(prop<sd_lower|prop>sd_upper~TRUE,
-                                TRUE~FALSE))
+                                TRUE~FALSE),
+           abs_diff_mean=abs(prop-mean))
     
   
 }
@@ -160,24 +161,24 @@ plot_an_nt <- function(data_tbl,
   data_tbl <- data_tbl %>%
     mutate(text=paste("Specialty: ",specialty_name,
                       "\nAnomaly: ",anomaly,
-                      "\nProportion: ",round(prop,2)))
+                      "\nProportion: ",round(prop,2),
+                      "\nMean proportion: ",round(mean,2)))
   if(!is.null(facet)){
   plt<-ggplot(data_tbl,
          aes(x=!!sym(x_var), y=!! sym(y_var), text=text))+
-    geom_bar(stat='identity', position="dodge", aes(fill=!!sym(fill_var))) +
+    geom_bar(stat='identity', position=position_dodge(width=1), aes(fill=!!sym(fill_var))) +
     scale_fill_manual(values=pal_map)+
-    #geom_errorbar(aes(x=!!sym(x_var),ymin=sd_lower,ymax=sd_upper))+
-    geom_point(aes(x=!!sym(x_var),y=mean), shape=4)+
+    geom_point(aes(x=!!sym(x_var),fill=!!sym(fill_var),y=mean), position=position_dodge(width=1),shape=4)+
     coord_flip()+
     facet_wrap((facet), scales="free_y")+
     theme_classic()
   }else{
     plt<-ggplot(data_tbl,
                 aes(x=!!sym(x_var), y=!! sym(y_var), text=text)) +
-      geom_bar(stat='identity', position="dodge", aes(fill=!!sym(fill_var)))+
+      geom_bar(stat='identity', position=position_dodge(width=1), aes(fill=!!sym(fill_var))) +
       scale_fill_manual(values=pal_map)+
       #geom_errorbar(aes(x=!!sym(x_var),ymin=sd_lower,ymax=sd_upper))+
-      geom_point(aes(x=!!sym(x_var),y=mean), shape=4)+
+      geom_point(aes(x=!!sym(x_var),fill=!!sym(fill_var),y=mean), position=position_dodge(width=1),shape=4)+
       coord_flip()+
       theme_classic()
   }
@@ -250,4 +251,43 @@ plot_conc_ms_exp_dotplot <- function(data_tbl,
     coord_flip()
   ggplotly(plt)
   
+}
+
+plot_ss_exp_ot_conc <- function(data_tbl){
+  dat_to_plot<-data_tbl %>%
+    mutate(text=paste("Specialty: ",specialty_name,
+                      "\nProportion: ",round(prop,2),
+                      "\nTime Start: ",time_start))
+  plt<-ggplot(dat_to_plot, aes(x=time_start,y=prop,color=specialty_name,text=text))+
+    geom_line(group=1)+
+    theme_classic()
+  
+  ggplotly(plt, tooltip="text")
+}
+
+#' Function to insert a column into a table
+#'  indicating whether the record is in the top n
+#'  for the given group
+#' @param dat table containing the data
+#' @param gp_cols columns to group by
+#'                  the top n will be taken from each group, so the total indicated as "top" hits will be # of groups * n
+#' @param val_col column to order by when determining the top n
+#' @param n number of records to indicate as top within the group
+#' @return the original `dat` table with all original columns,
+#'         plus a column `top_n_indicator` which is TRUE if the record is in the top n
+#'         and FALSE if not
+insert_top_n_indicator<-function(dat,
+                                 gp_cols,
+                                 val_col,
+                                 n){
+  top_hits <- dat %>%
+    group_by(!!!syms(gp_cols))%>%
+    slice_max(order_by = !!sym(val_col),n=n) %>%
+    ungroup()%>%
+    mutate(top_n_indicator=TRUE)
+    
+  dat %>%
+    left_join(top_hits)%>%
+    mutate(top_n_indicator=case_when(is.na(top_n_indicator)~FALSE,
+                                     TRUE~TRUE))
 }

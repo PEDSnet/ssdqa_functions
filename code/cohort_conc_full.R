@@ -126,6 +126,8 @@ conc_process <- function(cohort,
 #' @param time_dimension TRUE if should have a time dimension
 #' @param facet_vars vector of variable names to facet by
 #' @param color_var variable in conc_process_output to color/fill by
+#' @param top_n integer value whose meaning depends on plot context:
+#'          for anomaly detection, will display the top n with values furthest from the mean. Defaults to the number of rows in the output, which will be the maximum number of rows regardless of groupings
 #'                    
 #' suggestions:
 #' if single_site, exploratory: 
@@ -148,7 +150,8 @@ conc_output_gen <- function(conc_process_output,
                             anomaly,
                             time_dimension,
                             facet_vars,
-                            color_var=NULL){
+                            color_var=NULL,
+                            top_n=nrow(conc_process_output)){
   message('Preparing data for visualization')
   if('cluster'%in%facet_vars&'visit_type'%in%facet_vars){
     stop("Can only stratify by visit_type or cluster, not both")
@@ -160,7 +163,7 @@ conc_output_gen <- function(conc_process_output,
     gp_vars<-c('codeset_name')
   }
   if(time_dimension){
-    gp_vars <- gp_vars %>%append('year')
+    gp_vars <- gp_vars %>%append('time_start')
   }
   if(multi_site){
     gp_vars <- gp_vars %>% append('site')
@@ -205,6 +208,7 @@ conc_output_gen <- function(conc_process_output,
     conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
                                    facet_vars=facet_vars,
                                    distinct_vars=c('codeset_name', 'specialty_name'))
+      
   }
   if(anomaly&single_site){
     gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site'&!spec_gp_vars=='cluster']
@@ -216,9 +220,14 @@ conc_output_gen <- function(conc_process_output,
     
     message('Flagging the anomalies')
     # only select the specialties where at least one specialty is an anomaly
-    # conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
-    #                                        facet_vars=facet_vars,
-    #                                        distinct_vars=c('codeset_name','cluster'))
+    conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
+                                           facet_vars=facet_vars,
+                                           distinct_vars=c('codeset_name','cluster')) %>%
+      insert_top_n_indicator(.,
+                             gp_cols=c("cluster"),
+                             val_col="abs_diff_mean",
+                             n=top_n)%>%
+      filter(top_n_indicator)
   }
   
   # generate color palette for color variable
@@ -231,13 +240,15 @@ conc_output_gen <- function(conc_process_output,
   if(single_site&exploratory){
     if(time_dimension){
       # single site, exploratory, over time
-      conc_output_plot <- plot_ss_exp_ot(data_tbl=conc_output_pp,
-                                         facet=facet_vars,
-                                         color_var=color_var,
-                                         pal_map=conc_colors)
+      conc_output_plot <- plot_ss_exp_ot_conc(data_tbl=conc_output_pp)
       
     }else{
       # single site, exploratory, no time
+      conc_output_pp <- insert_top_n_indicator(dat=conc_output_pp,
+                                               gp_cols=facet_vars,
+                                               val_col="prop",
+                                               n=top_n)%>%
+        filter(top_n_indicator)
       conc_output_plot <- conc_ss_exp_nt(data_tbl=conc_output_pp,
                                          facet=facet_vars,
                                          x_var='specialty_name',
@@ -251,13 +262,13 @@ conc_output_gen <- function(conc_process_output,
       
     }else{
       # single site, anomaly, no time
-      # conc_output_plot <- plot_an_nt(data_tbl=conc_output_pp,
-      #                                   x_var='cluster',
-      #                                   y_var='prop',
-      #                                   fill_var=color_var,
-      #                                   facet=facet_vars,
-      #                                   pal_map=conc_colors)
-      conc_output_plot <- plot_ss_an_nt_conc(data_tbl=conc_output_pp)
+       conc_output_plot <- plot_an_nt(data_tbl=conc_output_pp,
+                                         x_var='cluster',
+                                         y_var='prop',
+                                         fill_var=color_var,
+                                         facet=facet_vars,
+                                         pal_map=conc_colors)
+      #conc_output_plot <- plot_ss_an_nt_conc(data_tbl=conc_output_pp)
     }
     
   }else if(multi_site&exploratory){

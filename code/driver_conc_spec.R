@@ -45,7 +45,7 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
                                     provider=TRUE,
                                     visit_type_tbl=read_codeset('conc_visit_types', col_type='ic'),
                                     time=TRUE,
-                                    time_span=c('2010-01-01', '2023-01-01'),
+                                    time_span=c('2012-01-01', '2022-01-01'),
                                     time_period='year',
                                     site_list=list('cchmc',
                                                    'chop',
