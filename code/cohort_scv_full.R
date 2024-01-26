@@ -23,7 +23,7 @@ scv_process <- function(cohort = cohort,
                         site_list = c('seattle','cchmc'),
                         domain_tbl=read_codeset('scv_domains', 'cccc'),
                         concept_set = c(45567437, 45553188),
-                        #dplyr::union(load_codeset('jia_codes','iccccc'),
+                        # dplyr::union(load_codeset('jia_codes','iccccc'),
                         # load_codeset('jia_codes_icd','iccccc')) 
                         code_type = 'source',
                         code_domain = 'condition_occurrence',
