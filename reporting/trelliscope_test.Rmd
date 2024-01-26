@@ -1,0 +1,142 @@
+---
+title: "SSDQA Trelliscope Test"
+output:
+  html_document:
+    df_print: paged
+    embed-resources: TRUE
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(trelliscopejs)
+require(ggiraph)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+test_output <- read.csv(file = paste0(base_dir, '/results/trelliscope_test.csv'))
+```
+
+```{r get_tbls, echo=FALSE, include=FALSE}
+
+denom <-  'denom_concept_ct'
+col <- 'concept_id'
+map_col <- 'source_concept_id'
+prop <- 'concept_prop'
+num_codes <- '15'
+num_mappings <- '10'
+title <- paste0('Top ', num_mappings, ' Mappings for Top ', num_codes, ' CDM Codes')
+
+facet <- c('site', 'age_grp')
+
+
+ topcodes <- test_output %>%
+    ungroup() %>%
+    select(col, denom, all_of(facet)) %>%
+    distinct() %>%
+    group_by(!!! syms(facet)) %>%
+    arrange(desc(!! sym(denom))) %>%
+    slice(1:num_codes)
+  
+  ref <- test_output %>% 
+    ungroup() %>%
+    inner_join(topcodes) 
+  
+  nmap_total <- ref %>%
+    group_by(!!sym(col), !!!syms(facet)) %>%
+    summarise(nmap = n())
+  
+  nmap_top <- ref %>%
+    select(col, map_col, all_of(facet), prop) %>%
+    distinct() %>% 
+    group_by(!!sym(col), !!!syms(facet)) %>%
+    arrange(desc(!!sym(prop))) %>%
+    slice(1:num_mappings)
+
+
+    final_filt <- ref %>%
+      inner_join(nmap_top) %>%
+      left_join(nmap_total) 
+    
+    final <- join_to_vocabulary(tbl = final_filt,
+                                vocab_tbl = vocabulary_tbl('concept'),
+                                col = map_col) %>%
+      mutate(xaxis = paste0(!!sym(col), '\n Total Mappings: ', nmap)) 
+    
+  facet <- facet %>% append(col)
+
+
+```
+
+```{r base_graph}
+
+    plot <- final %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
+                                 fill = !!sym(prop))) +
+      geom_tile_interactive(aes(tooltip = concept_name)) +
+      geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
+      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+      facet_wrap((facet), scales = 'free') +
+      theme(axis.text.x = element_blank()) +
+      labs(title = title,
+           x = col,
+           y = map_col)
+
+girafe(ggobj = plot,
+       width = 15,
+       height = 15)
+
+```
+
+```{r trelliscope, fig.height=10, fig.width=10}
+
+#facet <- c('site', 'age_grp', 'concept_id')
+
+final %>% 
+  select(-xaxis) %>%
+  mutate(concept_id = as.character(concept_id),
+         source_concept_id = as.character(source_concept_id)) %>%
+  ggplot(aes(x = !!sym(col), y = !!sym(map_col), fill = !!sym(prop))) +
+      geom_tile(aes(label = concept_name)) +
+      #geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
+      scale_fill_gradient2(low = 'pink', high = 'maroon') +
+      facet_trelliscope((facet), nrow = 1, ncol = 2, scales = 'free', path = ".",
+                        as_plotly = TRUE 
+                        #self_contained = TRUE
+                        ) +
+      # facet_wrap((facet), scales = 'free') +
+      theme(axis.text.x = element_blank()) +
+      labs(title = title,
+           x = col,
+           y = map_col)
+
+```
