@@ -1,4 +1,15 @@
 
+#' FOT function (generally applicable)
+#'
+#' @param cohort 
+#' @param check_func 
+#' @param reduce_id 
+#' @param time_period 
+#' @param time_span 
+#' @param site_list 
+#'
+#' @return
+#' 
 compute_fot <- function(cohort,
                         check_func,
                         reduce_id = 'visit_type',
@@ -123,6 +134,14 @@ compute_fot <- function(cohort,
   
 ## Function to check correct inputs for multi/single site argument
   
+#' Check site type (single vs multi) against number of sites provided in list
+#'
+#' @param cohort 
+#' @param multi_or_single_site 
+#' @param site_list 
+#'
+#' @return
+#' 
 check_site_type <- function(cohort,
                             multi_or_single_site,
                             site_list){
@@ -165,4 +184,26 @@ check_site_type <- function(cohort,
                 'site_list_adj' = site_list_adj)
   
   return(final)
+}
+
+
+
+#' Join to vocabulary table
+#'
+#' @param tbl 
+#' @param vocab_tbl 
+#' @param col 
+#'
+#' @return
+#' 
+join_to_vocabulary <- function(tbl,
+                               vocab_tbl,
+                               col){
+  
+  final <- select(vocab_tbl, concept_id, concept_name) %>%
+    rename('join_col' = concept_id) %>%
+    right_join(tbl %>% rename('join_col' = col), by = c('join_col'),
+               copy = TRUE) %>%
+    rename_with(~col, join_col) %>%
+    collect()
 }
