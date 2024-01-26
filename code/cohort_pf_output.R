@@ -251,12 +251,11 @@ pf_ss_anom_nt <- function(data_tbl,
 #' requires input for one site; can create multiple graphs
 #' for different grouped variables
 #' 
-#' @param output desired output - have 3 options:
+#' @param output desired output - have 2 options:
 #' 1) `median_site_with0s`: specific site median, including patients with no evidence of patient fact
 #' (e.g., if domain = labs, includes in the median all patients with and without any labs)
 #' 2) `median_site_without0s`: specific site median, not including patients without evidence of patient fact
 #' (e.g., if domain = labs, only includes median for patients with evidence of a lab)
-#' 3) `prop_all_w_fact`: proportion of patients with the patient fact (e.g., proportion of patients with lab)
 #' 
 #' @param facet variables to facet (e.g., `domain`); vector of strings
 #' 
@@ -268,7 +267,6 @@ pf_ss_exp_nt <- function(data_tbl,
   
   if(output=='median_site_with0s') {y_title='Median for All Patients'}
   if(output=='median_site_without0s') {y_title='Median for Patients with Fact'}
-  if(output=='prop_all_w_fact') {y_title='Proportion of Patients with Fact'}
   
   domain_deframe <- 
     data_tbl %>% distinct(domain) %>% 
@@ -306,12 +304,11 @@ pf_ss_exp_nt <- function(data_tbl,
 #' requires input for multiple sites; can create multiple graphs
 #' for different grouped variables
 #' 
-#' @param output desired output - have 3 options:
+#' @param output desired output - have 2 options:
 #' 1) `median_site_with0s`: specific site median, including patients with no evidence of patient fact
 #' (e.g., if domain = labs, includes in the median all patients with and without any labs)
 #' 2) `median_site_without0s`: specific site median, not including patients without evidence of patient fact
 #' (e.g., if domain = labs, only includes median for patients with evidence of a lab)
-#' 3) `prop_all_w_fact`: proportion of patients with the patient fact (e.g., proportion of patients with lab)
 #' 
 #' @param facet variables to facet (e.g., `domain`); vector of strings
 #' 
@@ -359,7 +356,6 @@ pf_ms_exp_nt <- function(data_tbl,
   comp_var = 'median_all_with0s'}
   if(output=='median_site_without0s') {y_title='Median for Patients with Fact Across Sites'
   comp_var = 'median_all_without0s'}
-  # if(output=='prop_all_w_fact') {y_title='Proportion of Patients with Fact Across Sites'}
   
   site_deframe <- 
     data_tbl %>% distinct(site) %>% 

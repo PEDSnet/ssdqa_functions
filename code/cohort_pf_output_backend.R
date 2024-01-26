@@ -51,8 +51,8 @@ compute_pf_medians <- function(data_input,
     summarise(n_tot=n(),
               n_w_fact=sum(var_ever),
               median_site_with0s=median(var_val),
-              median_site_without0s=median(var_val[var_val!=0])) %>% ungroup() %>% 
-    mutate(prop_all_w_fact=round(n_w_fact/n_tot,3))
+              median_site_without0s=median(var_val[var_val!=0])) %>% ungroup() #%>% 
+    #mutate(prop_all_w_fact=round(n_w_fact/n_tot,3))
   
   site_distance_final <- 
     site_distance_final %>% replace(is.na(.), 0) %>% 
