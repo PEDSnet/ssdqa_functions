@@ -1,6 +1,5 @@
 ---
 title: 'Concordance: Clinical Events and Specialties'
-author: "Kimberley Dickinson"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -101,6 +100,21 @@ output_ss_expl_ot <- conc_output_gen(conc_process_output=jspa_output_time,
 output_ss_expl_ot
 ```
 
+### Stratified by Cluster
+
+```{r}
+output_ss_expl_ot <- conc_output_gen(conc_process_output=jspa_output_time,
+                                         conc_process_names=concept_names_grouped,
+                                         single_site=TRUE,
+                                         multi_site=FALSE,
+                                         exploratory=TRUE,
+                                         anomaly=FALSE,
+                                         time_dimension=TRUE,
+                                         facet_vars=c('codeset_name', 'cluster'),
+                                         color_var='specialty_name')
+output_ss_expl_ot
+```
+
 ## Single Site, Anomaly, No Time
 
 If there is an anomalous specialty, only shows the top n specialties with the greatest difference from the mean for the given cluster. Here, only the top 10 are displayed.
@@ -134,13 +148,47 @@ output_ms_exp_nt <- conc_output_gen(conc_process_output=jspa_output_full,
 output_ms_exp_nt
 ```
 
+## Multi Site, Exploratory, No Time (Alternate Approach)
+
+```{r}
+output_ms_exp_nt2 <- conc_output_gen(conc_process_output=jspa_output_full,
+                                              conc_process_names=concept_names_grouped,
+                                              single_site=FALSE,
+                                              multi_site=TRUE,
+                                              exploratory=TRUE,
+                                              anomaly=FALSE,
+                                              time_dimension=FALSE,
+                                              facet_vars=c('codeset_name'),
+                                              color_var='site',
+                                     alt=TRUE)
+output_ms_exp_nt2
+```
+
+## Multi Site, Exploratory, Over Time
+
+Only top 6, summed across all sites across all years, is shown. Can be adjusted by user.
+
+```{r}
+output_ms_exp_ot <- conc_output_gen(conc_process_output=jspa_output_time,
+                                    conc_process_names=concept_names_grouped,
+                                    single_site=FALSE,
+                                    multi_site=TRUE,
+                                    exploratory=TRUE,
+                                    anomaly=FALSE,
+                                    time_dimension=TRUE,
+                                    facet_vars=c('codeset_name'),
+                                    color_var='site',
+                                    top_n=6L)
+output_ms_exp_ot
+```
+
 ## Multi-Site, Anomaly, No Time
 
 Only specialties for which at least one site is an anomaly (+/- 2SD from mean) are pictured, but if there is an anomaly, all sites are displayed for that specialty
 
 Error bars get huge when turn to a plotly plot
 
-```{r}
+```{r eval=FALSE}
 output_ms_an_nt <- conc_output_gen(conc_process_output=jspa_output_full,
                                    conc_process_names=concept_names_grouped,
                                               single_site=FALSE,

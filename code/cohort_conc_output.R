@@ -120,7 +120,9 @@ generate_color_pal <- function(distinct_list){
 #' @param var_col column to compute summary statistics on
 #' @param num_sd (integer) number of standard deviations away from the mean
 #'               from which to compute the sd_lower and sd_upper columns
-#' @return a table with the `grp_vars` | mean | sd | sd_lower | sd_upper
+#' @return a table with the `grp_vars` | mean | sd | sd_lower | sd_upper | 
+#'                                      anomaly_yn: indicator of whether data point is +/- num_sd from mean
+#'                                      abs_diff_mean: absolute value of difference between mean for group and observation
 compute_dist_mean_conc <- function(tbl,
                                    grp_vars,
                                    var_col,
@@ -128,7 +130,9 @@ compute_dist_mean_conc <- function(tbl,
   stats <- tbl %>%
     group_by(!!!syms(grp_vars))%>%
     summarise(mean=mean(!!!syms(var_col)),
-              sd=sd(!!!syms(var_col), na.rm=TRUE)) %>%
+              median=median(!!!syms(var_col)),
+              sd=sd(!!!syms(var_col), na.rm=TRUE),
+              mad=mad(!!!syms(var_col),center=median)) %>%
     ungroup() %>%
     mutate(sd_lower=mean-num_sd*sd,
            sd_upper=mean+num_sd*sd)
@@ -137,8 +141,9 @@ compute_dist_mean_conc <- function(tbl,
     inner_join(stats)%>%
     mutate(anomaly_yn=case_when(prop<sd_lower|prop>sd_upper~TRUE,
                                 TRUE~FALSE),
-           abs_diff_mean=abs(prop-mean))
-    
+           abs_diff_mean=abs(prop-mean),
+           abs_diff_median=abs(prop-median),
+           n_mad=abs_diff_median/mad)
   
 }
 #' Function to generate a plot for anomaly detection with no time component
@@ -152,7 +157,7 @@ compute_dist_mean_conc <- function(tbl,
 #' @param facet vector of strings of variable names to facet by
 #' @param pal_map map matching fill variables to colors to fill by
 #' @return bar plot filled and faceted as specified with error bars with lower and upper bounds and mean marked
-plot_an_nt <- function(data_tbl,
+plot_ss_an_nt_conc <- function(data_tbl,
                           x_var,
                           y_var,
                           fill_var,
@@ -160,7 +165,7 @@ plot_an_nt <- function(data_tbl,
                           pal_map){
   data_tbl <- data_tbl %>%
     mutate(text=paste("Specialty: ",specialty_name,
-                      "\nAnomaly: ",anomaly,
+                      "\nAnomaly: ",anomaly_yn,
                       "\nProportion: ",round(prop,2),
                       "\nMean proportion: ",round(mean,2)))
   if(!is.null(facet)){
@@ -223,7 +228,7 @@ flag_anomaly<- function(tbl,
 }
 
 
-plot_ss_an_nt_conc <- function(data_tbl){
+plot_ss_an_nt_conc_hm <- function(data_tbl){
   data_tbl <- data_tbl %>%
     mutate(text=paste("Specialty: ", specialty_name,
                       "\nCluster: ", cluster,
@@ -237,30 +242,51 @@ plot_ss_an_nt_conc <- function(data_tbl){
     geom_tile(aes(color=as.factor(anomaly_yn)),lwd=0.5,linetype=1)+
     theme_classic()+
     scale_colour_manual(values=c("white", "red"))
- # ggplotly(plt, tooltip = "text")
+  ggplotly(plt, tooltip = "text")
 }
 
 
 plot_conc_ms_exp_dotplot <- function(data_tbl,
                                      pal_map){
-  plt<-ggplot(data_tbl, aes(x=specialty_name,
+  dat_to_plot<-data_tbl%>%
+    mutate(text=paste("Specialty: ",specialty_name,
+                      "\nProportion: ",round(prop,2),
+                      "\nSite: ",site))
+  plt<-ggplot(dat_to_plot, aes(x=specialty_name,
                   y=prop,
-                  colour=site))+
+                  colour=site,
+                  text=text))+
     geom_point()+
     scale_color_manual(values=pal_map)+
-    coord_flip()
-  ggplotly(plt)
+    coord_flip()+
+    theme_bw()
+  ggplotly(plt, tooltip = "text")
   
 }
 
-plot_ss_exp_ot_conc <- function(data_tbl){
+plot_ss_exp_ot_conc <- function(data_tbl,
+                                facet=NULL,
+                                pal_map){
   dat_to_plot<-data_tbl %>%
     mutate(text=paste("Specialty: ",specialty_name,
                       "\nProportion: ",round(prop,2),
                       "\nTime Start: ",time_start))
+  
+  if(is.null(facet)){
   plt<-ggplot(dat_to_plot, aes(x=time_start,y=prop,color=specialty_name,text=text))+
     geom_line(group=1)+
-    theme_classic()
+    scale_color_manual(values=pal_map)+
+    theme_classic()+
+    theme(axis.text.x = element_text(angle=90))
+  }else{  
+    plt<-ggplot(dat_to_plot, aes(x=time_start,y=prop,color=specialty_name,text=text))+
+      geom_line(group=1)+
+      scale_color_manual(values=pal_map)+
+      facet_wrap(facets = eval(facet), scales = 'free')+
+      theme_classic()+
+      theme(axis.text.x = element_text(angle=90))
+    
+    }
   
   ggplotly(plt, tooltip="text")
 }
@@ -279,15 +305,90 @@ plot_ss_exp_ot_conc <- function(data_tbl){
 insert_top_n_indicator<-function(dat,
                                  gp_cols,
                                  val_col,
-                                 n){
+                                 n,
+                                 sum_first=FALSE){
+  if(sum_first){
+    top_hits <- dat %>%
+      ungroup()%>%
+      group_by(!!!syms(gp_cols))%>%
+      summarise(sumn=sum(!!sym(val_col)))%>%
+      ungroup()%>%
+      slice_max(order_by = sumn,n=n)%>%
+      ungroup()%>%
+      mutate(top_n_indicator=TRUE)%>%
+      select(-sumn)
+  }else{
   top_hits <- dat %>%
     group_by(!!!syms(gp_cols))%>%
     slice_max(order_by = !!sym(val_col),n=n) %>%
     ungroup()%>%
     mutate(top_n_indicator=TRUE)
+  }
     
   dat %>%
     left_join(top_hits)%>%
     mutate(top_n_indicator=case_when(is.na(top_n_indicator)~FALSE,
                                      TRUE~TRUE))
+}
+
+#' Function to plot specialty concordance: multi-site, exploratory, over time
+#' @param data_tbl table which must contain the cols: time_start | codeset_name | specialty_name | site
+#' @param facet if supplied, variable to facet the plot by
+#' @param pal_map color palette for the variable that will be used to color the line
+#' @return line plot, with time on x axis, proportion on y, line color determined by site
+#'              with a dotted line for the all-site mean
+plot_ms_exp_ot_conc <- function(data_tbl,
+                                facet=NULL,
+                                pal_map){
+  # compute all site mean
+   all_site_mean <- data_tbl%>%
+     group_by(time_start, codeset_name,specialty_name)%>%
+     summarise(prop=mean(prop, na.rm=TRUE))%>%
+     ungroup()%>%
+     mutate(site="all")
+   
+   # set up scheme for line types: differentiate "all" from site names
+   site_names<-data_tbl%>%distinct(site)%>%pull()
+   n_sites<-length(site_names)
+   line_vals<-c("dotted",rep("solid",n_sites))
+   line_breaks<-c("all",site_names)
+  
+  dat_to_plot<-data_tbl %>%
+    bind_rows(all_site_mean)%>%
+    mutate(text=paste("Site: ",site,
+                      "\nProportion of site's visits: ",round(prop,2),
+                      "\nTime Start: ",time_start))
+
+  
+  if(is.null(facet)){
+    plt<-ggplot(dat_to_plot, aes(x=time_start,y=prop,color=site,text=text))+
+      geom_line(group=1,aes(linetype=site))+
+      scale_color_manual(values=pal_map)+
+      scale_linetype_manual(values=line_vals,breaks=line_breaks)+
+      theme_classic()+
+      theme(axis.text.x = element_text(angle=90))
+  }else{  
+    plt<-ggplot(dat_to_plot, aes(x=time_start,y=prop,color=site,text=text))+
+      geom_line(group=1,aes(linetype=site))+
+      scale_color_manual(values=pal_map)+
+      facet_wrap(facets = eval(facet), scales = 'free')+
+      scale_linetype_manual(values=line_vals,breaks=line_breaks)+
+      theme_classic()+
+      theme(axis.text.x = element_text(angle=90))
+  }
+  
+  ggplotly(plt, tooltip="text")
+}
+
+compute_mad<-function(){
+  
+}
+
+plot_ms_an_nt_conc<-function(data_tbl=conc_output_pp,
+                             x_var='specialty_name',
+                             y_var='prop',
+                             fill_var=color_var,
+                             facet=facet_vars,
+                             pal_map=conc_colors){
+  
 }

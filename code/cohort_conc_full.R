@@ -128,6 +128,7 @@ conc_process <- function(cohort,
 #' @param color_var variable in conc_process_output to color/fill by
 #' @param top_n integer value whose meaning depends on plot context:
 #'          for anomaly detection, will display the top n with values furthest from the mean. Defaults to the number of rows in the output, which will be the maximum number of rows regardless of groupings
+#' @param alt a temporary parameter to specify whether to display a different type of plot, for testing
 #'                    
 #' suggestions:
 #' if single_site, exploratory: 
@@ -151,7 +152,8 @@ conc_output_gen <- function(conc_process_output,
                             time_dimension,
                             facet_vars,
                             color_var=NULL,
-                            top_n=nrow(conc_process_output)){
+                            top_n=nrow(conc_process_output),
+                            alt=FALSE){
   message('Preparing data for visualization')
   if('cluster'%in%facet_vars&'visit_type'%in%facet_vars){
     stop("Can only stratify by visit_type or cluster, not both")
@@ -205,9 +207,9 @@ conc_output_gen <- function(conc_process_output,
     
     message('Flagging the anomalies')
     # only select the specialties where at least one site is an anomaly
-    conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
-                                   facet_vars=facet_vars,
-                                   distinct_vars=c('codeset_name', 'specialty_name'))
+    # conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
+    #                                facet_vars=facet_vars,
+    #                                distinct_vars=c('codeset_name', 'specialty_name'))
       
   }
   if(anomaly&single_site){
@@ -237,13 +239,16 @@ conc_output_gen <- function(conc_process_output,
   }
   
   message('Building visualization')
+  ## SINGLE SITE, EXPLORATORY
   if(single_site&exploratory){
+    # over time
     if(time_dimension){
-      # single site, exploratory, over time
-      conc_output_plot <- plot_ss_exp_ot_conc(data_tbl=conc_output_pp)
+      conc_output_plot <- plot_ss_exp_ot_conc(data_tbl=conc_output_pp,
+                                              facet=facet_vars,
+                                              pal_map=conc_colors)
       
     }else{
-      # single site, exploratory, no time
+      # not over time
       conc_output_pp <- insert_top_n_indicator(dat=conc_output_pp,
                                                gp_cols=facet_vars,
                                                val_col="prop",
@@ -258,44 +263,62 @@ conc_output_gen <- function(conc_process_output,
     }
     
   }else if(single_site&anomaly){
+    ## SINGLE SITE, ANOMALY
     if(time_dimension){
+      # over time
       
+    }else if(!alt){
+      # not over time
+      conc_output_plot <- plot_ss_an_nt_conc(data_tbl=conc_output_pp,
+                                             x_var='cluster',
+                                             y_var='prop',
+                                             fill_var=color_var,
+                                             facet=facet_vars,
+                                             pal_map=conc_colors)
     }else{
-      # single site, anomaly, no time
-       conc_output_plot <- plot_an_nt(data_tbl=conc_output_pp,
-                                         x_var='cluster',
-                                         y_var='prop',
-                                         fill_var=color_var,
-                                         facet=facet_vars,
-                                         pal_map=conc_colors)
-      #conc_output_plot <- plot_ss_an_nt_conc(data_tbl=conc_output_pp)
+      # testing alternate plot for single site, anomaly, not over time
+      conc_output_plot <- plot_ss_an_nt_conc_hm(data_tbl=conc_output_pp)
     }
     
   }else if(multi_site&exploratory){
+    ## MULTI SITE, EXPLORATORY
     if(time_dimension){
-      
-    }else{
-      # multi-site, exploratory, no time
+      # over time
+      conc_output_pp<-insert_top_n_indicator(conc_output_pp,
+                                             gp_cols=c('specialty_name'),
+                                             val_col = "n",
+                                             n=top_n,
+                                             sum_first=TRUE)%>%
+        filter(top_n_indicator)
+      facet_vars <- facet_vars %>% append(c('specialty_name'))
+      conc_output_plot <- plot_ms_exp_ot_conc(data_tbl=conc_output_pp,
+                                              facet=facet_vars,
+                                              pal_map=conc_colors)
+    }else if(!alt){
+      # not over time
       conc_output_plot <- plot_ms_exp_nt(data_tbl=conc_output_pp,
                                          x_var='site',
                                          y_var='specialty_name',
                                          fill_var='prop',
                                          facet=facet_vars)
-      # conc_output_plot <- plot_conc_ms_exp_dotplot(data_tbl=conc_output_pp,
-      #                                              pal_map=conc_colors)
+    }else{
+      # testing alternate plot for multi-site, exploratory, not over time
+      conc_output_plot <- plot_conc_ms_exp_dotplot(data_tbl=conc_output_pp,
+                                                    pal_map=conc_colors)
     }
-    
+    ## MULTI SITE, ANOMALY
   }else if(multi_site&anomaly){
     if(time_dimension){
+      # over time
       
     }else{
-      # multi-site, anomaly, no time
-      conc_output_plot <- plot_an_nt(data_tbl=conc_output_pp,
-                                     x_var='specialty_name',
-                                     y_var='prop',
-                                     fill_var=color_var,
-                                     facet=facet_vars,
-                                     pal_map=conc_colors)
+      # not over time
+      # conc_output_plot <- plot_ms_an_nt_conc(daxta_tbl=conc_output_pp,
+      #                                        x_var='specialty_name',
+      #                                        y_var='prop',
+      #                                        fill_var=color_var,
+      #                                        facet=facet_vars,
+      #                                        pal_map=conc_colors)
     }
     
   }
