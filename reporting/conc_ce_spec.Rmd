@@ -184,11 +184,10 @@ output_ms_exp_ot
 
 ## Multi-Site, Anomaly, No Time
 
-Only specialties for which at least one site is an anomaly (+/- 2SD from mean) are pictured, but if there is an anomaly, all sites are displayed for that specialty
+The median proportion of visits with each specialty across sites is computed, and each site's proportion of visits with that specialty is compared against the median using n_mad = (absolute distance to the median)/(median absolute distance from the median)
 
-Error bars get huge when turn to a plotly plot
 
-```{r eval=FALSE}
+```{r}
 output_ms_an_nt <- conc_output_gen(conc_process_output=jspa_output_full,
                                    conc_process_names=concept_names_grouped,
                                               single_site=FALSE,
@@ -198,5 +197,26 @@ output_ms_an_nt <- conc_output_gen(conc_process_output=jspa_output_full,
                                               time_dimension=FALSE,
                                               facet_vars=c('codeset_name'),
                                               color_var='site')
+
 output_ms_an_nt
+```
+
+## Multi-Site, Anomaly, Across Time
+
+MAD is computed for each specialty for each year, and each site is compared to the median for that specialty for the given year.
+
+We could give the option to limit to only show "top n", but would need to figure out what that means in this context: specialties where there is the largest n_mad in one of the years, regardless of the year? something else?
+
+```{r}
+output_ms_an_ot <- conc_output_gen(conc_process_output=jspa_output_time,
+                                   conc_process_names=concept_names_grouped,
+                                              single_site=FALSE,
+                                              multi_site=TRUE,
+                                              exploratory=FALSE,
+                                              anomaly=TRUE,
+                                              time_dimension=TRUE,
+                                              facet_vars=c('codeset_name'),
+                                              color_var='site')
+
+output_ms_an_ot
 ```
