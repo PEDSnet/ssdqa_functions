@@ -186,7 +186,28 @@ check_site_type <- function(cohort,
   return(final)
 }
 
+#' check for `site_summ` column and switch to `site`
+#' 
+#' @param tbl the tbl with to use for 
+#' replacement of `site_summ`
+#' 
+#' 
+#' @return tbl with `site` replacing `site_summ`
+#' 
 
+replace_site_col <- function(tbl) {
+  
+  site_summ_exist <- 'site_summ' %in% colnames(tbl)
+  site_exist <- 'site' %in% colnames(tbl)
+  if(site_summ_exist & ! site_exist) 
+    {final_tbl_site <- 
+        tbl %>% rename(site = site_summ)} 
+  else if(site_summ_exist & site_exist)
+    {final_tbl_site <- 
+        tbl %>% select(-site_summ)} 
+  else {final_tbl_site <- tbl}
+  
+}
 
 #' Join to vocabulary table
 #'
