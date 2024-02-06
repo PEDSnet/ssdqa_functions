@@ -1,14 +1,26 @@
 
-#' FOT function (generally applicable)
+#' Reusable FOT function
 #'
-#' @param cohort 
-#' @param check_func 
-#' @param reduce_id 
-#' @param time_period 
-#' @param time_span 
-#' @param site_list 
+#' @param cohort a cohort tbl with a column for `site`, `person_id`, `start_date` and `end_date`
+#' @param check_func the base function for the check that needs to be executed across time; this argument
+#'                   should be structured as the following, where dat is the input data for the function:
+#'                   
+#'                   function(dat){check_function(param1 = dat, param2 = param2_input, ..., 
+#'                   paramX = paramX_input)}
+#'                   
+#'                   all parameters for the base check function should be included if any defaults are not being
+#'                   used
+#' @param reduce_id if the check provided in @check_func returns a list of tables, this is
+#'                  the ID that should be used to reduce the tables into one dataframe
+#' @param time_period when time = TRUE, this argument defines the distance between dates within the specified time period. defaults
+#'                    to `year`, but other time periods such as `month` or `week` are also acceptable
+#' @param time_span when time = TRUE, this argument defines the start and end dates for the time period of interest. should be
+#'                  formatted as c(start date, end date) in yyyy-mm-dd date format
+#' @param site_list A list of sites for which you would like to examine clinical facts. Can be one site 
+#'                  (single-site) or multiple (multi-site) 
 #'
-#' @return
+#' @return one dataframe where the output of @check_func has been executed for each @time_period in 
+#'         the provided @time_span for each of the sites included in @site_list
 #' 
 compute_fot <- function(cohort,
                         check_func,
@@ -68,67 +80,67 @@ compute_fot <- function(cohort,
   
   
   
-  #' Prepare cohort for check execution
-  #' requirement: fields must have columns: 
-  #' `person_id`, `start_date`, `end_date`
-  #' 
-  #' @param cohort_tbl table with required fields for each member of the cohort
-  #' @param age_groups option to read in a CSV with age group designations to allow for stratification
-  #'                   by age group in output. defaults to `NULL`. 
-  #'                   sample CSV can be found in `specs/age_group_definitions.csv`
-  #' @param codeset option to read in a CSV with codeset metadata to allow for labelling of 
-  #'                cohort members based on a user-provided codeset. the codeset itself should be
-  #'                a CSV file with at least a `concept_id` column and a `flag` column with user-provided
-  #'                labels.
-  #'                a sample metadata CSV, where the user can provide the correct table and column information,
-  #'                can be found in `specs/codeset_metadata.csv`
-  #' 
-  #' 
-  #' @return a tbl with person_id and the following:
-  #'          `start_date` the cohort entry date
-  #'          `end_date` the last visit
-  #'          `fu`: length of follow up
-  #'          `site` : patient site
-  #'        if age_groups is not NULL: 
-  #'          `age_ce`: patient age at cohort entry
-  #'          `age_grp`: user-provided age grouping
-  #'        if codeset is not NULL:
-  #'          `flag`: flag that indiciates patient is a member of a user-specified group in the codeset
-  #' 
+#' Prepare cohort for check execution
+#' requirement: fields must have columns: 
+#' `person_id`, `start_date`, `end_date`
+#' 
+#' @param cohort_tbl table with required fields for each member of the cohort
+#' @param age_groups option to read in a CSV with age group designations to allow for stratification
+#'                   by age group in output. defaults to `NULL`. 
+#'                   sample CSV can be found in `specs/age_group_definitions.csv`
+#' @param codeset option to read in a CSV with codeset metadata to allow for labelling of 
+#'                cohort members based on a user-provided codeset. the codeset itself should be
+#'                a CSV file with at least a `concept_id` column and a `flag` column with user-provided
+#'                labels.
+#'                a sample metadata CSV, where the user can provide the correct table and column information,
+#'                can be found in `specs/codeset_metadata.csv`
+#' 
+#' 
+#' @return a tbl with person_id and the following:
+#'          `start_date` the cohort entry date
+#'          `end_date` the last visit
+#'          `fu`: length of follow up
+#'          `site` : patient site
+#'        if age_groups is not NULL: 
+#'          `age_ce`: patient age at cohort entry
+#'          `age_grp`: user-provided age grouping
+#'        if codeset is not NULL:
+#'          `flag`: flag that indiciates patient is a member of a user-specified group in the codeset
+#' 
+
+prepare_cohort <- function(cohort_tbl,
+                           age_groups = NULL,
+                           codeset = NULL) {
   
-  prepare_cohort <- function(cohort_tbl,
-                             age_groups = NULL,
-                             codeset = NULL) {
-    
-    ct <- cohort_tbl
-    
-    stnd <- 
-      ct %>% 
-      mutate(fu = round((end_date - start_date + 1)/365.25,3)) #%>% 
-      #select(site, person_id, start_date, end_date, fu) #%>% 
-      #add_site()
-    
-    if(!is.data.frame(age_groups)){
-      final_age <- stnd
-    }else{
-      final_age <- compute_age_groups(cohort_tbl = stnd,
-                                      person_tbl = cdm_tbl('person'),
-                                      age_groups = age_groups)}
-    
-    if(!is.data.frame(codeset)){
-      final_cdst <- stnd
-    }else{
-      final_cdst <- cohort_codeset_label(cohort_tbl = stnd,
-                                         codeset_meta = codeset) %>%
-        add_site()}
-    
-    final <- stnd %>%
-      left_join(final_age) %>%
-      left_join(final_cdst)
-    
-    return(final)
-    
-  }
+  ct <- cohort_tbl
+  
+  stnd <- 
+    ct %>% 
+    mutate(fu = round((end_date - start_date + 1)/365.25,3)) #%>% 
+    #select(site, person_id, start_date, end_date, fu) #%>% 
+    #add_site()
+  
+  if(!is.data.frame(age_groups)){
+    final_age <- stnd
+  }else{
+    final_age <- compute_age_groups(cohort_tbl = stnd,
+                                    person_tbl = cdm_tbl('person'),
+                                    age_groups = age_groups)}
+  
+  if(!is.data.frame(codeset)){
+    final_cdst <- stnd
+  }else{
+    final_cdst <- cohort_codeset_label(cohort_tbl = stnd,
+                                       codeset_meta = codeset) %>%
+      add_site()}
+  
+  final <- stnd %>%
+    left_join(final_age) %>%
+    left_join(final_cdst)
+  
+  return(final)
+  
+}
   
   
   
@@ -136,11 +148,20 @@ compute_fot <- function(cohort,
   
 #' Check site type (single vs multi) against number of sites provided in list
 #'
-#' @param cohort 
-#' @param multi_or_single_site 
-#' @param site_list 
+#' @param cohort a cohort tbl with a column for `site`, `person_id`, `start_date` and `end_date`
+#' @param multi_or_single_site Option to run the function on a single vs multiple sites
+#'                               - @single - run the function for a single site
+#'                               - @multi - run the function for multiple sites
+#' @param site_list A list of sites for which you would like to examine clinical facts. Can be one site 
+#'                  (single-site) or multiple (multi-site) 
 #'
-#' @return
+#' @return if @multi_or_single_site = single but multiple sites are provided, the cohort table
+#'         is returned with a summary site column equaling `combined` so all sites will be treated
+#'         as one
+#'         
+#'         otherwise, the existing site column is left alone. if an illogical parameter combination
+#'         is supplied, the function will provide an error with recommendations on how to remedy the
+#'         issue.
 #' 
 check_site_type <- function(cohort,
                             multi_or_single_site,
@@ -211,11 +232,13 @@ replace_site_col <- function(tbl) {
 
 #' Join to vocabulary table
 #'
-#' @param tbl 
-#' @param vocab_tbl 
-#' @param col 
+#' @param tbl data table to which the vocabulary table should be joined
+#' @param vocab_tbl location of the vocabulary table
+#' @param col the column that should be used in the `by` statement to join
+#'            to the concept_id column in the vocabulary table
 #'
-#' @return
+#' @return the dataframe provided in @tbl with the addition of the concept name
+#'         column
 #' 
 join_to_vocabulary <- function(tbl,
                                vocab_tbl,
