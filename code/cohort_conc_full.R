@@ -310,15 +310,11 @@ conc_output_gen <- function(conc_process_output,
   }else if(multi_site&anomaly){
     if(time_dimension){
       # over time
+      conc_output_plot <- plot_ms_an_ot_conc(data_tbl=conc_output_pp)
       
     }else{
       # not over time
-      # conc_output_plot <- plot_ms_an_nt_conc(daxta_tbl=conc_output_pp,
-      #                                        x_var='specialty_name',
-      #                                        y_var='prop',
-      #                                        fill_var=color_var,
-      #                                        facet=facet_vars,
-      #                                        pal_map=conc_colors)
+      conc_output_plot <- plot_ms_an_nt_conc(data_tbl=conc_output_pp)
     }
     
   }

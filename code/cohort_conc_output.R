@@ -91,10 +91,12 @@ plot_ms_exp_nt <- function(data_tbl,
   if(is.null(facet)){
     plt <- ggplot(data_tbl,aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var)))+
     geom_tile(color='white',lwd=0.5,linetype=1)+
+      scale_fill_gradient2(low='pink', high='maroon')+
       theme_classic()
   }else{
     plt <- ggplot(data_tbl,aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var)))+
     geom_tile(color='white',lwd=0.5,linetype=1)+
+      scale_fill_gradient2(low='pink', high='maroon')+
       theme_classic()+
       facet_wrap(facets = eval(facet), scales = 'free')
   }
@@ -384,11 +386,24 @@ compute_mad<-function(){
   
 }
 
-plot_ms_an_nt_conc<-function(data_tbl=conc_output_pp,
-                             x_var='specialty_name',
-                             y_var='prop',
-                             fill_var=color_var,
-                             facet=facet_vars,
-                             pal_map=conc_colors){
+plot_ms_an_nt_conc<-function(data_tbl){
+  dat_to_plot <- data_tbl %>%
+    mutate(text=paste("Specialty: ",specialty_name,
+                      "\nNo. MAD from median: ", n_mad))
+  plt<-ggplot(data_tbl, aes(x=site,y=specialty_name,fill=n_mad))+
+    geom_tile()+
+    facet_wrap(~site, scales="free_x")+
+    scale_fill_gradient2(low='pink', high='maroon')
   
+  ggplotly(plt)
+}
+
+plot_ms_an_ot_conc<- function(data_tbl){
+  plt<-ggplot(data_tbl, aes(x=time_start,y=site,fill=n_mad))+
+    geom_tile()+
+    facet_wrap(~specialty_name)+
+    scale_fill_gradient2(low='pink',high='maroon')+
+    theme_classic()+
+    theme(axis.text.x = element_text(angle=90))
+  ggplotly(plt)
 }
