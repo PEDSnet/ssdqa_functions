@@ -118,3 +118,64 @@ csd_ss_exp_nt <- function(process_output,
   
   return(output)
 }
+
+
+#' *Single Site, Anomaly, No Time*
+#' 
+#' 
+#' @param process_output 
+#'--- @param facet 
+#' @param vocab_tbl 
+#' @param num_codes 
+#' @param num_mappings
+#' 
+#' @return 
+#' 
+csd_ss_anom_nt <- function(process_output,
+                          #facet,
+                          num_concept_combined = FALSE,
+                          vocab_tbl = vocabulary_tbl('concept'),
+                          num_codes = 10,
+                          num_mappings = 10,
+                          filtered_var = 'general_jia'){
+  
+  firstcolnames <- join_to_vocabulary(tbl = tbl_input,
+                                      vocab_tbl = vocab_tbl,
+                                      col = 'concept1') %>% 
+    rename(conceptname1=concept_name) %>% select(concept1, conceptname1)
+  
+  secondcolnames <- join_to_vocabulary(tbl = tbl_input,
+                                       vocab_tbl = vocab_tbl,
+                                       col = 'concept2') %>% 
+    rename(conceptname2=concept_name) %>% select(concept2, conceptname2)
+  
+  final <- 
+    process_output %>% 
+    left_join(firstcolnames) %>% 
+    left_join(secondcolnames) %>% distinct()
+    
+    plot <- final %>% filter(variable==filtered_var) %>% filter(above_sd == TRUE) %>% 
+      ggplot(aes(x = as.character(concept1), y = as.character(concept2), 
+             fill = jaccard_index)) + 
+      geom_tile_interactive(aes(tooltip = paste0('concept1 = ',conceptname1, '; n= ',concept1_ct,'\n','concept2 = ',conceptname2,'; n= ',concept2_ct,
+                                                 '\n', 'co-occurrence = ', cocount,
+                                                 '\n','jaccard sim = ',jaccard_index,
+                                                 '\n', 'mean = ',var_jaccard_mean,'\n','sd = ', var_jaccard_sd))) + 
+      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+       labs(title = filtered_var,
+            x = 'concept1',
+            y = 'concept2') +
+      theme_bw() +
+      theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) 
+    
+    p <- girafe(ggobj=plot,
+                width=10,
+                height=10)
+  
+  ## filter output down to most common codes, selecting a user-provided number
+ 
+  
+  return(p)
+}
+
+

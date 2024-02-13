@@ -29,7 +29,10 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
                         #code_type = 'source',
                         #code_domain = 'condition_occurrence',
                         multi_or_single_site = 'single',
-                        anomaly_or_exploratory='exploratory',
+                        anomaly_or_exploratory='anomaly',
+                        num_concept_combined = FALSE,
+                        num_concept_1 = 30,
+                        num_concept_2 = 30,
                         age_groups = FALSE, #read_codeset('age_group_definitions'),
                         time = FALSE,
                         time_span = c('2012-01-01', '2020-01-01'),
@@ -69,20 +72,31 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
       # filters by site
       cohort_site <- cohort_prep %>% filter(!!sym(site_col)%in%c(site_list_thisrnd))
       
-      domain_compute <- check_code_dist_alt(cohort_codedist = cohort_site,
-                                           #code_type = 'cdm',
-                                            code_domain = code_domain,
-                                            concept_set = concept_set,
-                                            domain_tbl = domain_tbl) 
+      if(multi_or_single_site=='single' & anomaly_or_exploratory=='anomaly') {
+        variable_compute <- check_code_dist_ssanom(cohort_codedist = cohort_site,
+                                                   code_domain=code_domain,
+                                                   concept_set = concept_set,
+                                                   domain_tbl = domain_tbl,
+                                                   num_concept_combined = num_concept_combined,
+                                                   num_concept_1 = num_concept_1,
+                                                   num_concept_2 = num_concept_2)
+      } else {
+        variable_compute <- check_code_dist_alt(cohort_codedist = cohort_site,
+                                              #code_type = 'cdm',
+                                              code_domain = code_domain,
+                                              concept_set = concept_set,
+                                              domain_tbl = domain_tbl) 
+      }
       
-      site_output[[k]] <- domain_compute
+      
+      site_output[[k]] <- variable_compute
       
     }
     
-    scv_tbl <- reduce(.x=site_output,
-                      .f=dplyr::union)
+    csd_tbl <- reduce(.x=site_output,
+                      .f=dplyr::union) %>% mutate(site=site_list_thisrnd)
     
-  } else if(time){
+  } else {
     ## Do we need a loop here? works because it groups by site as a default, not sure if
     ## its necessary (which one is faster/more efficient)
     if(!is.vector(concept_set)){stop('For an over time output, please select 1-5 codes from your
@@ -111,6 +125,8 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
     
   }
   
+  final_csd_tbl <- 
+    replace_site_col(csd_tbl)
   
   return(scv_tbl)
   

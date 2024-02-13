@@ -111,3 +111,165 @@ check_code_dist_alt <- function(cohort_codedist,
   fact_tbl_final_reduce
   
 }
+
+
+#' Base CSD function
+#' 
+#' @param cohort 
+#' @param concept_set 
+#' @param code_type 
+#' @param code_domain 
+#' @param time 
+#' @param domain_tbl 
+#' 
+#' @return 
+#' 
+check_code_dist_ssanom <- function(cohort_codedist,
+                                   concept_set,
+                                   code_domain,
+                                   time = FALSE,
+                                   num_concept_combined = FALSE,
+                                   num_concept_1 = 30,
+                                   num_concept_2 = 30,
+                                   domain_tbl = read_codeset('scv_domains', 'cccc')){
+  
+  
+  domain_filter <- 
+    concept_set %>% select(domain) %>% distinct() %>% 
+    inner_join(domain_tbl)
+  concept_set_db <- copy_to_new(df=concept_set, name='concept_set')
+  variable_list <- concept_set_db %>% distinct(variable) %>% pull()
+  
+      variable_summary <- list() 
+      
+    for(i in variable_list) {
+      
+      variable_filtered <- 
+        concept_set_db %>% filter(variable == i)
+      
+      domain_num <- 
+        variable_filtered %>% select(domain) %>% distinct() %>% pull()
+      
+      variable_combined <- list()
+      
+      for(n in 1:length(domain_num)) {
+        
+        domain_name <- domain_num[[n]]
+        
+        final_col <- 
+          domain_filter %>% 
+          filter(domain == domain_name) %>% 
+          select(concept_col) %>% pull()
+        
+        one_domain_tbl <- 
+          cohort_codedist %>% 
+          inner_join(
+            cdm_tbl(domain_name) 
+          ) %>% 
+          inner_join(variable_filtered,
+                     by=setNames('concept_id',final_col)) %>% 
+          #inner_join(cohort_codedist) %>% 
+          select(person_id,
+                 all_of(group_vars(cohort_codedist)),
+                 all_of(final_col),
+                 variable) %>% 
+          rename('concept_id'=final_col) %>% 
+          mutate(domain = domain_name) %>% 
+          group_by(person_id,concept_id, variable, domain,
+                   .add=TRUE) %>% 
+          summarise(ct=n()) %>% 
+          compute_new(temporary=TRUE)
+        
+        variable_combined[[n]] <- one_domain_tbl
+        
+      }
+      
+      variable_flattened <- reduce(.x=variable_combined,
+                                   .f=dplyr::union)
+      
+      var_domain_lookup <- 
+        variable_flattened %>% 
+        ungroup %>% select(concept_id,variable) %>% distinct() %>%  collect()
+      
+     jaccards <- compute_jaccard(variable_flattened) %>% 
+       mutate(variable = i)
+     
+     variable_summary[[i]] <- jaccards
+      
+    }
+      
+      combined <- reduce(.x=variable_summary,
+                         .f=dplyr::union)
+      
+      if(! num_concept_combined) {
+        combined_filtered <- 
+          combined %>% 
+          filter(concept1_ct > num_concept_1 | concept2_ct > num_concept_2)
+      } else {combined_filtered <- 
+        combined %>% 
+        filter(concept1_ct > num_concept_1,
+             concept2_ct > num_concept_2)}
+      
+      x_vars_meansd <- 
+        process_output_filtered %>% 
+        group_by(variable) %>% 
+        summarise(var_jaccard_mean=mean(jaccard_index),
+                  var_jaccard_sd=sd(jaccard_index))
+      
+      tbl_input <- 
+        process_output_filtered %>% 
+        inner_join(x_vars_meansd) %>% 
+        mutate(above_sd=
+                 case_when(jaccard_index > (var_jaccard_mean + var_jaccard_sd) ~ TRUE,
+                           TRUE ~ FALSE)) %>% 
+        mutate(across(where(is.double), \(x) round(x, digits=3)))
+   
+        
+      
+}
+    
+    # fact_tbl_final_reduce <- 
+    #   reduce(.x = fact_tbl_final,
+    #          .f= dplyr::union)
+    # 
+    # 
+    # fact_tbl_final_reduce
+    
+ 
+compute_jaccard <- function(jaccard_input_tbl) {
+  
+  persons_concepts <- 
+    jaccard_input_tbl %>% ungroup %>% #distinct() %>% collect()
+    select(person_id,
+           concept_id) %>% distinct() %>% collect()
+  
+  persons_concepts_cts <- 
+    persons_concepts %>% 
+    group_by(concept_id) %>% 
+    summarise(concept_person_ct=n_distinct(person_id))
+  
+  concord <- 
+    persons_concepts %>% table() %>% crossprod()
+  diag(concord) <- -1
+  
+  best <- as_tibble(concord, rownames='concept1') %>% 
+    pivot_longer(!concept1, names_to = 'concept2', values_to='cocount') %>% 
+    filter(cocount != -1L) %>% mutate(across(.cols = c(concept1, concept2, cocount), .fns=as.integer)) %>%
+    left_join(persons_concepts_cts, by = c('concept1'='concept_id'))%>%
+    rename(concept1_ct=concept_person_ct)%>%
+    left_join(persons_concepts_cts, by = c('concept2'='concept_id'))%>%
+    rename(concept2_ct=concept_person_ct) %>%
+    mutate(concept_count_union=concept1_ct+concept2_ct-cocount,
+           jaccard_index=cocount/concept_count_union) %>% 
+    mutate(concept1_prop=round(cocount/concept1_ct,2),
+           concept2_prop=round(cocount/concept2_ct,2)) %>% 
+    filter(concept1_ct > 0 & concept2_ct > 0 & cocount > 0) %>% 
+    filter(concept1 > concept2) 
+  
+  best
+  
+}
+
+
+
+
