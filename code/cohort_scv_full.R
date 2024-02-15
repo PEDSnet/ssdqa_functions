@@ -127,6 +127,7 @@ scv_process <- function(cohort,
     concept_set_prep <- copy_to_new(df = concept_set_prep)
     
     scv_tbl <- compute_fot(cohort = cohort_prep,
+                           site_col = site_col,
                            site_list = site_list_adj,
                            time_span = time_span,
                            time_period = time_period,

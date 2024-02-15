@@ -205,11 +205,11 @@ scv_ss_exp_nt <- function(process_output,
     
     facet <- facet %>% append('xaxis')
     
-    p <- final %>% ggplot(aes(x = xaxis, y = !!sym(map_col), 
+    p <- final %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
                               fill = !!sym(prop))) + 
       geom_tile() + 
       geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
-      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+      scale_fill_viridis_c(option = 'turbo') +
       facet_wrap((facet), scales = 'free') +
       theme(axis.text.x = element_blank()) +
       labs(title = title,
@@ -240,7 +240,7 @@ scv_ss_exp_nt <- function(process_output,
                                  fill = !!sym(prop))) +
       geom_tile_interactive(aes(tooltip = concept_name)) +
       geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
-      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+      scale_fill_viridis_c(option = 'turbo') +
       facet_wrap((facet), scales = 'free') +
       theme(axis.text.x = element_blank()) +
       labs(title = title,
