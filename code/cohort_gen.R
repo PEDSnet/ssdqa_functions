@@ -78,7 +78,66 @@ compute_fot <- function(cohort,
   
 }
   
+#' compute age at cohort entry
+#' 
+#' @param cohort_tbl table of cohort members with at least `person_id`, `start_date`, and `end_date`
+#' @param person_tbl the CDM person table
+#' @param age_groups a csv file (template found in specs folder) where the user defines the minimum and maximum
+#'                   age allowed for a group and provides a string name for the group
+#' 
+#' @return `cohort_tbl` with the age at cohort entry and age group for each patient
+#' 
+#' 
+
+compute_age_groups <- function(cohort_tbl,
+                               person_tbl,
+                               age_groups) {
   
+  cohorts <- cohort_tbl %>% 
+    inner_join(select(person_tbl,
+                      person_id,
+                      birth_date)) %>% 
+    mutate(age_ce = floor((start_date - birth_date)/365.25)) %>%
+    collect_new()
+  
+  cohorts_grpd <- cohorts %>%
+    cross_join(age_groups) %>%
+    mutate(age_grp = case_when(age_ce >= min_age & age_ce <= max_age ~ group,
+                               TRUE ~ as.character(NA))) %>%
+    filter(!is.na(age_grp)) %>%
+    right_join(cohorts) %>%
+    select(-c(birth_date, min_age, max_age, group)) %>%
+    mutate(age_grp = case_when(is.na(age_grp) ~ 'No Group',
+                               TRUE ~ age_grp))
+  
+  copy_to_new(df = cohorts_grpd)
+  
+}
+
+#' intake codeset to customize patient labels
+#'
+#' @param cohort_tbl table of cohort members with at least `person_id`, `start_date`, and `end_date`
+#' @param codeset_meta a CSV file with metadata relating to a codeset with customized group labels
+#'                     
+#'                     this file should have `table`, `column`, and `file_name` columns
+
+cohort_codeset_label <- function(cohort_tbl,
+                                 codeset_meta){
+  
+  codeset <- load_codeset(codeset_meta$file_name)
+  
+  filter_tbl <- select(cdm_tbl('visit_occurrence'), person_id, visit_occurrence_id, provider_id, care_site_id) %>%
+    left_join(cdm_tbl(codeset_meta$table)) %>%
+    rename('concept_id' = codeset_meta$column) %>%
+    inner_join(codeset, by = 'concept_id') %>%
+    select(person_id, flag) %>%
+    distinct() %>%
+    right_join(cohort_tbl, by = 'person_id') %>%
+    mutate(flag = case_when(is.na(flag) ~ 'None',
+                            TRUE ~ flag))
+  
+  
+}  
   
   
 #' Prepare cohort for check execution
@@ -251,4 +310,46 @@ join_to_vocabulary <- function(tbl,
                copy = TRUE) %>%
     rename_with(~col, join_col) %>%
     collect()
+}
+
+
+#' Generate parameter summary and recommended string to input into output function
+#'
+#' @param check_string abbreviation to represent check type, should be the same as what
+#'                     is prefixed to the names of the output functions
+#' @param ... all of the parameters input into the core function. any argument that is not
+#'            able to be vectorized (i.e. a CDM tbl, codeset, etc) will not appear in the final
+#'            summary
+#'
+#' @return paramater_summary.csv to the results directory
+#' @return output_type string to be piped into a descriptive message at the end of the core function
+#'         to inform users what should be used as the `output_function` argument in the output
+#'         function
+#' 
+param_csv_summ2 <- function(check_string, ...){
+  
+  argg <- c(...)
+  
+  
+  df <- stack(argg) %>%
+    rename('param' = ind,
+           'value' = values)
+  
+  site_type <- df %>% filter(param == 'multi_or_single_site') %>% 
+    mutate(v = ifelse(value == 'single', 'ss', 'ms')) %>% distinct(v) %>% pull()
+  exp_anom <- df %>% filter(param == 'anomaly_or_exploratory') %>% 
+    mutate(v = ifelse(value == 'anomaly', 'anom', 'exp')) %>% distinct(v) %>% pull()
+  time <- df %>% filter(param == 'time') %>% 
+    mutate(v = ifelse(value == TRUE, 'at', 'nt')) %>% distinct(v) %>% pull()
+  
+  output_type <- paste0(check_string, '_', site_type, '_', exp_anom, '_', time)
+  
+  df_final <- df %>%
+    add_row(param = 'output_function',
+            value = output_type)
+  
+  output_tbl(df_final, 'parameter_summary', file = TRUE)
+  
+  return(output_type)
+  
 }
