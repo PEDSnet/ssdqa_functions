@@ -24,6 +24,7 @@
 #' 
 compute_fot <- function(cohort,
                         check_func,
+                        site_col,
                         reduce_id = 'visit_type',
                         time_period='year',
                         time_span= c('2012-01-01','2022-12-31'),
@@ -56,7 +57,7 @@ compute_fot <- function(cohort,
     
     
     cohort_narrow_prepped <- cohort_narrowed %>%
-      filter(site %in% site_list_v) %>% 
+      filter(!! sym(site_col) %in% site_list_v) %>% 
       mutate(time_start=start_date,
              time_increment=time_period)
     

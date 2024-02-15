@@ -23,7 +23,9 @@
 csd_process <- function(cohort = results_tbl('jspa_cohort'),
                         site_list = c('seattle','cchmc'),
                         domain_tbl=read_codeset('scv_domains', 'cccc'),
-                        concept_set = read_codeset('csd_codesets','iccccc'),
+                        #concept_set = c('ibd', 'spondyloarthritis', 'systemic_jia', 'uveitis', 'general_jia'),
+                        concept_set = read_codeset('csd_codesets','iccccc') %>% 
+                          filter(variable %in% c('ibd', 'spondyloarthritis', 'systemic_jia', 'uveitis', 'general_jia')),
                         # dplyr::union(load_codeset('jia_codes','iccccc'),
                         # load_codeset('jia_codes_icd','iccccc')) 
                         #code_type = 'source',
@@ -34,7 +36,7 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
                         num_concept_1 = 30,
                         num_concept_2 = 30,
                         age_groups = FALSE, #read_codeset('age_group_definitions'),
-                        time = FALSE,
+                        time = TRUE,
                         time_span = c('2012-01-01', '2020-01-01'),
                         time_period = 'year'
 ){
@@ -65,6 +67,7 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
   # Execute function
   if(! time) {
     
+    
     for(k in 1:length(site_list_adj)) {
       
       site_list_thisrnd <- site_list_adj[[k]]
@@ -81,7 +84,7 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
                                                    num_concept_1 = num_concept_1,
                                                    num_concept_2 = num_concept_2)
       } else {
-        variable_compute <- check_code_dist_alt(cohort_codedist = cohort_site,
+        variable_compute <- check_code_dist_csd(cohort_codedist = cohort_site,
                                               #code_type = 'cdm',
                                               code_domain = code_domain,
                                               concept_set = concept_set,
@@ -99,25 +102,30 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
   } else {
     ## Do we need a loop here? works because it groups by site as a default, not sure if
     ## its necessary (which one is faster/more efficient)
-    if(!is.vector(concept_set)){stop('For an over time output, please select 1-5 codes from your
-                                   concept set and include them as a vector in the concept_set argument.')}
-    if(is.vector(concept_set) && length(concept_set) > 5){stop('For an over time output, please select 1-5 
-                                                              codes from your concept set and include them as
-                                                             a vector in the concept_set argument.')}
+    # if(!is.vector(concept_set)){stop('For an over time output, please select 1-5 codes from your
+    #                                concept set and include them as a vector in the concept_set argument.')}
+    # if(is.vector(concept_set) && length(concept_set) > 5){stop('For an over time output, please select 1-5 
+    #                                                           codes from your concept set and include them as
+    #                                                          a vector in the concept_set argument.')}
     
-    concept_set_prep <- as.data.frame(concept_set) %>% rename('concept_id' = concept_set) %>%
-      mutate(concept_id = as.integer(concept_id))
-    concept_set_prep <- copy_to_new(df = concept_set_prep)
+    # concept_set_prep <- as.data.frame(concept_set) %>% rename('concept_id' = concept_set) %>%
+    #   mutate(concept_id = as.integer(concept_id))
+    # concept_set_prep <- copy_to_new(df = concept_set_prep)
     
-    scv_tbl <- compute_fot(cohort = cohort_prep,
+    cohort_prep <- prepare_cohort(cohort_tbl = cohort_filter, age_groups = age_groups, codeset = NULL) %>% 
+      #mutate(domain = code_domain) %>% 
+      group_by(!!! syms(grouped_list))
+    
+    csd_tbl <- compute_fot(cohort = cohort_prep,
                            site_list = site_list_adj,
+                           site_col = site_col,
                            time_span = time_span,
                            time_period = time_period,
                            reduce_id = NULL,
                            check_func = function(dat){
-                             check_code_dist(cohort = dat,
-                                             concept_set = concept_set_prep,
-                                             code_type = code_type,
+                             check_code_dist_csd(cohort_codedist = dat,
+                                             concept_set = concept_set,
+                                             #code_type = code_type,
                                              code_domain = code_domain,
                                              domain_tbl = domain_tbl,
                                              time = TRUE)
@@ -128,7 +136,7 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
   final_csd_tbl <- 
     replace_site_col(csd_tbl)
   
-  return(scv_tbl)
+  return(final_csd_tbl)
   
   
 }

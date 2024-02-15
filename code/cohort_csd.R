@@ -11,7 +11,7 @@
 #' 
 #' @return 
 #' 
-check_code_dist_alt <- function(cohort_codedist,
+check_code_dist_csd <- function(cohort_codedist,
                                 concept_set,
                                 code_domain,
                                 time = FALSE,
@@ -32,38 +32,30 @@ check_code_dist_alt <- function(cohort_codedist,
   #   final_col = concept_col
   # }else{stop(paste0(code_type, ' is not a valid argument. Please select either "source" or "cdm"'))}
   
-  if(time){
+  fact_tbl_final <- list()
+  
+  for(i in 1:nrow(domain_filter)) {
     
-    domain_tbl <- cohort_codedist %>%
-      inner_join(cdm_tbl(code_domain)) %>%
-      filter(!!sym(domain_filter$date_col) >= start_date,
-             !!sym(domain_filter$date_col) <= end_date)
+    domain_tbl_name <- domain_filter[i,1] %>% pull
+    domain_tbl_cdm <- cohort_codedist %>% 
+      inner_join(cdm_tbl(domain_tbl_name))  
+    final_col <- domain_filter[i,]$concept_col
     
-    
-    fact_tbl <- 
-      domain_tbl %>% 
-      inner_join(concept_set,
-                 by=setNames('concept_id',final_col)) %>% 
-      select(all_of(group_vars(cohort_codedist)),
-             all_of(concept_col),
-             all_of(source_col),
-             time_start,
-             time_increment) %>% 
-      rename('concept_id' = concept_col,
-             'source_concept_id' = source_col) %>%
-      group_by(time_start, time_increment, .add = TRUE)
-    
-  }else{
-    
-    fact_tbl_final <- list()
-    
-    for(i in 1:nrow(domain_filter)) {
-      
-      domain_tbl_name <- domain_filter[i,1] %>% pull
-      domain_tbl_cdm <- cohort_codedist %>% 
-        inner_join(cdm_tbl(domain_tbl_name))  
-      final_col <- domain_filter[i,]$concept_col
-      
+    if(time){
+      fact_tbl <- 
+        domain_tbl_cdm %>% 
+        inner_join(concept_set_db,
+                   by=setNames('concept_id',final_col)) %>% 
+        select(all_of(group_vars(cohort_codedist)),
+               all_of(final_col),
+               variable,
+               time_start,
+               time_increment) %>% 
+        group_by(time_start,
+                 time_increment,
+                 .add=TRUE) %>%  
+        rename('concept_id' = final_col) 
+    } else {
       fact_tbl <- 
         domain_tbl_cdm %>% 
         inner_join(concept_set_db,
@@ -73,44 +65,125 @@ check_code_dist_alt <- function(cohort_codedist,
                variable) %>% 
         rename('concept_id' = final_col) 
       
-      cts <- 
-        fact_tbl %>% 
-        group_by(
-          concept_id,
-          variable,
-          .add=TRUE
-        ) %>% 
-        summarise(ct_concept=n()) %>% 
-        collect()
-      
-      denom <- 
-        fact_tbl %>% 
-        group_by(
-          variable,
-          .add=TRUE
-        ) %>% 
-        summarise(ct_denom=n()) %>% 
-        collect()
-      
-      props <- 
-        denom %>% 
-        inner_join(cts, multiple='all') %>% 
-        mutate(prop_concept = round(ct_concept/ct_denom, 2),
-               concept_id = as.character(concept_id))
-      
-      fact_tbl_final[[i]] <- props
-      
     }
     
-    fact_tbl_final_reduce <- 
-      reduce(.x = fact_tbl_final,
-             .f= dplyr::union)
+    cts <- 
+      fact_tbl %>% 
+      group_by(
+        concept_id,
+        variable,
+        .add=TRUE
+      ) %>% 
+      summarise(ct_concept=n()) %>% 
+      collect() 
     
+    fact_tbl_final[[i]] <- cts
   }
   
-  fact_tbl_final_reduce
+  fact_tbl_final_reduce <- 
+    reduce(.x = fact_tbl_final,
+           .f= dplyr::union)
+  
+  denom <- 
+    fact_tbl_final_reduce %>% 
+    ungroup(concept_id) %>% 
+    group_by(variable,
+             .add=TRUE) %>% 
+    # group_by(
+    #   -concept_id,
+    #   .add=TRUE
+    # ) %>% 
+    summarise(ct_denom=sum(ct_concept)) %>% 
+    collect()
+  
+  props <- 
+    denom %>% 
+    inner_join(cts, multiple='all') %>% 
+    mutate(prop_concept = round(ct_concept/ct_denom, 2),
+           concept_id = as.character(concept_id))
+  
   
 }
+  
+#   if(time){
+#     
+#     domain_tbl <- cohort_codedist %>%
+#       inner_join(cdm_tbl(code_domain)) %>%
+#       filter(!!sym(domain_filter$date_col) >= start_date,
+#              !!sym(domain_filter$date_col) <= end_date)
+#     
+#     
+#     fact_tbl <- 
+#       domain_tbl %>% 
+#       inner_join(concept_set,
+#                  by=setNames('concept_id',final_col)) %>% 
+#       select(all_of(group_vars(cohort_codedist)),
+#              all_of(concept_col),
+#              all_of(source_col),
+#              time_start,
+#              time_increment) %>% 
+#       rename('concept_id' = concept_col,
+#              'source_concept_id' = source_col) %>%
+#       group_by(time_start, time_increment, .add = TRUE)
+#     
+#   }else{
+#     
+#     fact_tbl_final <- list()
+#     
+#     for(i in 1:nrow(domain_filter)) {
+#       
+#       domain_tbl_name <- domain_filter[i,1] %>% pull
+#       domain_tbl_cdm <- cohort_codedist %>% 
+#         inner_join(cdm_tbl(domain_tbl_name))  
+#       final_col <- domain_filter[i,]$concept_col
+#       
+#       fact_tbl <- 
+#         domain_tbl_cdm %>% 
+#         inner_join(concept_set_db,
+#                    by=setNames('concept_id',final_col)) %>% 
+#         select(all_of(group_vars(cohort_codedist)),
+#                all_of(final_col),
+#                variable) %>% 
+#         rename('concept_id' = final_col) 
+#       
+#       cts <- 
+#         fact_tbl %>% 
+#         group_by(
+#           concept_id,
+#           variable,
+#           .add=TRUE
+#         ) %>% 
+#         summarise(ct_concept=n()) %>% 
+#         collect()
+#       
+#       denom <- 
+#         fact_tbl %>% 
+#         group_by(
+#           variable,
+#           .add=TRUE
+#         ) %>% 
+#         summarise(ct_denom=n()) %>% 
+#         collect()
+#       
+#       props <- 
+#         denom %>% 
+#         inner_join(cts, multiple='all') %>% 
+#         mutate(prop_concept = round(ct_concept/ct_denom, 2),
+#                concept_id = as.character(concept_id))
+#       
+#       fact_tbl_final[[i]] <- props
+#       
+#     }
+#     
+#     fact_tbl_final_reduce <- 
+#       reduce(.x = fact_tbl_final,
+#              .f= dplyr::union)
+#     
+#   }
+#   
+#   fact_tbl_final_reduce
+#   
+# }
 
 
 #' Base CSD function

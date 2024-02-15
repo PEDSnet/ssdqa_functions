@@ -178,4 +178,71 @@ csd_ss_anom_nt <- function(process_output,
   return(p)
 }
 
+### ACROSS TIME
 
+#' *Single Site, Anomaly, Across Time*
+#' 
+#' Control chart looking at number of mappings over time
+#' 
+#' using the CHOP-developed package called `rocqi` 
+#' 
+#' @param process_output dataframe output by `scv_process`
+#' @param code_type type of code to be used in analysis -- either `source` or `cdm`
+#' 
+#'                  should match the code_type provided when running `scv_process`
+#' @param facet the variables by which you would like to facet the graph
+#' 
+#' @return a C control chart that highlights points in time where the number of mappings for
+#'         a particular code are anomalous; outlying points are highlighted red
+#' 
+scv_ss_anom_at <- function(process_output,
+                           vocab_tbl=vocabulary_tbl('concept'),
+                           variable_name,
+                           facet=NULL){
+  
+  # if(code_type == 'source'){
+  #   col <- 'source_concept_id'
+  # }else if(code_type == 'cdm'){
+  #   col <- 'concept_id'}
+  
+  facet <- facet %>% append('variable')
+  
+  n_mappings_yr <- process_output %>% filter(variable == 'ibd') %>% 
+    group_by(!!!syms(facet), time_start) %>%
+    summarise(n_mappings = n_distinct(concept_id))
+  
+  top_six <- 
+    process_output %>% filter(variable == variable_name) %>% 
+    ungroup() %>% 
+    group_by(variable, concept_id) %>% 
+    summarise(total_ct = sum(ct_concept)) %>% 
+    ungroup() %>% arrange(desc(total_ct)) %>% 
+    top_n(n=6) %>% select(concept_id) %>% pull()
+  
+  c_added <- join_to_vocabulary(tbl = process_output %>% filter(variable == 'ibd') %>% 
+                                  filter(concept_id %in% top_six) %>% 
+                                  mutate(concept_id=as.integer(concept_id)),
+                              vocab_tbl = vocab_tbl,
+                              col = 'concept_id') 
+  
+  c_added %>% 
+    #group_by(!!!syms(facet)) %>%
+    group_by(concept_id) %>% 
+    group_modify(
+      ~spc_calculate(
+        data = .x, 
+        x = time_start,
+        y = prop_concept,
+        chart = "c"
+      )
+    ) %>% 
+    ungroup() %>%
+    # plot
+    spc_plot(engine = "ggplot") + 
+    facet_wrap((facet)) + 
+    theme(panel.background = element_rect("white", "grey80")) +
+    labs(title = 'Control Chart: Number of Mappings per Code Over Time')
+  
+  
+  
+}
