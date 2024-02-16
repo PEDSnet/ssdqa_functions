@@ -64,6 +64,11 @@ scv_process <- function(cohort,
                         time_period = 'year'
 ){
   
+  ## parameter summary output
+  output_type <- suppressWarnings(param_csv_summ2(check_string = 'scv',
+                                                  as.list(environment())))
+  
+  
   # Add site check
   site_filter <- check_site_type(cohort = cohort,
                                  multi_or_single_site = multi_or_single_site,
@@ -111,8 +116,6 @@ scv_process <- function(cohort,
                       .f=dplyr::union)
     
   } else if(time){
-    ## Do we need a loop here? works because it groups by site as a default, not sure if
-    ## its necessary (which one is faster/more efficient)
     if(!is.vector(concept_set)){stop('For an over time output, please select 1-5 codes from your
                                    concept set and include them as a vector in the concept_set argument.')}
     if(is.vector(concept_set) && length(concept_set) > 5){stop('For an over time output, please select 1-5 
@@ -124,6 +127,7 @@ scv_process <- function(cohort,
     concept_set_prep <- copy_to_new(df = concept_set_prep)
     
     scv_tbl <- compute_fot(cohort = cohort_prep,
+                           site_col = site_col,
                            site_list = site_list_adj,
                            time_span = time_span,
                            time_period = time_period,
@@ -139,10 +143,11 @@ scv_process <- function(cohort,
     
   }
   
+  message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
+                       output function in scv_output: ', output_type, '. This is also included
+                       in the parameter_summary.csv file output to the results directory.')))
   
   return(scv_tbl)
-  
-  
 }
 
 

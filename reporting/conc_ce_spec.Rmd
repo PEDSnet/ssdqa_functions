@@ -49,10 +49,13 @@ output_ss_expl
 
 ### Stratified by visit type
 
-Only shows top 5 per visit type, which could be different across visit types
+  - Only shows top 5 per visit type, which could be different across visit types
+  - Filtered to only emergency_dept, outpatient, inpatient
 
 ```{r}
-output_ss_expl_vis <- conc_output_gen(conc_process_output=jspa_output_full,
+jspa_output_edopip <- jspa_output_full %>%
+  filter(visit_type%in%c('emergency_dept', 'outpatient', 'inpatient'))
+output_ss_expl_vis <- conc_output_gen(conc_process_output=jspa_output_edopip,
                                       conc_process_names=concept_names_grouped,
                                       single_site=TRUE,
                                       multi_site=FALSE,
@@ -67,7 +70,7 @@ output_ss_expl_vis
 
 ### Stratified by cluster
 
-Only showing top 5 within each grouping, which could be different across clusters
+  - Only showing top 5 within each grouping, which could be different across clusters
 
 ```{r}
 output_ss_expl_clus <- conc_output_gen(conc_process_output=jspa_output_full,
@@ -117,7 +120,10 @@ output_ss_expl_ot
 
 ## Single Site, Anomaly, No Time
 
-If there is an anomalous specialty, only shows the top n specialties with the greatest difference from the mean for the given cluster. Here, only the top 10 are displayed.
+  - A specialty is anomalous if its proportion of visits for the given cluster is +/- the specified number of MAD from the median proportion of visits for that specialty across all other clusters
+  - Anomalous specialties for the cluster are stars, non-anomalous are points
+  - Size and fill color are based on number of MAD from median
+  - Specialties without any visits for the cluster do not have a point (is this okay or should we be counting this as a zero and including in the computation of the median?)
 
 ```{r}
 output_ss_an <- conc_output_gen(conc_process_output=jspa_output_full,
@@ -129,7 +135,8 @@ output_ss_an <- conc_output_gen(conc_process_output=jspa_output_full,
                                 time_dimension=FALSE,
                                 facet_vars=c('codeset_name'),
                                 color_var='specialty_name',
-                                top_n=10L)
+                                n_mad=3,
+                                alt=TRUE)
 output_ss_an
 ```
 
@@ -186,17 +193,26 @@ output_ms_exp_ot
 
 The median proportion of visits with each specialty across sites is computed, and each site's proportion of visits with that specialty is compared against the median using n_mad = (absolute distance to the median)/(median absolute distance from the median)
 
+  - Anomalous (more than +/- the specified MAD) specialties are stars, non-anomalous specialties are points
+  - Size and fill color are based on number of MAD from median
+  - Specialties are only shown if there is at least one site with an anomalous proportion
+  - Sites without any visits to the specialty do not have a point
+  
 
 ```{r}
+concept_names_nona<-concept_names_grouped%>%filter(!specialty_name%in%c('Unknown','Other'))
 output_ms_an_nt <- conc_output_gen(conc_process_output=jspa_output_full,
-                                   conc_process_names=concept_names_grouped,
+                                   conc_process_names=concept_names_nona,
                                               single_site=FALSE,
                                               multi_site=TRUE,
                                               exploratory=FALSE,
                                               anomaly=TRUE,
                                               time_dimension=FALSE,
                                               facet_vars=c('codeset_name'),
-                                              color_var='site')
+                                              color_var='site',
+                                   n_mad=3L,
+                                   alt=TRUE)
+
 
 output_ms_an_nt
 ```
@@ -210,13 +226,12 @@ We could give the option to limit to only show "top n", but would need to figure
 ```{r}
 output_ms_an_ot <- conc_output_gen(conc_process_output=jspa_output_time,
                                    conc_process_names=concept_names_grouped,
-                                              single_site=FALSE,
-                                              multi_site=TRUE,
-                                              exploratory=FALSE,
-                                              anomaly=TRUE,
-                                              time_dimension=TRUE,
-                                              facet_vars=c('codeset_name'),
-                                              color_var='site')
+                                   single_site=FALSE,
+                                   multi_site=TRUE,
+                                   exploratory=FALSE,
+                                   anomaly=TRUE,
+                                   time_dimension=TRUE,
+                                   facet_vars=c('codeset_name'))
 
 output_ms_an_ot
 ```

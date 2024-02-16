@@ -128,6 +128,8 @@ conc_process <- function(cohort,
 #' @param color_var variable in conc_process_output to color/fill by
 #' @param top_n integer value whose meaning depends on plot context:
 #'          for anomaly detection, will display the top n with values furthest from the mean. Defaults to the number of rows in the output, which will be the maximum number of rows regardless of groupings
+#' @param n_mad number of MAD from the median for which to flag anomalies
+#'                defaults to 3
 #' @param alt a temporary parameter to specify whether to display a different type of plot, for testing
 #'                    
 #' suggestions:
@@ -153,6 +155,7 @@ conc_output_gen <- function(conc_process_output,
                             facet_vars,
                             color_var=NULL,
                             top_n=nrow(conc_process_output),
+                            n_mad=3L,
                             alt=FALSE){
   message('Preparing data for visualization')
   if('cluster'%in%facet_vars&'visit_type'%in%facet_vars){
@@ -200,36 +203,40 @@ conc_output_gen <- function(conc_process_output,
   if(anomaly&multi_site){
     gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site']
     message('Computing mean and distance to mean')
-    conc_output_pp <- compute_dist_mean_conc(conc_output_pp,
-                                             grp_vars=gp_vars_no_site,
-                                             var_col='prop',
-                                             num_sd=2L)
+    # conc_output_pp <- compute_dist_mean_conc(conc_output_pp,
+    #                                          grp_vars=gp_vars_no_site,
+    #                                          var_col='prop',
+    #                                          num_sd=2L)
+    conc_output_pp <- compute_dist_median_conc(tbl=conc_output_pp,
+                                               grp_vars=gp_vars_no_site,
+                                               var_col='prop',
+                                               num_mad=n_mad)
     
     message('Flagging the anomalies')
     # only select the specialties where at least one site is an anomaly
-    # conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
-    #                                facet_vars=facet_vars,
-    #                                distinct_vars=c('codeset_name', 'specialty_name'))
+    conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
+                                    facet_vars=facet_vars,
+                                    distinct_vars=c('codeset_name', 'specialty_name'))
       
   }
   if(anomaly&single_site){
     gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site'&!spec_gp_vars=='cluster']
     message('Computing mean and distance to mean')
-    conc_output_pp <- compute_dist_mean_conc(conc_output_pp,
-                                             grp_vars=gp_vars_no_site,
-                                             var_col='prop',
-                                             num_sd=2L)
+    conc_output_pp <- compute_dist_median_conc(conc_output_pp,
+                                               grp_vars=gp_vars_no_site,
+                                               var_col='prop',
+                                               num_mad=n_mad)
     
     message('Flagging the anomalies')
     # only select the specialties where at least one specialty is an anomaly
     conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
                                            facet_vars=facet_vars,
-                                           distinct_vars=c('codeset_name','cluster')) %>%
-      insert_top_n_indicator(.,
-                             gp_cols=c("cluster"),
-                             val_col="abs_diff_mean",
-                             n=top_n)%>%
-      filter(top_n_indicator)
+                                           distinct_vars=c('codeset_name','cluster')) #%>%
+      # insert_top_n_indicator(.,
+      #                        gp_cols=c("cluster"),
+      #                        val_col="n_mad",
+      #                        n=top_n)%>%
+      # filter(top_n_indicator)
   }
   
   # generate color palette for color variable
@@ -277,7 +284,7 @@ conc_output_gen <- function(conc_process_output,
                                              pal_map=conc_colors)
     }else{
       # testing alternate plot for single site, anomaly, not over time
-      conc_output_plot <- plot_ss_an_nt_conc_hm(data_tbl=conc_output_pp)
+      conc_output_plot <- plot_ss_an_nt_conc_alt(data_tbl=conc_output_pp)
     }
     
   }else if(multi_site&exploratory){
@@ -314,7 +321,9 @@ conc_output_gen <- function(conc_process_output,
       
     }else{
       # not over time
-      conc_output_plot <- plot_ms_an_nt_conc(data_tbl=conc_output_pp)
+      if(alt){
+        conc_output_plot <- plot_ms_an_nt_conc_alt(data_tbl=conc_output_pp)
+      }else{conc_output_plot <- plot_ms_an_nt_conc(data_tbl=conc_output_pp)}
     }
     
   }

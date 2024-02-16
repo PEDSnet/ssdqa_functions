@@ -128,7 +128,8 @@ generate_color_pal <- function(distinct_list){
 compute_dist_mean_conc <- function(tbl,
                                    grp_vars,
                                    var_col,
-                                   num_sd){
+                                   num_sd,
+                                   num_mad){
   stats <- tbl %>%
     group_by(!!!syms(grp_vars))%>%
     summarise(mean=mean(!!!syms(var_col)),
@@ -137,13 +138,46 @@ compute_dist_mean_conc <- function(tbl,
               mad=mad(!!!syms(var_col),center=median)) %>%
     ungroup() %>%
     mutate(sd_lower=mean-num_sd*sd,
-           sd_upper=mean+num_sd*sd)
+           sd_upper=mean+num_sd*sd,
+           mad_lower=median-num_mad*mad,
+           mad_upper=median+num_mad*mad)
   
   tbl %>%
     inner_join(stats)%>%
     mutate(anomaly_yn=case_when(prop<sd_lower|prop>sd_upper~TRUE,
                                 TRUE~FALSE),
            abs_diff_mean=abs(prop-mean),
+           abs_diff_median=abs(prop-median),
+           n_mad=abs_diff_median/mad)
+  
+}
+
+
+
+#' @param tbl table with at least the vars specified in `grp_vars` and `var_col`
+#' @param grp_vars variables to group by when computing summary statistics
+#' @param var_col column to compute summary statistics on
+#' @param num_mad (integer) number of MAD from the MAD
+#'               from which to compute the mad_lower and mad_upper columns
+#' @return a table with the `grp_vars` | mean | sd | sd_lower | sd_upper | 
+#'                                      anomaly_yn: indicator of whether data point is +/- num_mad from median
+#'                                      abs_diff_median: absolute value of difference between median for group and observation
+compute_dist_median_conc <- function(tbl,
+                                   grp_vars,
+                                   var_col,
+                                   num_mad){
+  stats <- tbl %>%
+    group_by(!!!syms(grp_vars))%>%
+    summarise(median=median(!!!syms(var_col)),
+              mad=mad(!!!syms(var_col),center=median)) %>%
+    ungroup() %>%
+    mutate(mad_lower=median-num_mad*mad,
+           mad_upper=median+num_mad*mad)
+  
+  tbl %>%
+    inner_join(stats)%>%
+    mutate(anomaly_yn=case_when(prop<mad_lower|prop>mad_upper~TRUE,
+                                TRUE~FALSE),
            abs_diff_median=abs(prop-median),
            n_mad=abs_diff_median/mad)
   
@@ -169,23 +203,23 @@ plot_ss_an_nt_conc <- function(data_tbl,
     mutate(text=paste("Specialty: ",specialty_name,
                       "\nAnomaly: ",anomaly_yn,
                       "\nProportion: ",round(prop,2),
-                      "\nMean proportion: ",round(mean,2)))
+                      "\nMedian proportion: ",round(median,2)))
   if(!is.null(facet)){
   plt<-ggplot(data_tbl,
          aes(x=!!sym(x_var), y=!! sym(y_var), text=text))+
-    geom_bar(stat='identity', position=position_dodge(width=1), aes(fill=!!sym(fill_var))) +
+    geom_bar(stat='identity', position=position_dodge(width=1), aes(fill=!!sym(fill_var), color=anomaly_yn)) +
     scale_fill_manual(values=pal_map)+
-    geom_point(aes(x=!!sym(x_var),fill=!!sym(fill_var),y=mean), position=position_dodge(width=1),shape=4)+
+    geom_point(aes(x=!!sym(x_var),fill=!!sym(fill_var),y=median), position=position_dodge(width=1),shape=4)+
     coord_flip()+
     facet_wrap((facet), scales="free_y")+
     theme_classic()
   }else{
     plt<-ggplot(data_tbl,
                 aes(x=!!sym(x_var), y=!! sym(y_var), text=text)) +
-      geom_bar(stat='identity', position=position_dodge(width=1), aes(fill=!!sym(fill_var))) +
+      geom_bar(stat='identity', position=position_dodge(width=1), aes(fill=!!sym(fill_var),color=anomaly_yn)) +
       scale_fill_manual(values=pal_map)+
       #geom_errorbar(aes(x=!!sym(x_var),ymin=sd_lower,ymax=sd_upper))+
-      geom_point(aes(x=!!sym(x_var),fill=!!sym(fill_var),y=mean), position=position_dodge(width=1),shape=4)+
+      geom_point(aes(x=!!sym(x_var),fill=!!sym(fill_var),y=median), position=position_dodge(width=1),shape=4)+
       coord_flip()+
       theme_classic()
   }
@@ -206,12 +240,13 @@ flag_anomaly<- function(tbl,
                         facet_vars,
                         distinct_vars){
   anomaly_tbl <- tbl %>%
-    filter(prop<sd_lower|prop>sd_upper) %>%
+    # anomaly_yn is created within compute_dist_median_conc
+    filter(anomaly_yn) %>%
     distinct(!!!syms(distinct_vars)) 
   anomaly_all <- anomaly_tbl %>%
-    inner_join(tbl)%>%
-    mutate(anomaly=case_when(prop<sd_lower|prop>sd_upper~TRUE,
-                             TRUE~FALSE))
+    inner_join(tbl)#%>%
+    # mutate(anomaly=case_when(prop<sd_lower|prop>sd_upper~TRUE,
+    #                          TRUE~FALSE))
   
   # if('visit_type'%in%facet_vars){
   #   anomaly_tbl <- tbl %>%
@@ -389,13 +424,14 @@ compute_mad<-function(){
 plot_ms_an_nt_conc<-function(data_tbl){
   dat_to_plot <- data_tbl %>%
     mutate(text=paste("Specialty: ",specialty_name,
-                      "\nNo. MAD from median: ", n_mad))
-  plt<-ggplot(data_tbl, aes(x=site,y=specialty_name,fill=n_mad))+
+                      "\nProportion: ",round(prop,2),
+                      "\nNo. MAD from median: ", round(n_mad,2),
+                      "\nAnomaly: ",anomaly_yn))
+  plt<-ggplot(dat_to_plot, aes(x=site,y=specialty_name,fill=n_mad, text=text))+
     geom_tile()+
-    facet_wrap(~site, scales="free_x")+
-    scale_fill_gradient2(low='pink', high='maroon')
+    scale_fill_gradient(colors=c('#8c510a','#d8b365','#f6e8c3', '#c7eae5', '#5ab4ac', '#01665e'))
   
-  ggplotly(plt)
+  ggplotly(plt, tooltip="text")
 }
 
 plot_ms_an_ot_conc<- function(data_tbl){
@@ -406,4 +442,49 @@ plot_ms_an_ot_conc<- function(data_tbl){
     theme_classic()+
     theme(axis.text.x = element_text(angle=90))
   ggplotly(plt)
+}
+
+plot_ms_an_nt_conc_alt<-function(data_tbl){
+  dat_to_plot <- data_tbl %>%
+    mutate(text=paste("Specialty: ",specialty_name,
+                      "\nSite: ",site,
+                      "\nProportion: ",round(prop,2),
+                      "\nMedian proportion: ",round(median,2),
+                      "\nNo. MAD from median: ", round(n_mad,2)))
+  
+  mid<-(max(dat_to_plot$n_mad,na.rm=TRUE)+min(dat_to_plot$n_mad,na.rm=TRUE))/2
+  
+  plt<-ggplot(dat_to_plot, aes(x=site, y=specialty_name, text=text))+
+    geom_point(aes(size=n_mad,colour=n_mad,shape=anomaly_yn))+
+    scale_shape_manual(values=c(20,8))+
+    scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
+    theme_bw()+
+    labs(colour="No. MAD\nfrom median",
+         shape="Anomaly",
+         size="")+
+    theme(axis.text.x = element_text(angle=90))
+  
+  ggplotly(plt, tooltip="text")
+}
+
+plot_ss_an_nt_conc_alt<- function(data_tbl){
+  dat_to_plot <- data_tbl %>%
+    mutate(text=paste("Specialty: ",specialty_name,
+                      "\nProportion: ",round(prop,2),
+                      "\nMedian proportion: ",round(median,2),
+                      "\nNo. MAD from median: ", round(n_mad,2)))
+  mid<-(max(dat_to_plot$n_mad,na.rm=TRUE)+min(dat_to_plot$n_mad,na.rm=TRUE))/2
+  
+  plt<-ggplot(dat_to_plot, aes(x=specialty_name, y=cluster, text=text))+
+    geom_point(aes(size=n_mad,colour=n_mad,shape=anomaly_yn))+
+    scale_shape_manual(values=c(20,8))+
+    scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
+    theme_bw()+
+    labs(colour="No. MAD\nfrom median",
+         shape="Anomaly",
+         size="")+
+    theme(axis.text.x = element_text(angle=90))
+  
+  ggplotly(plt, tooltip="text")
+  
 }
