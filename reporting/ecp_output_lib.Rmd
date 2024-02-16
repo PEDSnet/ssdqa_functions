@@ -1,0 +1,121 @@
+---
+title: "Expected Concepts Present Output Library"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+no_time <- read_csv(file = paste0(config('base_dir'), '/results/ecp_nt.csv'))
+
+across_time <- read_csv(file = paste0(config('base_dir'), '/results/ecp_at.csv'))
+
+facet <- NULL
+
+output_level <- 'patient'
+
+```
+
+## Single Site, Exploratory, No Time
+```{r ss_exp_nt}
+
+ecp_ss_exp_nt(process_output = no_time %>% filter(site == 'nationwide'),
+              output_level = output_level,
+              facet = facet)
+
+```
+
+## Multi Site, Exploratory, No Time
+```{r ms_exp_nt}
+
+ecp_ms_exp_nt(process_output = no_time,
+              output_level = output_level,
+              facet = facet)
+
+```
+
+## Single Site, Anomaly, No Time
+
+In development
+
+Do we need to set a minimum threshold of the amount of concept sets that should be used for this to work? i.e. if they just put in 2-3, it may not be as interesting as entering 10-12 and running that comparison
+
+## Multi Site, Anomaly, No Time
+```{r ms_anom_nt}
+
+ecp_ms_anom_nt(process_output = no_time,
+               output_level = output_level,
+               facet = facet)
+
+```
+
+## Single Site, Exploratory, Across Time
+```{r ss_exp_at}
+
+g <- ecp_ss_exp_at(process_output = across_time %>% filter(site == 'nationwide'),
+              output_level = output_level,
+              facet = facet)
+
+g
+
+```
+
+## Multi Site, Exploratory, Across Time
+```{r ms_exp_at}
+
+g <- ecp_ms_exp_at(process_output = across_time,
+              output_level = output_level,
+              facet = facet)
+
+g
+```
+
+## Single Site, Anomaly, Across Time
+```{r ss_anom_at}
+
+ecp_ss_anom_at(process_output = across_time %>% filter(site == 'nationwide'),
+              output_level = output_level,
+              facet = facet)
+
+```
+
+## Multi Site, Anomaly, Across Time
+
+In development
+
+It seems like the specs on Confluence are referring to a code level rather than a concept set level analysis here. is that the direction we want to go for multi site? or leave it at the concept set level like the other output
