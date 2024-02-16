@@ -299,6 +299,9 @@ scv_ms_exp_nt <- function(process_output,
     prop <- 'source_prop'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
+  ## Enfore site facetting
+  facet <- facet %>% append('site') %>% unique()
+  
   ## filter output down to most common codes, selecting a user-provided number
   topcodes <- process_output %>%
     ungroup() %>%
@@ -314,14 +317,16 @@ scv_ms_exp_nt <- function(process_output,
     
     table <- final %>%
       ungroup() %>%
-      select(site, all_of(facet), source_concept_id, concept_id, ct, prop) %>%
+      select(all_of(facet), source_concept_id, concept_id, ct, prop) %>%
       mutate(pct = !!sym(prop)) %>%
-      arrange(site, !!!syms(facet), desc(ct)) %>%
+      arrange(!!!syms(facet), desc(ct)) %>%
       gt::gt() %>%
-      gtExtras::gt_plt_bar_pct(column = pct) %>%
+      cols_nanoplot(columns = pct, plot_type = 'bar',
+                    autohide = TRUE, new_col_label = 'percent') %>%
+      #gtExtras::gt_plt_bar_pct(column = pct) %>%
       fmt_number(columns = ct, decimals = 0) %>%
       fmt_percent(columns = prop, decimals = 0) %>%
-      data_color(palette = "Dark2", columns = c(site, all_of(facet))) %>%
+      data_color(palette = "Dark2", columns = c(all_of(facet))) %>%
       tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) %>%
       opt_interactive(use_search = TRUE,
                       use_filters = TRUE)
@@ -339,14 +344,16 @@ scv_ms_exp_nt <- function(process_output,
     
     table <- final %>%
       ungroup() %>%
-      select(site, all_of(facet), col, map_col, concept_name, ct, prop) %>%
+      select(all_of(facet), col, map_col, concept_name, ct, prop) %>%
       mutate(pct = !!sym(prop)) %>%
-      arrange(site, !!!syms(facet), desc(ct)) %>%
+      arrange(!!!syms(facet), desc(ct)) %>%
       gt::gt() %>%
-      gtExtras::gt_plt_bar_pct(column = pct) %>%
+      cols_nanoplot(columns = pct, plot_type = 'bar',
+                    autohide = TRUE, new_col_label = 'percent') %>%
+      #gtExtras::gt_plt_bar_pct(column = pct) %>%
       fmt_number(columns = ct, decimals = 0) %>%
       fmt_percent(columns = prop, decimals = 0) %>%
-      data_color(palette = "Dark2", columns = c(site, all_of(facet))) %>%
+      data_color(palette = "Dark2", columns = c(all_of(facet))) %>%
       tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) %>%
       opt_interactive(use_search = TRUE,
                       use_filters = TRUE)
@@ -586,7 +593,7 @@ scv_ss_ms_exp_at <- function(process_output,
     denom <- 'denom_concept_ct'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
-  facet <- facet %>% append(col)
+  facet <- facet %>% append(col, 'site') %>% unique()
   
   if(is.null(vocab_tbl)){
     
