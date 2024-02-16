@@ -48,7 +48,7 @@ generate_ref_table <- function(tbl,
     }
   }else{
     
-    time_inc <- tbl %>% distinct(time_increment) %>% pull()
+    time_inc <- tbl %>% ungroup() %>% distinct(time_increment) %>% pull()
     
     if(!is.null(vocab_tbl)){
       
