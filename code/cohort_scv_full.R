@@ -143,6 +143,10 @@ scv_process <- function(cohort,
     
   }
   
+  if('site_summ' %in% colnames(scv_tbl)){
+    scv_tbl <- scv_tbl %>% rename('site' = site_summ)
+  }
+  
   message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
                        output function in scv_output: ', output_type, '. This is also included
                        in the parameter_summary.csv file output to the results directory.')))
