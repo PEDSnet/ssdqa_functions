@@ -226,8 +226,8 @@ if(!is.null(facet_vars)){
       
       kmeans_scaled[, !colSums(!is.finite(kmeans_scaled))]
       
-      kmeans_final <- list(kmeans_scaled,
-                           "K-Means Cluster Analysis")
+      kmeans_list[[1]] <- list(kmeans_scaled,
+                               "K-Means Cluster Analysis")
     
   }
   
@@ -253,7 +253,7 @@ produce_kmeans_output <- function(kmeans_list,
 
   for(i in 1:length(kmeans_list)){
     
-    if(ncol(kmeans_list[[i]][[1]]) == 0){next}
+    if(ncol(kmeans_list[[i]][[1]]) == 0 || is.null(kmeans_list[[i]][[1]])){next}
     
     set.seed(123)
     k <- kmeans(kmeans_list[[i]][[1]], centers=centers)
