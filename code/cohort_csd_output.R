@@ -195,37 +195,39 @@ csd_ss_anom_nt <- function(process_output,
 #' @return a C control chart that highlights points in time where the number of mappings for
 #'         a particular code are anomalous; outlying points are highlighted red
 #' 
-scv_ss_anom_at <- function(process_output,
+csd_ss_anom_at <- function(process_output,
                            vocab_tbl=vocabulary_tbl('concept'),
-                           variable_name,
-                           facet=NULL){
+                           variable_name='ibd',
+                           facet=NULL,
+                           top_mapping_n = 6){
   
   # if(code_type == 'source'){
   #   col <- 'source_concept_id'
   # }else if(code_type == 'cdm'){
   #   col <- 'concept_id'}
   
-  facet <- facet %>% append('variable')
+  facet <- facet %>% append('concept_id')
   
-  n_mappings_yr <- process_output %>% filter(variable == 'ibd') %>% 
+  n_mappings_yr <- process_output %>% filter(variable == variable_name) %>% 
     group_by(!!!syms(facet), time_start) %>%
     summarise(n_mappings = n_distinct(concept_id))
   
-  top_six <- 
+  top_n <- 
     process_output %>% filter(variable == variable_name) %>% 
     ungroup() %>% 
     group_by(variable, concept_id) %>% 
     summarise(total_ct = sum(ct_concept)) %>% 
     ungroup() %>% arrange(desc(total_ct)) %>% 
-    top_n(n=6) %>% select(concept_id) %>% pull()
+    top_n(n=top_mapping_n) %>% select(concept_id) %>% pull()
   
-  c_added <- join_to_vocabulary(tbl = process_output %>% filter(variable == 'ibd') %>% 
-                                  filter(concept_id %in% top_six) %>% 
+  c_added <- join_to_vocabulary(tbl = process_output %>% filter(variable == variable_name) %>% 
+                                  filter(concept_id %in% top_n) %>% 
                                   mutate(concept_id=as.integer(concept_id)),
                               vocab_tbl = vocab_tbl,
                               col = 'concept_id') 
   
-  c_added %>% 
+  c_plot <- 
+    c_added %>% 
     #group_by(!!!syms(facet)) %>%
     group_by(concept_id) %>% 
     group_modify(
@@ -243,6 +245,108 @@ scv_ss_anom_at <- function(process_output,
     theme(panel.background = element_rect("white", "grey80")) +
     labs(title = 'Control Chart: Number of Mappings per Code Over Time')
   
+  ref_tbl <- generate_ref_table(tbl = process_output %>% filter(variable == variable_name) %>% 
+                                  filter(concept_id %in% top_n) %>% 
+                                  mutate(concept_id=as.integer(concept_id)),
+                                col = 'concept_id',
+                                denom = 'ct_denom',
+                                vocab_tbl = vocab_tbl,
+                                time = TRUE)
+  
   
   
 }
+
+
+#' *Single Site, Anomaly, Across Time*
+#' 
+#' Facets by main code (cdm or source) by default, with each line representing
+#' a mapping code. using plotly so the legend is interactive and codes can be isolated
+#' 
+#' 
+#' @param process_output dataframe output by `scv_process`
+#' @param code_type type of code to be used in analysis -- either `source` or `cdm`
+#' 
+#'                  should match the code_type provided when running `scv_process`
+#' @param facet the variables by which you would like to facet the graph
+#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
+#'                  concept names
+#' 
+#' @return a line graph with one facet per code displaying the proportion of mapped codes
+#'         across the user selected time period
+#' @return a reference table with total counts of each code across the entire user selected
+#'         time period
+#' 
+scv_ss_ms_exp_at <- function(process_output,
+                             code_type,
+                             facet,
+                             vocab_tbl = vocabulary_tbl('concept')){
+  
+  if(code_type == 'source'){
+    col <- 'source_concept_id'
+    map_col <- 'concept_id'
+    prop <- 'source_prop'
+    denom <- 'denom_source_ct'
+  }else if(code_type == 'cdm'){
+    col <- 'concept_id'
+    map_col <- 'source_concept_id'
+    prop <- 'concept_prop'
+    denom <- 'denom_concept_ct'
+  }else{stop('Please select a valid code_type - `source` or `cdm`')}
+  
+  facet <- facet %>% append(col)
+  
+  if(is.null(vocab_tbl)){
+    
+    p <- process_output %>%
+      mutate(concept_id = as.character(concept_id),
+             source_concept_id = as.character(source_concept_id)) %>%
+      ggplot(aes(y = !!sym(prop), x = time_start, color = !!sym(map_col))) +
+      geom_line() +
+      facet_wrap((facet)) +
+      labs(title = 'Code Mapping Pairs Over Time')
+    
+    plot <- ggplotly(p)
+    
+    ref_tbl <- generate_ref_table(tbl = process_output,
+                                  col = col,
+                                  denom = denom,
+                                  vocab_tbl = vocab_tbl,
+                                  time = TRUE)
+    
+  }else{
+    
+    process_output_plot <- join_to_vocabulary(tbl = process_output,
+                                              vocab_tbl = vocab_tbl,
+                                              col = map_col)
+    
+    p <- process_output_plot %>%
+      mutate(concept_id = as.character(concept_id),
+             source_concept_id = as.character(source_concept_id)) %>%
+      ggplot(aes(y = !!sym(prop), x = time_start, color = !!sym(map_col),
+                 label = concept_name,
+                 label2 = ct
+      )) +
+      geom_line() +
+      facet_wrap((facet)) +
+      labs(title = 'Code Mapping Pairs Over Time',
+           color = map_col)
+    
+    plot <- ggplotly(p)
+    
+    ref_tbl <- generate_ref_table(tbl = process_output,
+                                  col = col,
+                                  denom = denom,
+                                  vocab_tbl = vocab_tbl,
+                                  time = TRUE)
+  }
+  
+  output <- list(plot, ref_tbl)
+  
+  return(output)
+  
+}
+
+
+
+

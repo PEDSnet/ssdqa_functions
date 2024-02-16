@@ -38,7 +38,9 @@ check_code_dist_csd <- function(cohort_codedist,
     
     domain_tbl_name <- domain_filter[i,1] %>% pull
     domain_tbl_cdm <- cohort_codedist %>% 
-      inner_join(cdm_tbl(domain_tbl_name))  
+      inner_join(cdm_tbl(domain_tbl_name)) %>%
+      filter(!!sym(domain_filter$date_col) >= start_date,
+             !!sym(domain_filter$date_col) <= end_date)  
     final_col <- domain_filter[i,]$concept_col
     
     if(time){
