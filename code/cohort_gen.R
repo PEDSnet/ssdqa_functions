@@ -303,6 +303,7 @@ replace_site_col <- function(tbl) {
 join_to_vocabulary <- function(tbl,
                                vocab_tbl,
                                col){
+  if(!is.null(vocab_tbl)){
   
   final <- select(vocab_tbl, concept_id, concept_name) %>%
     rename('join_col' = concept_id) %>%
@@ -310,6 +311,9 @@ join_to_vocabulary <- function(tbl,
                copy = TRUE) %>%
     rename_with(~col, join_col) %>%
     collect()
+  }else{
+    final <- tbl %>% mutate(concept_name = 'No vocabulary table input')
+  }
 }
 
 
@@ -351,5 +355,58 @@ param_csv_summ2 <- function(check_string, ...){
   output_tbl(df_final, 'parameter_summary', file = TRUE)
   
   return(output_type)
+  
+}
+
+
+#' Generate concept reference table to accompany output
+#' 
+#' @param tbl intermediate table generated in the output function that contains the concepts
+#'            of interest to be displayed in the reference table
+#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
+#'                  concept names
+#' @param col the name of the column with the concept that needs to be summarised in the 
+#'            refrence table
+#' @param denom the denominator count associated with @col to be displayed in the 
+#'              reference table
+#' @param time logical to define whether @tbl has over time output or not
+#' 
+#' @return a reference table with summary information about the codes in the output that 
+#'         could not be displayed in the associated graph
+
+generate_ref_table <- function(tbl,
+                               col,
+                               denom,
+                               time = FALSE){
+  if(!time){
+      
+      t <- tbl %>%
+        rename('denom_col' = denom) %>%
+        distinct(site, !!sym(col), concept_name, denom_col) %>%
+        gt::gt() %>%
+        fmt_number(denom_col, decimals = 0) %>%
+        data_color(palette = "Dark2", columns = c(site)) %>%
+        cols_label(denom_col = 'Total Count') %>%
+        tab_header('Concept Reference Table')
+  }else{
+    
+    time_inc <- tbl %>% ungroup() %>% distinct(time_increment) %>% pull()
+      
+      t <- tbl %>%
+        rename('denom_col' = denom) %>%
+        distinct(site, !!sym(col), concept_name, denom_col) %>%
+        group_by(site, !!sym(col)) %>%
+        mutate(denom_col = sum(denom_col)) %>%
+        ungroup() %>%
+        distinct() %>%
+        gt::gt() %>%
+        fmt_number(denom_col, decimals = 0) %>%
+        data_color(palette = "Dark2", columns = c(site)) %>%
+        cols_label(denom_col = 'Total Count (All Time Points)') %>%
+        tab_header('Concept Reference Table')
+      
+  }
+  
+  return(t)
   
 }
