@@ -303,6 +303,7 @@ replace_site_col <- function(tbl) {
 join_to_vocabulary <- function(tbl,
                                vocab_tbl,
                                col){
+  if(!is.null(vocab_tbl)){
   
   final <- select(vocab_tbl, concept_id, concept_name) %>%
     rename('join_col' = concept_id) %>%
@@ -310,6 +311,9 @@ join_to_vocabulary <- function(tbl,
                copy = TRUE) %>%
     rename_with(~col, join_col) %>%
     collect()
+  }else{
+    final <- tbl %>% mutate(concept_name = 'No vocabulary table input')
+  }
 }
 
 
@@ -355,52 +359,54 @@ param_csv_summ2 <- function(check_string, ...){
 }
 
 
-#' Should be able to use this for other checks,
-#' but naming this way to differentiate from
-#' the existing `compute_dist_mean` function
-#' @param tbl table with at least the vars specified in `grp_vars` and `var_col`
-#' @param grp_vars variables to group by when computing summary statistics
-#' @param var_col column to compute summary statistics on
-#' @param num_sd (integer) number of standard deviations away from the mean
-#'               from which to compute the sd_lower and sd_upper columns
-#' @return a table with the `grp_vars` | mean | sd | sd_lower | sd_upper | 
-#'                                      anomaly_yn: indicator of whether data point is +/- num_sd from mean
-#'                                      abs_diff_mean: absolute value of difference between mean for group and observation
-compute_dist_mean_conc <- function(tbl,
-                                   grp_vars,
-                                   var_col,
-                                   num_sd,
-                                   num_mad){
+#' Generate concept reference table to accompany output
+#' 
+#' @param tbl intermediate table generated in the output function that contains the concepts
+#'            of interest to be displayed in the reference table
+#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
+#'                  concept names
+#' @param col the name of the column with the concept that needs to be summarised in the 
+#'            refrence table
+#' @param denom the denominator count associated with @col to be displayed in the 
+#'              reference table
+#' @param time logical to define whether @tbl has over time output or not
+#' 
+#' @return a reference table with summary information about the codes in the output that 
+#'         could not be displayed in the associated graph
+
+generate_ref_table <- function(tbl,
+                               col,
+                               denom,
+                               time = FALSE){
+  if(!time){
+      
+      t <- tbl %>%
+        rename('denom_col' = denom) %>%
+        distinct(site, !!sym(col), concept_name, denom_col) %>%
+        gt::gt() %>%
+        fmt_number(denom_col, decimals = 0) %>%
+        data_color(palette = "Dark2", columns = c(site)) %>%
+        cols_label(denom_col = 'Total Count') %>%
+        tab_header('Concept Reference Table')
+  }else{
+    
+    time_inc <- tbl %>% ungroup() %>% distinct(time_increment) %>% pull()
+      
+      t <- tbl %>%
+        rename('denom_col' = denom) %>%
+        distinct(site, !!sym(col), concept_name, denom_col) %>%
+        group_by(site, !!sym(col)) %>%
+        mutate(denom_col = sum(denom_col)) %>%
+        ungroup() %>%
+        distinct() %>%
+        gt::gt() %>%
+        fmt_number(denom_col, decimals = 0) %>%
+        data_color(palette = "Dark2", columns = c(site)) %>%
+        cols_label(denom_col = 'Total Count (All Time Points)') %>%
+        tab_header('Concept Reference Table')
+      
+  }
   
-  site_rows <-
-    tbl %>% ungroup() %>% select(site) %>% distinct()
-  grpd_vars_tbl <- tbl %>% ungroup() %>% select(!!!syms(grp_vars)) %>% distinct()
-  
-  tbl_new <- 
-    cross_join(site_rows,
-               grpd_vars_tbl) %>% 
-    left_join(tbl) %>% 
-    mutate(across(where(is.numeric), ~replace_na(.x,0)))
-  
-  stats <- tbl_new %>%
-    group_by(!!!syms(grp_vars))%>%
-    summarise(mean=mean(!!!syms(var_col)),
-              median=median(!!!syms(var_col)),
-              sd=sd(!!!syms(var_col), na.rm=TRUE),
-              mad=mad(!!!syms(var_col),center=median),
-              `90th_percentile`=quantile(!!!syms(var_col), 0.95)) %>%
-    ungroup() %>%
-    mutate(sd_lower=mean-num_sd*sd,
-           sd_upper=mean+num_sd*sd,
-           mad_lower=median-num_mad*mad,
-           mad_upper=median+num_mad*mad)
-  
-  tbl_new %>%
-    inner_join(stats)%>%
-    mutate(anomaly_yn=case_when(!!sym(var_col)<sd_lower|!!sym(var_col)>sd_upper|!!sym(var_col)>`90th_percentile`~TRUE,
-                                TRUE~FALSE),
-           abs_diff_mean=abs(!!sym(var_col)-mean),
-           abs_diff_median=abs(!!sym(var_col)-median),
-           n_mad=abs_diff_median/mad)
+  return(t)
   
 }
