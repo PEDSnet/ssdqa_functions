@@ -13,7 +13,7 @@
 #' @return 
 #' 
 csd_ss_exp_nt <- function(process_output,
-                          facet,
+                          facet = NULL,
                           vocab_tbl = vocabulary_tbl('concept'),
                           num_codes = 10,
                           num_mappings = 10){
@@ -29,10 +29,13 @@ csd_ss_exp_nt <- function(process_output,
   ## filter output down to most common codes, selecting a user-provided number
   topcodes <- process_output %>%
     ungroup() %>%
+    group_by(!! sym(col)) %>% 
     select(col, denom, all_of(facet)) %>%
     distinct() %>%
-    group_by(!!! syms(facet)) %>%
-    arrange(desc(!! sym(denom))) %>%
+    summarise(total_sum = sum(!! sym(denom))) %>% 
+    #group_by(!!! syms(facet)) %>%
+    #arrange(desc(!! sym(denom))) %>%
+    arrange(desc(total_sum)) %>% 
     slice(1:num_codes)
   
   ref <- process_output %>% 
@@ -50,49 +53,19 @@ csd_ss_exp_nt <- function(process_output,
     arrange(desc(!!sym(prop))) %>%
     slice(1:num_mappings)
   
-  if(is.null(vocab_tbl)){
-    final <- ref %>%
-      inner_join(nmap_top) %>%
-      left_join(nmap_total) %>%
-      mutate(xaxis = paste0(!!sym(col), '\n Total Mappings: ', nmap))
-    
-    facet <- facet %>% append('xaxis')
-    
-    p <- final %>% 
-      filter(!!sym(prop) > 0.02) %>% ggplot(aes(x = xaxis, y = !!sym(map_col), 
-                              fill = !!sym(prop))) + 
-      geom_tile() + 
-      geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
-      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
-      facet_wrap((facet), scales = 'free') +
-      theme(axis.text.x = element_blank()) +
-      labs(title = title,
-           x = col,
-           y = map_col) +
-      theme_bw()
-    
-    # Summary Reference Table
-    ref_tbl <- generate_ref_table(tbl = final,
-                                  col = col,
-                                  denom = denom,
-                                  vocab_tbl = vocab_tbl)
-    
-  }else{
-    
-    final_filt <- ref %>%
-      inner_join(nmap_top) %>%
-      left_join(nmap_total) %>% 
-      mutate(concept_id = as.integer(concept_id))
-    
-    final <- join_to_vocabulary(tbl = final_filt,
-                                vocab_tbl = vocab_tbl,
-                                col = map_col) %>%
-      mutate(xaxis = paste0(!!sym(col), '\n Total Mappings: ', nmap)) 
-    
-    facet <- facet %>% append('xaxis')
-    
-    ## ggiraph interactive
-    plot <- final %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
+  final <- 
+    ref %>% 
+    inner_join(nmap_top) %>% 
+    left_join(nmap_total) %>% 
+    mutate(xaxis = paste0(!!sym(col), '\n Total Mappings: ', nmap))
+  
+  facet <- facet %>% append('xaxis')
+  
+  if(! is.null(vocab_tbl)) {
+    final_filt <- join_to_vocabulary(tbl = final %>% mutate(concept_id = as.integer(concept_id)),
+                                    vocab_tbl = vocab_tbl,
+                                    col = map_col) 
+    plot <- final_filt %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
                                  fill = !!sym(prop))) +
       geom_tile_interactive(aes(tooltip = concept_name)) +
       geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
@@ -106,13 +79,28 @@ csd_ss_exp_nt <- function(process_output,
     p <- girafe(ggobj = plot,
                 width = 10,
                 height = 10)
+  } else {
+    final_filt <- final
     
-    # Summary Reference Table
-    ref_tbl <- generate_ref_table(tbl = final_filt,
-                                  col = map_col,
-                                  denom = denom,
-                                  vocab_tbl = vocab_tbl)
+    p <- final %>% 
+      filter(!!sym(prop) > 0.02) %>% ggplot(aes(x = xaxis, y = !!sym(map_col), 
+                                                fill = !!sym(prop))) + 
+      geom_tile() + 
+      geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
+      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+      facet_wrap((facet), scales = 'free') +
+      theme(axis.text.x = element_blank()) +
+      labs(title = title,
+           x = col,
+           y = map_col) +
+      theme_bw()
+    
   }
+  
+  ref_tbl <- generate_ref_table(tbl = final %>% mutate(concept_id = as.integer(concept_id)),
+                                col = col,
+                                denom = denom,
+                                vocab_tbl = NULL)
   
   output <- list(p, ref_tbl)
   
@@ -234,7 +222,7 @@ csd_ss_anom_at <- function(process_output,
       ~spc_calculate(
         data = .x, 
         x = time_start,
-        y = prop_concept,
+        y = ct_concept,
         chart = "c"
       )
     ) %>% 
@@ -243,32 +231,34 @@ csd_ss_anom_at <- function(process_output,
     spc_plot(engine = "ggplot") + 
     facet_wrap((facet)) + 
     theme(panel.background = element_rect("white", "grey80")) +
-    labs(title = 'Control Chart: Number of Mappings per Code Over Time')
+    labs(title = 'Control Chart: Proportion of Code Usage Over Time')
   
   ref_tbl <- generate_ref_table(tbl = process_output %>% filter(variable == variable_name) %>% 
                                   filter(concept_id %in% top_n) %>% 
                                   mutate(concept_id=as.integer(concept_id)),
                                 col = 'concept_id',
-                                denom = 'ct_denom',
+                                denom = 'ct_concept',
                                 vocab_tbl = vocab_tbl,
                                 time = TRUE)
   
-  
+  output <- list(c_plot, ref_tbl)
   
 }
 
 
-#' *Single Site, Anomaly, Across Time*
+#' *Single Site, Exploratory, Across Time*
 #' 
 #' Facets by main code (cdm or source) by default, with each line representing
 #' a mapping code. using plotly so the legend is interactive and codes can be isolated
 #' 
 #' 
 #' @param process_output dataframe output by `scv_process`
-#' @param code_type type of code to be used in analysis -- either `source` or `cdm`
 #' 
 #'                  should match the code_type provided when running `scv_process`
 #' @param facet the variables by which you would like to facet the graph
+#'  ### IF MULTI SITE --- then will facet by site. In the case of multi-site exploration, 
+#'  the documentation should state that the exploratory should look at JUST one variable. 
+#'  ### IF SINGLE SITE, then can include more than one variable and will facet by variable
 #' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
 #'                  concept names
 #' 
@@ -277,69 +267,68 @@ csd_ss_anom_at <- function(process_output,
 #' @return a reference table with total counts of each code across the entire user selected
 #'         time period
 #' 
-scv_ss_ms_exp_at <- function(process_output,
-                             code_type,
-                             facet,
+csd_ss_ms_exp_at <- function(process_output,
+                             variable_names = c('ibd','spondyloarthritis'),
+                             multi_or_single_site = 'single',
                              vocab_tbl = vocabulary_tbl('concept')){
   
-  if(code_type == 'source'){
-    col <- 'source_concept_id'
-    map_col <- 'concept_id'
-    prop <- 'source_prop'
-    denom <- 'denom_source_ct'
-  }else if(code_type == 'cdm'){
-    col <- 'concept_id'
-    map_col <- 'source_concept_id'
-    prop <- 'concept_prop'
-    denom <- 'denom_concept_ct'
-  }else{stop('Please select a valid code_type - `source` or `cdm`')}
+  # if(code_type == 'source'){
+  #   col <- 'source_concept_id'
+  #   map_col <- 'concept_id'
+  #   prop <- 'source_prop'
+  #   denom <- 'denom_source_ct'
+  # }else if(code_type == 'cdm'){
+  #   col <- 'concept_id'
+  #   map_col <- 'source_concept_id'
+  #   prop <- 'concept_prop'
+  #   denom <- 'denom_concept_ct'
+  # }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
-  facet <- facet %>% append(col)
+  if(multi_or_single_site=='multi'){
+    facet <- facet %>% append('site')
+  } else {
+    facet <- facet %>% append('variable')
+  }
   
   if(is.null(vocab_tbl)){
     
-    p <- process_output %>%
-      mutate(concept_id = as.character(concept_id),
-             source_concept_id = as.character(source_concept_id)) %>%
-      ggplot(aes(y = !!sym(prop), x = time_start, color = !!sym(map_col))) +
+    p <- process_output %>% filter(variable %in% variable_names) %>% 
+      ggplot(aes(y = prop_concept, x = time_start, color = concept_id)) +
       geom_line() +
       facet_wrap((facet)) +
       labs(title = 'Code Mapping Pairs Over Time')
     
     plot <- ggplotly(p)
     
-    ref_tbl <- generate_ref_table(tbl = process_output,
-                                  col = col,
-                                  denom = denom,
-                                  vocab_tbl = vocab_tbl,
-                                  time = TRUE)
     
   }else{
     
-    process_output_plot <- join_to_vocabulary(tbl = process_output,
+    process_output_plot <- join_to_vocabulary(tbl = process_output %>% 
+                                                mutate(concept_id=as.integer(concept_id)),
                                               vocab_tbl = vocab_tbl,
-                                              col = map_col)
+                                              col = 'concept_id')
     
-    p <- process_output_plot %>%
-      mutate(concept_id = as.character(concept_id),
-             source_concept_id = as.character(source_concept_id)) %>%
-      ggplot(aes(y = !!sym(prop), x = time_start, color = !!sym(map_col),
-                 label = concept_name,
-                 label2 = ct
-      )) +
+    p <-process_output_plot %>% filter(variable %in% variable_names)  %>%
+      mutate(concept_id=as.character(concept_id)) %>% 
+      ggplot(aes(y = prop_concept, x = time_start, color = concept_id),
+             label1=concept_name,
+             label2=ct) +
       geom_line() +
       facet_wrap((facet)) +
       labs(title = 'Code Mapping Pairs Over Time',
-           color = map_col)
+           color = 'concept_id')
     
     plot <- ggplotly(p)
     
-    ref_tbl <- generate_ref_table(tbl = process_output,
-                                  col = col,
-                                  denom = denom,
-                                  vocab_tbl = vocab_tbl,
-                                  time = TRUE)
   }
+  
+  ref_tbl <- generate_ref_table(tbl = process_output %>% 
+                                  mutate(concept_id=as.integer(concept_id)) %>% 
+                                  group_by(site),
+                                col = 'concept_id',
+                                denom = 'ct_concept',
+                                vocab_tbl = vocab_tbl,
+                                time = TRUE)
   
   output <- list(plot, ref_tbl)
   
@@ -348,5 +337,137 @@ scv_ss_ms_exp_at <- function(process_output,
 }
 
 
+#' *Multi Site, Exploratory, No Time*
+#' 
+#' @param process_output dataframe output by `scv_process`
+#' @param code_type type of code to be used in analysis -- either `source` or `cdm`
+#' 
+#'                  should match the code_type provided when running `scv_process`
+#' @param facet the variables by which you would like to facet the graph
+#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
+#'                  concept names
+#' @param num_codes the number of top codes of code_type that should be displayed in the graph
+#' 
+#' @return a searchable and filterable table with mappings, proportion of representation, and
+#'         denominator counts for the number of codes selected
+#'         in @num_codes
+#'         concept name will be included if @vocab_tbl is not NULL
+#' 
+csd_ms_exp_nt <- function(process_output,
+                          facet,
+                          vocab_tbl = vocabulary_tbl('concept'),
+                          num_codes = 10){
+  
+  # picking columns / titles 
 
+    denom <-  'ct_denom'
+    col <- 'variable'
+    map_col <- 'concept_id'
+    prop <- 'prop_concept'
+    ct = 'ct_concept'
+  
+  ## Enfore site facetting
+  facet <- facet %>% append('site') %>% unique()
+  
+  ## filter output down to most common codes, selecting a user-provided number
+  
+  topcodes <- process_output %>%
+    ungroup() %>%
+    select(col, denom, all_of(facet)) %>%
+    distinct() %>%
+    group_by(!!! syms(facet)) %>%
+    arrange(desc(!! sym(denom))) %>%
+    slice(1:num_codes)
+  
+  final_filt <- process_output %>% 
+    inner_join(topcodes)
+  
+  if(is.null(vocab_tbl)) {
+    final <- final_filt
+  } else {
+    final <- join_to_vocabulary(tbl = final_filt %>% mutate(concept_id=as.integer(concept_id)),
+                                vocab_tbl = vocab_tbl,
+                                col = map_col)
+  }
+  
+  table <- 
+    final %>%
+    ungroup() %>%
+    select(-denom) %>%
+    mutate(pct = !!sym(prop)) %>%
+    arrange(!!!syms(facet), desc(ct)) %>%
+    relocate(site) %>% 
+    gt::gt() %>%
+    cols_nanoplot(columns = pct, plot_type = 'bar',
+                  autohide = TRUE, new_col_label = 'percent') %>%
+    #gtExtras::gt_plt_bar_pct(column = pct) %>%
+    fmt_number(columns = ct, decimals = 0) %>%
+    fmt_percent(columns = prop, decimals = 0) %>%
+    data_color(palette = "Dark2", columns = c(all_of(facet))) %>%
+    tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) %>%
+    opt_interactive(use_search = TRUE,
+                    use_filters = TRUE) 
+    
+  
+  return(table)
+  
+}
+
+
+#' *Multi-Site Anomaly No Time*
+#' 
+#' @param process_output output from csd_process
+#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
+#'                  concept names
+#'                  
+#'                  
+
+csd_ms_anom_nt<-function(process_output,
+                        vocab_tbl,
+                        text_wrapping_char=80,
+                        filtered_var='general_jia',
+                        comparison_col='prop_concept',
+                        grouped_vars=c('variable','concept_id')){
+  
+  mean_tbl <- 
+    compute_dist_mean_conc(tbl=process_output,
+                           grp_vars = grouped_vars,
+                           var_col = comparison_col,
+                           num_sd=2,
+                           num_mad=2)
+  
+  if(is.null(vocab_tbl)) {concept_label='concept_id'
+                          data_tbl=mean_tbl} else {
+                            data_tbl = join_to_vocabulary(tbl = mean_tbl %>% mutate(concept_id=as.integer(concept_id)),
+                                                          vocab_tbl = vocab_tbl,
+                                                          col = 'concept_id')
+                              concept_label='concept_name'}
+  
+  comparison_col = comparison_col
+  
+  dat_to_plot <- data_tbl %>% filter(variable == filtered_var) %>% 
+    mutate(text=paste("Concept: ",!!sym(concept_label),
+                      "\nSite: ",site,
+                      "\nProportion: ",round(!!sym(comparison_col),2),
+                      "\nMean proportion:",round(mean,2),
+                      "\nMedian proportion: ",round(median,2),
+                      "\nSD: ", round(sd,4)))
+  
+  
+  mid<-(max(dat_to_plot$abs_diff_mean,na.rm=TRUE)+min(dat_to_plot$abs_diff_mean,na.rm=TRUE))/2
+  
+  plt<-ggplot(dat_to_plot %>% filter(variable == filtered_var), aes(x=site, y=!!sym(concept_label), text=text))+
+    geom_point(aes(size=!!sym(comparison_col),colour=abs_diff_mean,shape=anomaly_yn))+
+    #aes(stringr::str_wrap(!!sym(concept_label), 20)) +
+    scale_shape_manual(values=c(20,8))+
+    scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
+    scale_y_discrete(labels = function(x) str_wrap(x, width = text_wrapping_char)) +
+    theme_bw()+
+    labs(colour="Difference\nfrom mean",
+         shape="Anomaly",
+         size="")+
+    theme(axis.text.x = element_text(angle=90)) 
+  
+  ggplotly(plt, tooltip="text")
+}
 

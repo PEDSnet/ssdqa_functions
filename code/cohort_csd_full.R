@@ -21,22 +21,23 @@
 #' @return
 #' 
 csd_process <- function(cohort = results_tbl('jspa_cohort'),
-                        site_list = c('seattle','cchmc'),
+                        site_list = c('seattle','cchmc','chop','lurie',
+                                      'nationwide','nemours','stanford','colorado'),
                         domain_tbl=read_codeset('scv_domains', 'cccc'),
                         #concept_set = c('ibd', 'spondyloarthritis', 'systemic_jia', 'uveitis', 'general_jia'),
-                        concept_set = read_codeset('csd_codesets','iccccc') %>% 
-                          filter(variable %in% c('ibd', 'spondyloarthritis', 'systemic_jia', 'uveitis', 'general_jia')),
+                        concept_set = read_codeset('csd_codesets','iccccc'), #%>% 
+                          #filter(variable %in% c('ibd', 'spondyloarthritis', 'systemic_jia', 'uveitis', 'general_jia')),
                         # dplyr::union(load_codeset('jia_codes','iccccc'),
                         # load_codeset('jia_codes_icd','iccccc')) 
                         #code_type = 'source',
                         #code_domain = 'condition_occurrence',
-                        multi_or_single_site = 'single',
-                        anomaly_or_exploratory='anomaly',
+                        multi_or_single_site = 'multi',
+                        anomaly_or_exploratory='exploratory',
                         num_concept_combined = FALSE,
                         num_concept_1 = 30,
                         num_concept_2 = 30,
                         age_groups = FALSE, #read_codeset('age_group_definitions'),
-                        time = TRUE,
+                        time = FALSE,
                         time_span = c('2012-01-01', '2020-01-01'),
                         time_period = 'year'
 ){
@@ -92,12 +93,12 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
       }
       
       
-      site_output[[k]] <- variable_compute
+      site_output[[k]] <- variable_compute %>% mutate(site=site_list_thisrnd)
       
     }
     
     csd_tbl <- reduce(.x=site_output,
-                      .f=dplyr::union) %>% mutate(site=site_list_thisrnd)
+                      .f=dplyr::union) #%>% mutate(site=site_list_thisrnd)
     
   } else {
     ## Do we need a loop here? works because it groups by site as a default, not sure if

@@ -36,11 +36,13 @@ check_code_dist_csd <- function(cohort_codedist,
   
   for(i in 1:nrow(domain_filter)) {
     
+    dates <- domain_filter$date_col[[i]]
+    
     domain_tbl_name <- domain_filter[i,1] %>% pull
     domain_tbl_cdm <- cohort_codedist %>% 
       inner_join(cdm_tbl(domain_tbl_name)) %>%
-      filter(!!sym(domain_filter$date_col) >= start_date,
-             !!sym(domain_filter$date_col) <= end_date)  
+      filter(!!sym(dates) >= start_date,
+             !!sym(dates) <= end_date)  
     final_col <- domain_filter[i,]$concept_col
     
     if(time){
@@ -100,7 +102,7 @@ check_code_dist_csd <- function(cohort_codedist,
   
   props <- 
     denom %>% 
-    inner_join(cts, multiple='all') %>% 
+    inner_join(fact_tbl_final_reduce, multiple='all') %>% 
     mutate(prop_concept = round(ct_concept/ct_denom, 2),
            concept_id = as.character(concept_id))
   
