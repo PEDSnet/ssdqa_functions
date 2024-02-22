@@ -589,7 +589,7 @@ scv_ss_anom_at <- function(process_output,
   n_mappings_yr <- process_output %>%
     group_by(!!!syms(facet), time_start) %>%
     summarise(n_mappings = n()) %>%
-    unite(facet_col, !!!syms(facet), sep = '_')
+    unite(facet_col, !!!syms(facet), sep = '\n')
   
   qic(data = n_mappings_yr, x = time_start, y = n_mappings, chart = 'c', facet = ~facet_col,
       title = 'Control Chart: Number of Mappings per Code', ylab = '# of Mappings', xlab = 'Time',
