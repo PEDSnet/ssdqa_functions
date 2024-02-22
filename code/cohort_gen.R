@@ -410,3 +410,53 @@ generate_ref_table <- function(tbl,
   return(t)
   
 }
+
+#' Should be able to use this for other checks,
+#' but naming this way to differentiate from
+#' the existing `compute_dist_mean` function
+#' @param tbl table with at least the vars specified in `grp_vars` and `var_col`
+#' @param grp_vars variables to group by when computing summary statistics
+#' @param var_col column to compute summary statistics on
+#' @param num_sd (integer) number of standard deviations away from the mean
+#'               from which to compute the sd_lower and sd_upper columns
+#' @return a table with the `grp_vars` | mean | sd | sd_lower | sd_upper | 
+#'                                      anomaly_yn: indicator of whether data point is +/- num_sd from mean
+#'                                      abs_diff_mean: absolute value of difference between mean for group and observation
+compute_dist_mean_conc <- function(tbl,
+                                   grp_vars,
+                                   var_col,
+                                   num_sd,
+                                   num_mad){
+  
+  site_rows <-
+    tbl %>% ungroup() %>% select(site) %>% distinct()
+  grpd_vars_tbl <- tbl %>% ungroup() %>% select(!!!syms(grp_vars)) %>% distinct()
+  
+  tbl_new <- 
+    cross_join(site_rows,
+               grpd_vars_tbl) %>% 
+    left_join(tbl) %>% 
+    mutate(across(where(is.numeric), ~replace_na(.x,0)))
+  
+  stats <- tbl_new %>%
+    group_by(!!!syms(grp_vars))%>%
+    summarise(mean=mean(!!!syms(var_col)),
+              median=median(!!!syms(var_col)),
+              sd=sd(!!!syms(var_col), na.rm=TRUE),
+              mad=mad(!!!syms(var_col),center=median),
+              `90th_percentile`=quantile(!!!syms(var_col), 0.95)) %>%
+    ungroup() %>%
+    mutate(sd_lower=mean-num_sd*sd,
+           sd_upper=mean+num_sd*sd,
+           mad_lower=median-num_mad*mad,
+           mad_upper=median+num_mad*mad)
+  
+  tbl_new %>%
+    inner_join(stats)%>%
+    mutate(anomaly_yn=case_when(!!sym(var_col)<sd_lower|!!sym(var_col)>sd_upper|!!sym(var_col)>`90th_percentile`~TRUE,
+                                TRUE~FALSE),
+           abs_diff_mean=abs(!!sym(var_col)-mean),
+           abs_diff_median=abs(!!sym(var_col)-median),
+           n_mad=abs_diff_median/mad)
+  
+}
