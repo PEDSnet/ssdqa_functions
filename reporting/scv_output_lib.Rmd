@@ -28,7 +28,7 @@ require(ggplot2)
 require(ggiraph)
 require(gt)
 require(plotly)
-require(rocqi)
+require(qicharts2)
 
 get_results <- function(tbl_name) {
   if (data_source == 'local') {
@@ -100,7 +100,7 @@ scv_output(process_output = no_time,
            code_type = 'cdm',
            facet = 'site',
            num_codes = 10,
-           vocab_tbl = vocabulary_tbl('concept'))
+           vocab_tbl = NULL)
 
 ```
 
@@ -126,7 +126,7 @@ op <- scv_output(process_output = across_time %>% filter(site == 'site 2'),
            output_function = 'scv_ss_exp_at',
            code_type = 'cdm',
            facet = NULL,
-           vocab_tbl = vocabulary_tbl('concept'))
+           vocab_tbl = NULL)
 
 op[[1]]
 op[[2]]
@@ -168,6 +168,6 @@ scv_output(process_output = across_time,
            code_type = 'cdm',
            facet = NULL,
            mad_dev = 2,
-           vocab_tbl = vocabulary_tbl('concept'))
+           vocab_tbl = NULL)
 
 ```
