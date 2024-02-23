@@ -91,10 +91,19 @@ ecp_process <- function(cohort,
     
     if(! time) {
       
-      concept_check <- compute_ecp(cohort = cohort_site,
-                                   grouped_list = grouped_list,
-                                   ecp_concept_file = ecp_concept_file,
-                                   time = time)
+      if(multi_or_single_site == 'single' && anomaly_or_exploratory == 'anomaly'){
+        
+        concept_check <- compute_ecp_ssanom(cohort = cohort_site,
+                                            grouped_list = grouped_list,
+                                            ecp_concept_file = ecp_concept_file)
+        
+      }else{
+        
+        concept_check <- compute_ecp(cohort = cohort_site,
+                                     grouped_list = grouped_list,
+                                     ecp_concept_file = ecp_concept_file,
+                                     time = time)
+      }
       
       site_output[[k]] <- concept_check
       
