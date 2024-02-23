@@ -515,8 +515,7 @@ produce_multisite_mad_scv <- function(multisite_tbl,
 scv_ms_anom_at <- function(process_output,
                            code_type,
                            facet,
-                           mad_dev = 2,
-                           vocab_tbl = vocabulary_tbl('concept')){
+                           mad_dev = 2){
   
   if(code_type == 'source'){
     col <- 'source_concept_id'
