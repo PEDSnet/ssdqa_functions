@@ -224,20 +224,22 @@ prepare_cohort <- function(cohort_tbl,
 #'         issue.
 #' 
 check_site_type <- function(cohort,
-                            multi_or_single_site,
-                            site_list){
+                            #site_list,
+                            multi_or_single_site){
   
   if('site' %in% colnames(cohort)){
     
     # count number of sites in site list that also exist in the cohort
-    n_site <- cohort %>% filter(site %in% site_list) %>% 
+    n_site <- cohort %>% select(site) %>% 
       summarise(n_distinct(site)) %>% pull()
+      #filter(site %in% site_list) %>% 
+      #summarise(n_distinct(site)) %>% pull()
     
     if(multi_or_single_site == 'single' && n_site > 1){
     # create new "summary" site column / name, add that to grouped list
     # instead of site, and create new site list to account for new site name
       cohort_final <- cohort %>%
-        filter(site %in% site_list) %>%
+        #filter(site %in% site_list) %>%
         mutate(site_summ = 'combined')
       
       grouped_list <- c('site_summ')
@@ -251,8 +253,11 @@ check_site_type <- function(cohort,
     }else if((multi_or_single_site == 'single' && n_site == 1) ||
              (multi_or_single_site == 'multi' && n_site > 1)){
       
-      cohort_final <- cohort %>%
-        filter(site %in% site_list)
+      cohort_final <- cohort #%>%
+        #filter(site %in% site_list)
+      
+      site_list <- cohort %>% 
+        select(site) %>% distinct() %>% pull()
       
       grouped_list <- c('site')
       site_list_adj <- site_list

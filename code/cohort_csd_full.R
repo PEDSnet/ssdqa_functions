@@ -21,31 +21,26 @@
 #' @return
 #' 
 csd_process <- function(cohort = results_tbl('jspa_cohort'),
-                        site_list = c('seattle','cchmc','chop','lurie',
-                                      'nationwide','nemours','stanford','colorado'),
                         domain_tbl=read_codeset('scv_domains', 'cccc'),
-                        #concept_set = c('ibd', 'spondyloarthritis', 'systemic_jia', 'uveitis', 'general_jia'),
                         concept_set = read_codeset('csd_codesets','iccccc'), #%>% 
                           #filter(variable %in% c('ibd', 'spondyloarthritis', 'systemic_jia', 'uveitis', 'general_jia')),
                         # dplyr::union(load_codeset('jia_codes','iccccc'),
                         # load_codeset('jia_codes_icd','iccccc')) 
-                        #code_type = 'source',
-                        #code_domain = 'condition_occurrence',
-                        multi_or_single_site = 'multi',
+                        multi_or_single_site = 'single',
                         anomaly_or_exploratory='exploratory',
                         num_concept_combined = FALSE,
                         num_concept_1 = 30,
                         num_concept_2 = 30,
                         age_groups = FALSE, #read_codeset('age_group_definitions'),
-                        time = FALSE,
+                        time = TRUE,
                         time_span = c('2012-01-01', '2020-01-01'),
                         time_period = 'year'
 ){
   
   # Add site check
   site_filter <- check_site_type(cohort = cohort,
-                                 multi_or_single_site = multi_or_single_site,
-                                 site_list = site_list)
+                                 multi_or_single_site = multi_or_single_site)
+                                 #site_list = site_list)
   cohort_filter <- site_filter$cohort
   grouped_list <- site_filter$grouped_list
   site_col <- site_filter$grouped_list
@@ -101,17 +96,7 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
                       .f=dplyr::union) #%>% mutate(site=site_list_thisrnd)
     
   } else {
-    ## Do we need a loop here? works because it groups by site as a default, not sure if
-    ## its necessary (which one is faster/more efficient)
-    # if(!is.vector(concept_set)){stop('For an over time output, please select 1-5 codes from your
-    #                                concept set and include them as a vector in the concept_set argument.')}
-    # if(is.vector(concept_set) && length(concept_set) > 5){stop('For an over time output, please select 1-5 
-    #                                                           codes from your concept set and include them as
-    #                                                          a vector in the concept_set argument.')}
-    
-    # concept_set_prep <- as.data.frame(concept_set) %>% rename('concept_id' = concept_set) %>%
-    #   mutate(concept_id = as.integer(concept_id))
-    # concept_set_prep <- copy_to_new(df = concept_set_prep)
+   
     
     cohort_prep <- prepare_cohort(cohort_tbl = cohort_filter, age_groups = age_groups, codeset = NULL) %>% 
       #mutate(domain = code_domain) %>% 
@@ -159,27 +144,24 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
 #'
 #' @return
 #' 
-csd_output <- function(process_output,
-                       output_function,
-                       code_type,
-                       facet,
-                       num_codes = 10,
-                       num_mappings = 25,
-                       rel_to_median = 'greater',
-                       mad_dev = 2,
+csd_output <- function(process_output=process_output,
+                       num_concept_combined = FALSE,
                        vocab_tbl = vocabulary_tbl('concept'),
+                       num_codes = 10,
+                       num_mappings = 10,
+                       filtered_var = 'general_jia',
                        save_as_png = FALSE,
                        file_path = NULL){
   
   ## Run output functions
-  if(output_function == 'scv_ms_anom_nt'){
-    scv_output <- scv_ms_anom_nt(process_output = process_output,
-                                 code_type = code_type,
-                                 facet = facet,
-                                 rel_to_median = rel_to_median,
-                                 mad_dev = mad_dev,
-                                 vocab_tbl = vocab_tbl)
-  }else if(output_function == 'scv_ss_anom_nt'){
+  if(output_function == 'csd_ss_exp_nt'){
+    scv_output <- scv_ms_anom_nt(process_output=process_output,
+                                 num_concept_combined = num_concept_combined,
+                                 vocab_tbl = vocab_tbl,
+                                 num_codes = num_codes,
+                                 num_mappings = num_mappings,
+                                 filtered_var = 'general_jia')
+  }else if(output_function == 'csd_ss_'){
     scv_output <- scv_ss_anom_nt(process_output = process_output,
                                  code_type = code_type,
                                  facet = facet,

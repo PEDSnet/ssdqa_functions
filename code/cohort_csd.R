@@ -288,13 +288,13 @@ check_code_dist_ssanom <- function(cohort_codedist,
              concept2_ct > num_concept_2)}
       
       x_vars_meansd <- 
-        process_output_filtered %>% 
+        combined_filtered %>% 
         group_by(variable) %>% 
         summarise(var_jaccard_mean=mean(jaccard_index),
                   var_jaccard_sd=sd(jaccard_index))
       
       tbl_input <- 
-        process_output_filtered %>% 
+        combined_filtered %>% 
         inner_join(x_vars_meansd) %>% 
         mutate(above_sd=
                  case_when(jaccard_index > (var_jaccard_mean + var_jaccard_sd) ~ TRUE,
