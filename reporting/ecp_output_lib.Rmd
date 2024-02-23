@@ -24,6 +24,7 @@ require(kableExtra)
 require(stringr)
 require(tibble)
 require(ggplot2)
+require(qicharts2)
 
 get_results <- function(tbl_name) {
   if (data_source == 'local') {
@@ -49,6 +50,8 @@ facet <- NULL
 
 output_level <- 'patient'
 
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
 ```
 
 ## Single Site, Exploratory, No Time
@@ -71,9 +74,20 @@ ecp_ms_exp_nt(process_output = no_time,
 
 ## Single Site, Anomaly, No Time
 
-In development
+```{r ss_anom_nt}
 
-Do we need to set a minimum threshold of the amount of concept sets that should be used for this to work? i.e. if they just put in 2-3, it may not be as interesting as entering 10-12 and running that comparison
+ss_anom <- ecp_process(cohort = results_tbl('jspa_cohort'),
+                       site_list = c('chop'),
+                       multi_or_single_site = 'single',
+                       anomaly_or_exploratory = 'anomaly',
+                       age_groups = read_codeset('age_group_definitions', 'iic'))
+
+g <- ecp_ss_anom_nt(process_output = ss_anom,
+                    facet = 'grp')
+
+g
+
+```
 
 ## Multi Site, Anomaly, No Time
 ```{r ms_anom_nt}
@@ -116,6 +130,11 @@ ecp_ss_anom_at(process_output = across_time %>% filter(site == 'nationwide'),
 
 ## Multi Site, Anomaly, Across Time
 
-In development
+```{r ms_anom_at}
 
-It seems like the specs on Confluence are referring to a code level rather than a concept set level analysis here. is that the direction we want to go for multi site? or leave it at the concept set level like the other output
+ecp_ms_anom_at(process_output = across_time,
+               output_level = output_level,
+               facet = facet,
+               mad_dev = 1)
+
+```
