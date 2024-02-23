@@ -69,3 +69,97 @@ compute_ecp <- function(cohort,
   
   
 }
+
+
+
+compute_ecp_ssanom <- function(cohort,
+                               grouped_list,
+                               ecp_concept_file = read_codeset('ecp_concepts', 'cccc')){
+  
+  ecp_list <- split(ecp_concept_file, seq(nrow(ecp_concept_file)))
+  
+  result <- list()
+  
+  for(i in 1:length(ecp_list)){
+    
+    concept_group <- ecp_list[[i]][[1]]
+    
+    join_cols <- set_names('concept_id', ecp_list[[i]][[3]])
+    
+    domain_tbl <- cdm_tbl(ecp_list[[i]][[2]]) %>%
+      inner_join(cohort) %>%
+      inner_join(load_codeset(ecp_list[[i]][[5]]), by = join_cols) %>%
+      group_by(!!!syms(grouped_list)) %>%
+      mutate(variable = concept_group) %>%
+      select(person_id,
+             all_of(group_vars(cohort)),
+             variable) %>%
+      group_by(person_id, variable, .add = TRUE) %>%
+      summarise(ct = n())
+    
+    result[[i]] <- domain_tbl
+    
+  }
+  
+  domain_reduce <- purrr::reduce(.x = result,
+                                .f = dplyr::union) %>%
+    collect() %>%
+    unite(facet_col, !!!syms(grouped_list), sep = '\n')
+  
+  facet_list <- group_split(domain_reduce %>% group_by(facet_col))
+  
+  jacc_list <- list()
+  
+  for(i in 1:length(facet_list)){
+    
+  grp <- facet_list[[i]] %>% distinct(facet_col) %>% pull()
+  
+  jaccards <- compute_jaccard_ecp(jaccard_input_tbl = facet_list[[i]]) %>%
+    mutate(grp = grp)
+  
+  jacc_list[[i]] <- jaccards
+  
+  }
+  
+  jacc_reduce <- purrr::reduce(.x = jacc_list,
+                               .f = dplyr::union)
+  
+  return(jacc_reduce)
+}
+
+
+
+
+compute_jaccard_ecp <- function(jaccard_input_tbl) {
+  
+  persons_concepts <- 
+    jaccard_input_tbl %>% ungroup %>% #distinct() %>% collect()
+    select(person_id,
+           variable) %>% distinct() %>% collect()
+  
+  persons_concepts_cts <- 
+    persons_concepts %>% 
+    group_by(variable) %>% 
+    summarise(concept_person_ct=n_distinct(person_id))
+  
+  concord <- 
+    persons_concepts %>% table() %>% crossprod()
+  diag(concord) <- -1
+  
+  best <- as_tibble(concord, rownames='concept1') %>% 
+    pivot_longer(!concept1, names_to = 'concept2', values_to='cocount') %>% 
+    filter(cocount != -1L) %>% mutate(across(.cols = c(cocount), .fns=as.integer)) %>%
+    left_join(persons_concepts_cts, by = c('concept1'='variable'))%>%
+    rename(concept1_ct=concept_person_ct)%>%
+    left_join(persons_concepts_cts, by = c('concept2'='variable'))%>%
+    rename(concept2_ct=concept_person_ct) %>%
+    mutate(concept_count_union=concept1_ct+concept2_ct-cocount,
+           jaccard_index=cocount/concept_count_union) %>% 
+    mutate(concept1_prop=round(cocount/concept1_ct,2),
+           concept2_prop=round(cocount/concept2_ct,2)) %>% 
+    filter(concept1_ct > 0 & concept2_ct > 0 & cocount > 0) %>% 
+    filter(concept1 > concept2) 
+  
+  best
+  
+}
