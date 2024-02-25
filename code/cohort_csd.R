@@ -2,35 +2,36 @@
 
 #' Base CSD function
 #' 
-#' @param cohort 
-#' @param concept_set 
-#' @param code_type 
-#' @param code_domain 
-#' @param time 
-#' @param domain_tbl 
+#' @param cohort_codedist the cohort to pass in 
+#' @param concept_set the concept set passed in through `csd_process`;
+#'                    concept set CSV file with the following columns:
+#'                    `concept_id` | `concept_code` | `concept_name` | `vocabulary_id` | `category` | `variable` | `domain`
+#'                    The variable field is required to categorize each concept set into a particular variable
+#'                    The domain is required so that the function knows which table to join to in order to derive counts
+#' @param domain_tbl domain table passed in through `csd_process`;
+#'                    tbl that is similar to the SCV check; 
+#'                   four columns: `domain` | `source_col` | `concept_col` | `date_col`;
+#'                   the required columns for the csd check are only `domain_tbl`, `concept_col`, `date_col`
+#' @param time logical to determine whether to output the check across time
+#' @param time_span when `time = TRUE`, a vector of two dates for the observation period of the study
+#' @param time_period when time = TRUE, this argument defines the distance between dates within the specified time period. defaults
+#'                    to `year`, but other time periods such as `month` or `week` are also acceptable 
 #' 
-#' @return 
+#' @return returns variable and their concept mappings, both in counts and in proportions; 
+#'         when `time = TRUE`, then output is given across time, and proportions computed within each variable
 #' 
 check_code_dist_csd <- function(cohort_codedist,
                                 concept_set,
-                                code_domain,
                                 time = FALSE,
+                                time_span,
+                                time_period,
                                 domain_tbl = read_codeset('scv_domains', 'cccc')){
   
-  # pick the right domain/columns
-  #domain_filter <- domain_tbl %>% filter(domain == code_domain)
+
   domain_filter <- 
     concept_set %>% select(domain) %>% distinct() %>% 
     inner_join(domain_tbl)
   concept_set_db <- copy_to_new(df=concept_set, name='concept_set')
-  #concept_col <- domain_filter$concept_col
-  #source_col <- domain_filter$source_col
-  
-  # if(code_type=='source') {
-  #   final_col = source_col
-  # }else if(code_type == 'cdm'){
-  #   final_col = concept_col
-  # }else{stop(paste0(code_type, ' is not a valid argument. Please select either "source" or "cdm"'))}
   
   fact_tbl_final <- list()
   
@@ -109,102 +110,35 @@ check_code_dist_csd <- function(cohort_codedist,
   
 }
   
-#   if(time){
-#     
-#     domain_tbl <- cohort_codedist %>%
-#       inner_join(cdm_tbl(code_domain)) %>%
-#       filter(!!sym(domain_filter$date_col) >= start_date,
-#              !!sym(domain_filter$date_col) <= end_date)
-#     
-#     
-#     fact_tbl <- 
-#       domain_tbl %>% 
-#       inner_join(concept_set,
-#                  by=setNames('concept_id',final_col)) %>% 
-#       select(all_of(group_vars(cohort_codedist)),
-#              all_of(concept_col),
-#              all_of(source_col),
-#              time_start,
-#              time_increment) %>% 
-#       rename('concept_id' = concept_col,
-#              'source_concept_id' = source_col) %>%
-#       group_by(time_start, time_increment, .add = TRUE)
-#     
-#   }else{
-#     
-#     fact_tbl_final <- list()
-#     
-#     for(i in 1:nrow(domain_filter)) {
-#       
-#       domain_tbl_name <- domain_filter[i,1] %>% pull
-#       domain_tbl_cdm <- cohort_codedist %>% 
-#         inner_join(cdm_tbl(domain_tbl_name))  
-#       final_col <- domain_filter[i,]$concept_col
-#       
-#       fact_tbl <- 
-#         domain_tbl_cdm %>% 
-#         inner_join(concept_set_db,
-#                    by=setNames('concept_id',final_col)) %>% 
-#         select(all_of(group_vars(cohort_codedist)),
-#                all_of(final_col),
-#                variable) %>% 
-#         rename('concept_id' = final_col) 
-#       
-#       cts <- 
-#         fact_tbl %>% 
-#         group_by(
-#           concept_id,
-#           variable,
-#           .add=TRUE
-#         ) %>% 
-#         summarise(ct_concept=n()) %>% 
-#         collect()
-#       
-#       denom <- 
-#         fact_tbl %>% 
-#         group_by(
-#           variable,
-#           .add=TRUE
-#         ) %>% 
-#         summarise(ct_denom=n()) %>% 
-#         collect()
-#       
-#       props <- 
-#         denom %>% 
-#         inner_join(cts, multiple='all') %>% 
-#         mutate(prop_concept = round(ct_concept/ct_denom, 2),
-#                concept_id = as.character(concept_id))
-#       
-#       fact_tbl_final[[i]] <- props
-#       
-#     }
-#     
-#     fact_tbl_final_reduce <- 
-#       reduce(.x = fact_tbl_final,
-#              .f= dplyr::union)
-#     
-#   }
-#   
-#   fact_tbl_final_reduce
-#   
-# }
 
-
-#' Base CSD function
+#' Base CSD function only for `single site, anomaly, no time`
 #' 
-#' @param cohort 
-#' @param concept_set 
-#' @param code_type 
-#' @param code_domain 
-#' @param time 
-#' @param domain_tbl 
+#' @param cohort_codedist the cohort to pass in 
+#' @param concept_set the concept set passed in through `csd_process`;
+#'                    concept set CSV file with the following columns:
+#'                    `concept_id` | `concept_code` | `concept_name` | `vocabulary_id` | `category` | `variable` | `domain`
+#'                    The variable field is required to categorize each concept set into a particular variable
+#'                    The domain is required so that the function knows which table to join to in order to derive counts
+#' @param domain_tbl domain table passed in through `csd_process`;
+#'                    tbl that is similar to the SCV check; 
+#'                   four columns: `domain` | `source_col` | `concept_col` | `date_col`;
+#'                   the required columns for the csd check are only `domain_tbl`, `concept_col`, `date_col`
+#' @param num_concept_combined when `mult_or_single_site` = `single` and `anomaly_or_exploratory` = `anomaly`,
+#'                             this argument is an integer and will ensure that `concept1` and `concept2` meet
+#'                             some minimal threshold for including in the jaccard index; if `TRUE`, then 
+#'                             *both* conditions for `num_concept_1` and `num_concept_2` should be met;
+#'                             if `FALSE` then just one condition needs to be met.
+#' @param num_concept_1  when `mult_or_single_site` = `single` and `anomaly_or_exploratory` = `anomaly`,
+#'                             this argument is an integer and requires a minimum number of times that 
+#'                             the *first* concept appears in the dataset
+#' @param num_concept_2 when `mult_or_single_site` = `single` and `anomaly_or_exploratory` = `anomaly`,
+#'                             this argument is an integer and requires a minimum number of times that 
+#'                             the *second* concept appears in the dataset
 #' 
-#' @return 
+#' @return the jaccard index of two different concepts for a given variable
 #' 
 check_code_dist_ssanom <- function(cohort_codedist,
                                    concept_set,
-                                   code_domain,
-                                   time = FALSE,
                                    num_concept_combined = FALSE,
                                    num_concept_1 = 30,
                                    num_concept_2 = 30,
@@ -305,12 +239,16 @@ check_code_dist_ssanom <- function(cohort_codedist,
       
 }
     
-    # fact_tbl_final_reduce <- 
-    #   reduce(.x = fact_tbl_final,
-    #          .f= dplyr::union)
-    # 
-    # 
-    # fact_tbl_final_reduce
+#' Compute Jaccard Index
+#' 
+#' @param jaccard_input_tbl tbl that will undergo jaccard index computation;
+#'                          the requirement is that it contains at least two columns: `person_id` and `concept_id`
+#'                          where each row represents an instance where a specific `concept_id` is used for a given patient (`person_id`)
+#'                          Alternatively, it can be a list of all unique `person_id` and `concept_id` combinations
+#'                          
+#' @return a table with both concepts, labeled `concept1` and `concept2`, the co-occurrence (`cocount`), individual
+#'         concept counts (`concept1_ct`, `concept2_ct`), total unique patient counts where either code is used (`concept_count_union`), 
+#'         the `jaccard_index`, as well as proportion of patients where the concept appears (`concept1_prop`, `concepet2_prop`) 
     
  
 compute_jaccard <- function(jaccard_input_tbl) {

@@ -46,7 +46,7 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
                            time_span = time_span_var,
                            time_period = time_period_var)%>%
     collect()
-    output_tbl(ss_exp_nt,
+    output_tbl(ss_exp_nt %>% relocate(site),
              name='csd_ss_exp_nt')
   
   ss_anom_nt <- csd_process(cohort = results_tbl('jspa_cohort'),
@@ -61,7 +61,7 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
                             time = FALSE,
                             time_span = time_span_var,
                             time_period = time_period_var)%>%
-    collect()
+    relocate(site)
     output_tbl(ss_anom_nt,
                name='csd_ss_anom_nt')
   

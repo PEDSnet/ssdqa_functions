@@ -287,10 +287,10 @@ replace_site_col <- function(tbl) {
   site_exist <- 'site' %in% colnames(tbl)
   if(site_summ_exist & ! site_exist) 
     {final_tbl_site <- 
-        tbl %>% rename(site = site_summ)} 
+        tbl %>% ungroup() %>% rename(site = site_summ)} 
   else if(site_summ_exist & site_exist)
     {final_tbl_site <- 
-        tbl %>% select(-site_summ)} 
+        tbl %>% ungroup() %>% select(-site_summ)} 
   else {final_tbl_site <- tbl}
   
 }

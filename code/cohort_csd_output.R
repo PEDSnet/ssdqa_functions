@@ -100,10 +100,10 @@ csd_ss_exp_nt <- function(process_output,
 #' 
 csd_ss_anom_nt <- function(process_output,
                           #facet,
-                          num_concept_combined = FALSE,
+                          #num_concept_combined = FALSE,
                           vocab_tbl = vocabulary_tbl('concept'),
-                          num_codes = 10,
-                          num_mappings = 10,
+                          #num_codes = 10,
+                          #num_mappings = 10,
                           filtered_var = 'general_jia'){
   
   firstcolnames <- join_to_vocabulary(tbl = process_output, #tbl_input,
@@ -245,7 +245,7 @@ csd_ss_anom_at <- function(process_output,
 #' 
 csd_ss_ms_exp_at <- function(process_output,
                              facet=NULL,
-                             variable_names = c('ibd','spondyloarthritis'),
+                             filtered_var = c('ibd','spondyloarthritis'),
                              #multi_or_single_site = 'multi',
                              vocab_tbl = vocabulary_tbl('concept'),
                              output_value='prop_concept'){
@@ -267,7 +267,7 @@ csd_ss_ms_exp_at <- function(process_output,
                                             vocab_tbl=vocab_tbl,
                                             col = 'concept_id')
   
-  dat_to_plot <- process_output_plot %>% filter(variable %in% variable_names) %>% 
+  dat_to_plot <- process_output_plot %>% filter(variable %in% filtered_var) %>% 
     mutate(text=paste("Concept: ",concept_id,
                       "\nConcept Name: ",concept_name,
                       "\nSite: ",site,

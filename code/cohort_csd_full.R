@@ -5,20 +5,46 @@
 #' add csv output of main table and csv output of param summary 
 #' (that function needs updating to be more generalizable)
 #'
-#' @param cohort 
-#' @param site_list 
-#' @param domain_tbl 
-#' @param concept_set 
-#' @param code_type 
-#' @param code_domain 
-#' @param multi_or_single_site 
-#' @param anomaly_or_exploratory 
-#' @param age_groups 
-#' @param time 
-#' @param time_span 
-#' @param time_period 
+#' @param cohort cohort for SSDQA testing; required fields: 
+#'               `site` | `person_id` | `start_date` | `end_date` where start and end date 
+#' @param domain_tbl tbl that is similar to the SCV check; 
+#'                   four columns: `domain` | `source_col` | `concept_col` | `date_col`;
+#'                   the required columns for the csd check are only `domain_tbl`, `concept_col`, `date_col`
+#' @param concept_set concept set CSV file with the following columns:
+#'                    `concept_id` | `concept_code` | `concept_name` | `vocabulary_id` | `category` | `variable` | `domain`
+#'                    The variable field is required to categorize each concept set into a particular variable
+#'                    The domain is required so that the function knows which table to join to in order to derive counts
+#' @param multi_or_single_site direction to determine what kind of check to run
+#'                             string that is either `multi` or `single`
+#' @param anomaly_or_exploratory direction to determine what kind of check to run; a string 
+#'                               that is either `anomaly` or `exploratory`
+#' @param num_concept_combined when `mult_or_single_site` = `single` and `anomaly_or_exploratory` = `anomaly`,
+#'                             this argument is an integer and will ensure that `concept1` and `concept2` meet
+#'                             some minimal threshold for including in the jaccard index; if `TRUE`, then 
+#'                             *both* conditions for `num_concept_1` and `num_concept_2` should be met;
+#'                             if `FALSE` then just one condition needs to be met.
+#' @param num_concept_1  when `mult_or_single_site` = `single` and `anomaly_or_exploratory` = `anomaly`,
+#'                             this argument is an integer and requires a minimum number of times that 
+#'                             the *first* concept appears in the dataset
+#' @param num_concept_2 when `mult_or_single_site` = `single` and `anomaly_or_exploratory` = `anomaly`,
+#'                             this argument is an integer and requires a minimum number of times that 
+#'                             the *second* concept appears in the dataset
+#' @param age_groups N/A for this check?
+#' @param time logical to determine whether to output the check across time
+#' @param time_span when `time = TRUE`, a vector of two dates for the observation period of the study
+#' @param time_period when time = TRUE, this argument defines the distance between dates within the specified time period. defaults
+#'                    to `year`, but other time periods such as `month` or `week` are also acceptable
 #'
-#' @return
+#' @return for `single- and multi-` and `exploratory` analyses, the output is:
+#'             `site` | `variable` | `ct_denom` | `concept_id` | `ct_concept` | `prop_concept`
+#'         for `single` and `anomaly` analyses, the output is: 
+#'             `site` | `concept1`| `concept2`| `cocount`| `concept1_ct` | `concept2_ct` | `concept_count_union` |`jaccard_index` |
+#'             `concept1_prop` | `concept2_prop` | `variable` | 
+#'             where `concept_count_union` is how often a pair of codes appear in the full dataset
+#'             and `concept1_ct` and `concept2_ct` are how often each appear in the dataset
+#'         for any that are `across time`, the output is:
+#'             `site` | `time_start` | `time_increment` | `variable` | `ct_denom` | `concept_id` | `ct_concept` | `prop_concept`
+#' 
 #' 
 csd_process <- function(cohort = results_tbl('jspa_cohort'),
                         domain_tbl=read_codeset('scv_domains', 'cccc'),
@@ -73,7 +99,6 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
       
       if(multi_or_single_site=='single' & anomaly_or_exploratory=='anomaly') {
         variable_compute <- check_code_dist_ssanom(cohort_codedist = cohort_site,
-                                                   code_domain=code_domain,
                                                    concept_set = concept_set,
                                                    domain_tbl = domain_tbl,
                                                    num_concept_combined = num_concept_combined,
@@ -130,22 +155,22 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
 
 #' full output function (needs some updating)
 #'
-#' @param process_output 
-#' @param output_function 
-#' @param code_type 
-#' @param facet 
-#' @param num_codes 
-#' @param num_mappings 
-#' @param rel_to_median 
-#' @param mad_dev 
-#' @param vocab_tbl 
+#' @param process_output the output from `csd_process`
+#' @param num_codes an integer to represent the top number of codes to include in the mappings for the exploratory analyses;
+#'                  will pick the codes based on the highest count of the most commonly appearing variables; 
+#' @param num_mappings an integer to represent the top number of mappings for a given variable in the exploratory analyses
+#' @param filtered_var for both `single- and multi- site anomaly tests without time measurements` and 
+#'                     `single- and multi- site exploratory tests with time measurements`, the variables
+#'                     to focus on
+#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
+#'                  the provided codes. if not NULL, concept names will be available in either a reference
+#'                  table or in a hover tooltip
 #' @param save_as_png 
 #' @param file_path 
 #'
 #' @return
 #' 
 csd_output <- function(process_output=process_output,
-                       num_concept_combined = FALSE,
                        vocab_tbl = vocabulary_tbl('concept'),
                        num_codes = 10,
                        num_mappings = 10,
@@ -155,53 +180,50 @@ csd_output <- function(process_output=process_output,
   
   ## Run output functions
   if(output_function == 'csd_ss_exp_nt'){
-    scv_output <- scv_ms_anom_nt(process_output=process_output,
-                                 num_concept_combined = num_concept_combined,
+    csd_output <- csd_ss_exp_nt(process_output=process_output,
                                  vocab_tbl = vocab_tbl,
                                  num_codes = num_codes,
-                                 num_mappings = num_mappings,
-                                 filtered_var = 'general_jia')
-  }else if(output_function == 'csd_ss_'){
-    scv_output <- scv_ss_anom_nt(process_output = process_output,
-                                 code_type = code_type,
-                                 facet = facet,
-                                 rel_to_median = rel_to_median,
-                                 vocab_tbl = vocab_tbl)
-  }else if(output_function == 'scv_ms_exp_nt'){
-    scv_output <- scv_ms_exp_nt(process_output = process_output,
-                                code_type = code_type,
-                                facet = facet,
-                                num_codes = num_codes,
-                                vocab_tbl = vocab_tbl)
-  }else if(output_function == 'scv_ss_exp_nt'){
-    scv_output <- scv_ss_exp_nt(process_output = process_output,
-                                code_type = code_type,
-                                facet = facet,
-                                num_codes = num_codes,
-                                num_mappings = num_mappings,
-                                vocab_tbl = vocab_tbl)
-  }else if(output_function == 'scv_ms_anom_at'){
-    scv_output <- scv_ms_anom_at(process_output = process_output,
-                                 code_type = code_type,
-                                 facet = facet,
-                                 mad_dev = mad_dev,
-                                 vocab_tbl = vocab_tbl)
-  }else if(output_function == 'scv_ss_anom_at'){
-    scv_output <- scv_ss_anom_at(process_output = process_output,
-                                 code_type = code_type,
-                                 facet = facet)
-  }else if(output_function == 'scv_ms_exp_at'){
-    scv_output <- scv_ss_ms_exp_at(process_output = process_output,
-                                   code_type = code_type,
-                                   facet = facet,
-                                   vocab_tbl = vocab_tbl)
-  }else if(output_function == 'scv_ss_exp_at'){
-    scv_output <- scv_ss_ms_exp_at(process_output = process_output,
+                                 num_mappings = num_mappings)
+  }else if(output_function == 'csd_ss_anom_nt'){
+    csd_output <- csd_ss_anom_nt(process_output,
+                                 vocab_tbl = vocab_tbl,
+                                 filtered_var = filtered_var)
+  }else if(output_function == 'csd_ss_exp_at'){
+    csd_output <- csd_ss_ms_exp_at(process_output,
+                                  facet=facet,
+                                  variable_names = variable_names,
+                                  vocab_tbl = vocab_tbl,
+                                  output_value=output_value)
+  }else if(output_function == 'csd_ss_anom_at'){
+    csd_output <- csd_ss_anom_at(process_output=process_output,
+                                vocab_tbl=vocab_tbl,
+                                variable_name=variable_name,
+                                facet=facet,
+                                top_mapping_n = top_mapping_n)
+  }else if(output_function == 'csd_ms_exp_nt'){
+    csd_output <- csd_ms_exp_nt(process_output=process_output,
+                                 facet=facet,
+                                 vocab_tbl = vocab_tbl,
+                                 num_codes = num_codes)
+  }else if(output_function == 'csd_ms_exp_nt'){
+    csd_output <- csd_ms_exp_nt(process_output=process_output,
+                                 facet=facet,
+                                 vocab_tbl = vocab_tbl,
+                                 num_codes = num_codes)
+  }else if(output_function == 'csd_ms_anom_nt'){
+    csd_output <- csd_ms_anom_nt(process_output=process_output,
+                                   vocab_tbl=vocab_tbl,
+                                   text_wrapping_char=text_wrapping_char,
+                                   filtered_var=filtered_var,
+                                   comparison_col=comparison_col,
+                                   grouped_vars=grouped_vars)
+  }else if(output_function == 'csd_ms_exp_at'){
+    csd_output <- csd_ss_ms_exp_at(process_output = process_output,
                                    code_type = code_type,
                                    facet = facet,
                                    vocab_tbl = vocab_tbl)
   }
   
-  return(scv_output)
+  return(csd_output)
   
 }
