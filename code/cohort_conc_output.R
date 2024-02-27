@@ -144,10 +144,10 @@ compute_dist_mean_conc <- function(tbl,
   
   tbl %>%
     inner_join(stats)%>%
-    mutate(anomaly_yn=case_when(prop<sd_lower|prop>sd_upper~TRUE,
+    mutate(anomaly_yn=case_when(!!sym(var_col)<sd_lower|!!sym(var_col)>sd_upper~TRUE,
                                 TRUE~FALSE),
-           abs_diff_mean=abs(prop-mean),
-           abs_diff_median=abs(prop-median),
+           abs_diff_mean=abs(!!sym(var_col)-mean),
+           abs_diff_median=abs(!!sym(var_col)-median),
            n_mad=abs_diff_median/mad)
   
 }
@@ -176,9 +176,9 @@ compute_dist_median_conc <- function(tbl,
   
   tbl %>%
     inner_join(stats)%>%
-    mutate(anomaly_yn=case_when(prop<mad_lower|prop>mad_upper~TRUE,
+    mutate(anomaly_yn=case_when(!!sym(var_col)<mad_lower|!!sym(var_col)>mad_upper~TRUE,
                                 TRUE~FALSE),
-           abs_diff_median=abs(prop-median),
+           abs_diff_median=abs(!!sym(var_col)-median),
            n_mad=abs_diff_median/mad)
   
 }

@@ -1,95 +1,3 @@
-
-#' Generate concept reference table to accompany output
-#' 
-#' @param tbl intermediate table generated in the output function that contains the concepts
-#'            of interest to be displayed in the reference table
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
-#' @param col the name of the column with the concept that needs to be summarised in the 
-#'            refrence table
-#' @param denom the denominator count associated with @col to be displayed in the 
-#'              reference table
-#' @param time logical to define whether @tbl has over time output or not
-#' 
-#' @return a reference table with summary information about the codes in the output that 
-#'         could not be displayed in the associated graph
-
-generate_ref_table <- function(tbl,
-                               vocab_tbl,
-                               col,
-                               denom,
-                               time = FALSE){
-  if(!time){
-    
-    if(!is.null(vocab_tbl)){
-      
-      t <- join_to_vocabulary(tbl = tbl,
-                              vocab_tbl = vocab_tbl,
-                              col = col) %>%
-        rename('denom_col' = denom) %>%
-        distinct(site, !!sym(col), concept_name, denom_col) %>%
-        gt::gt() %>%
-        fmt_number(denom_col, decimals = 0) %>%
-        data_color(palette = "Dark2", columns = c(site)) %>%
-        cols_label(denom_col = 'Total Count') %>%
-        tab_header('Concept Reference Table')
-      
-    }else{
-      
-      t <- tbl %>%
-        rename('denom_col' = denom) %>%
-        distinct(site, !!sym(col), denom_col) %>%
-        gt::gt() %>%
-        fmt_number(denom_col, decimals = 0) %>%
-        data_color(palette = "Dark2", columns = c(site)) %>%
-        cols_label(denom_col = 'Total Count') %>%
-        tab_header('Concept Reference Table')
-      
-    }
-  }else{
-    
-    time_inc <- tbl %>% distinct(time_increment) %>% pull()
-    
-    if(!is.null(vocab_tbl)){
-      
-      t <- join_to_vocabulary(tbl = tbl,
-                              vocab_tbl = vocab_tbl,
-                              col = col) %>%
-        rename('denom_col' = denom) %>%
-        distinct(site, !!sym(col), concept_name, denom_col) %>%
-        group_by(site, !!sym(col)) %>%
-        mutate(denom_col = sum(denom_col)) %>%
-        ungroup() %>%
-        distinct() %>%
-        gt::gt() %>%
-        fmt_number(denom_col, decimals = 0) %>%
-        data_color(palette = "Dark2", columns = c(site)) %>%
-        cols_label(denom_col = 'Total Count (All Time Points)') %>%
-        tab_header('Concept Reference Table')
-      
-    }else{
-      
-      t <- tbl %>%
-        rename('denom_col' = denom) %>%
-        distinct(site, !!sym(col), denom_col) %>%
-        group_by(site, !!sym(col)) %>%
-        mutate(denom_col = sum(denom_col)) %>%
-        ungroup() %>%
-        distinct() %>%
-        gt::gt() %>%
-        fmt_number(denom_col, decimals = 0) %>%
-        data_color(palette = "Dark2", columns = c(site)) %>%
-        cols_label(denom_col = 'Total Count (All Time Points)') %>%
-        tab_header('Concept Reference Table')
-      
-    }
-  }
-  
-  return(t)
-  
-}
-
-
 #' Compute number and median mappings per code (SCV)
 #'
 #' @param tbl intermediate table generated in the output function that contains the concepts
@@ -153,7 +61,6 @@ compute_mappings_per_code <- function(tbl,
 scv_ss_exp_nt <- function(process_output,
                           code_type,
                           facet,
-                          vocab_tbl = vocabulary_tbl('concept'),
                           num_codes = 10,
                           num_mappings = 25){
   
@@ -196,51 +103,21 @@ scv_ss_exp_nt <- function(process_output,
     group_by(!!sym(col), !!!syms(facet)) %>%
     arrange(desc(!!sym(prop))) %>%
     slice(1:num_mappings)
-  
-  if(is.null(vocab_tbl)){
+    
     final <- ref %>%
       inner_join(nmap_top) %>%
-      left_join(nmap_total) %>%
-      mutate(xaxis = paste0(!!sym(col), '\n Total Mappings: ', nmap))
-    
-    facet <- facet %>% append('xaxis')
-    
-    p <- final %>% ggplot(aes(x = xaxis, y = !!sym(map_col), 
-                              fill = !!sym(prop))) + 
-      geom_tile() + 
-      geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
-      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
-      facet_wrap((facet), scales = 'free') +
-      theme(axis.text.x = element_blank()) +
-      labs(title = title,
-           x = col,
-           y = map_col)
-    
-    # Summary Reference Table
-    ref_tbl <- generate_ref_table(tbl = final,
-                                  col = col,
-                                  denom = denom,
-                                  vocab_tbl = vocab_tbl)
-    
-  }else{
-    
-    final_filt <- ref %>%
-      inner_join(nmap_top) %>%
-      left_join(nmap_total) 
-    
-    final <- join_to_vocabulary(tbl = final_filt,
-                                vocab_tbl = vocab_tbl,
-                                col = map_col) %>%
-      mutate(xaxis = paste0(!!sym(col), '\n Total Mappings: ', nmap)) 
+      left_join(nmap_total) %>% 
+      mutate(xaxis = paste0(!!sym(col), '\n Total Mappings: ', nmap),
+             tooltip = paste0('Concept Name: ', concept_name)) 
     
     facet <- facet %>% append('xaxis')
     
     ## ggiraph interactive
     plot <- final %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
                                  fill = !!sym(prop))) +
-      geom_tile_interactive(aes(tooltip = concept_name)) +
+      geom_tile_interactive(aes(tooltip = tooltip)) +
       geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
-      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+      scale_fill_viridis_c(option = 'turbo') +
       facet_wrap((facet), scales = 'free') +
       theme(axis.text.x = element_blank()) +
       labs(title = title,
@@ -252,11 +129,9 @@ scv_ss_exp_nt <- function(process_output,
                 height = 10)
     
     # Summary Reference Table
-    ref_tbl <- generate_ref_table(tbl = final_filt,
+    ref_tbl <- generate_ref_table(tbl = final,
                                   col = col,
-                                  denom = denom,
-                                  vocab_tbl = vocab_tbl)
-  }
+                                  denom = denom)
   
   output <- list(p, ref_tbl)
   
@@ -283,7 +158,6 @@ scv_ss_exp_nt <- function(process_output,
 scv_ms_exp_nt <- function(process_output,
                           code_type,
                           facet,
-                          vocab_tbl = vocabulary_tbl('concept'),
                           num_codes = 10){
   
   # picking columns / titles 
@@ -299,6 +173,9 @@ scv_ms_exp_nt <- function(process_output,
     prop <- 'source_prop'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
+  ## Enfore site facetting
+  facet <- facet %>% append('site') %>% unique()
+  
   ## filter output down to most common codes, selecting a user-provided number
   topcodes <- process_output %>%
     ungroup() %>%
@@ -308,51 +185,27 @@ scv_ms_exp_nt <- function(process_output,
     arrange(desc(!! sym(denom))) %>%
     slice(1:num_codes)
   
-  if(is.null(vocab_tbl)){
+    
     final <- process_output %>% 
       inner_join(topcodes)
     
     table <- final %>%
       ungroup() %>%
-      select(site, all_of(facet), source_concept_id, concept_id, ct, prop) %>%
+      select(all_of(facet), col, map_col, concept_name, ct, prop) %>%
       mutate(pct = !!sym(prop)) %>%
-      arrange(site, !!!syms(facet), desc(ct)) %>%
+      arrange(!!!syms(facet), desc(ct)) %>%
       gt::gt() %>%
-      gtExtras::gt_plt_bar_pct(column = pct) %>%
+      cols_nanoplot(columns = pct, plot_type = 'bar',
+                    autohide = TRUE, new_col_label = 'percent') %>%
+      #gtExtras::gt_plt_bar_pct(column = pct) %>%
       fmt_number(columns = ct, decimals = 0) %>%
       fmt_percent(columns = prop, decimals = 0) %>%
-      data_color(palette = "Dark2", columns = c(site, all_of(facet))) %>%
+      data_color(palette = "Dark2", columns = c(all_of(facet))) %>%
       tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) %>%
       opt_interactive(use_search = TRUE,
                       use_filters = TRUE)
     
     return(table)
-    
-  }else{
-    
-    final_filt <- process_output %>% 
-      inner_join(topcodes)
-    
-    final <- join_to_vocabulary(tbl = final_filt,
-                                vocab_tbl = vocab_tbl,
-                                col = map_col)
-    
-    table <- final %>%
-      ungroup() %>%
-      select(site, all_of(facet), col, map_col, concept_name, ct, prop) %>%
-      mutate(pct = !!sym(prop)) %>%
-      arrange(site, !!!syms(facet), desc(ct)) %>%
-      gt::gt() %>%
-      gtExtras::gt_plt_bar_pct(column = pct) %>%
-      fmt_number(columns = ct, decimals = 0) %>%
-      fmt_percent(columns = prop, decimals = 0) %>%
-      data_color(palette = "Dark2", columns = c(site, all_of(facet))) %>%
-      tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) %>%
-      opt_interactive(use_search = TRUE,
-                      use_filters = TRUE)
-    
-    return(table)
-  }
   
 }
 
@@ -378,7 +231,6 @@ scv_ms_exp_nt <- function(process_output,
 scv_ss_anom_nt <- function(process_output,
                            code_type,
                            facet,
-                           vocab_tbl = vocabulary_tbl('concept'),
                            rel_to_median = 'greater'){
   
   if(code_type == 'source'){
@@ -401,37 +253,16 @@ scv_ss_anom_nt <- function(process_output,
     tbl_filt <- mappings_per_code %>%
       filter(n_mappings <= median)
   }else(stop('Invalid selection for rel_to_median: please select `greater` or `less`'))
-  
-  if(is.null(vocab_tbl)){
-    tbl <- tbl_filt %>%
-      mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
-             tooltip = paste0('Total Concept Mappings: ', n_mappings, '\nTotal Concept Rows: ', denom_fmt))
-    
-    plot <- tbl %>%
-      ggplot(aes(x = as.character(!!sym(col)), y = n_mappings, fill = as.character(!!sym(col)))) +
-      geom_col_interactive(aes(tooltip = tooltip)) +
-      geom_hline(aes(yintercept = median)) +
-      geom_hline(aes(yintercept = q1), linetype = 'dotted') +
-      geom_hline(aes(yintercept = q3), linetype = 'dotted') +
-      facet_wrap((facet), scales = 'free') +
-      theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1, vjust = 1),
-            legend.position = 'none') +
-      labs(title = 'Codes with Anomalous Number of Unique Mappings',
-           x = col)
-    
-    girafe(ggobj = plot,
-           width = 10,
-           height = 10)
-  }else{
-    
-    tbl <- join_to_vocabulary(tbl = tbl_filt,
-                              vocab_tbl = vocab_tbl,
-                              col = col) %>%
+   
+  info <- process_output %>% distinct(!!sym(col), !!sym(denom), concept_name)
+   
+  tb <- tbl_filt %>%
+      left_join(info) %>%
       mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
              tooltip = paste0('Concept Name: ', concept_name, '\nTotal Concept Mappings: ', n_mappings, 
                               '\nTotal Concept Rows: ', denom_fmt))
     
-    plot <- tbl %>%
+    plot <- tb %>%
       ggplot(aes(x = as.character(!!sym(col)), y = n_mappings, fill = as.character(!!sym(col)))) +
       geom_col_interactive(aes(tooltip = tooltip)) +
       geom_hline(aes(yintercept = median)) +
@@ -446,7 +277,6 @@ scv_ss_anom_nt <- function(process_output,
     girafe(ggobj = plot,
            width = 10,
            height = 10)
-  }
   
 }
 
@@ -474,8 +304,7 @@ scv_ss_anom_nt <- function(process_output,
 scv_ms_anom_nt <- function(process_output,
                            code_type,
                            facet,
-                           rel_to_median = 'greater',
-                           vocab_tbl = vocabulary_tbl('concept')){
+                           rel_to_median = 'greater'){
   
   if(code_type == 'source'){
     col <- 'source_concept_id'
@@ -500,38 +329,17 @@ scv_ms_anom_nt <- function(process_output,
     tbl_filt <- mappings_per_code %>%
       filter(n_mappings <= median)
   }else(stop('Invalid selection for rel_to_median: please select `greater` or `less`'))
+    
+  info <- process_output %>% distinct(!!sym(col), !!sym(denom), concept_name)
   
-  if(is.null(vocab_tbl)){
-    
-    tbl <- tbl_filt %>%
-      mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
-             tooltip = paste0('MAD from Median: ', n_mad, '\nTotal Concept Mappings: ', n_mappings, 
-                              '\nTotal Concept Rows: ', denom_fmt))
-    
-    plot <- tbl %>%
-      ggplot(aes(y = as.character(!!sym(col)), x = site, fill = n_mad)) +
-      geom_tile_interactive(aes(tooltip = tooltip)) +
-      facet_wrap((facet), scales = 'free', ncol = 1) +
-      scale_fill_viridis_c(option = 'turbo') +
-      labs(title = 'MAD from Median Number of Mappings per Code',
-           y = col,
-           x = '')
-    
-    girafe(ggobj = plot,
-           width = 10,
-           height = 10)
-    
-  }else{
-    
-    tbl <- join_to_vocabulary(tbl = tbl_filt,
-                              vocab_tbl = vocab_tbl,
-                              col = col) %>%
+    tb <- tbl_filt %>%
+      left_join(info) %>%
       mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
              tooltip = paste0('Concept Name: ', concept_name, '\nMAD from Median: ', n_mad, 
                               '\nTotal Concept Mappings: ', n_mappings, 
                               '\nTotal Concept Rows: ', denom_fmt))
     
-    plot <- tbl %>%
+    plot <- tb %>%
       ggplot(aes(y = as.character(!!sym(col)), x = site, fill = n_mad)) +
       geom_tile_interactive(aes(tooltip = tooltip)) +
       facet_wrap((facet), scales = 'free', ncol = 1) +
@@ -544,13 +352,11 @@ scv_ms_anom_nt <- function(process_output,
     girafe(ggobj = plot,
            width = 10,
            height = 10)
-    
-  }
   
 }
 
 
-#' *Single Site, Anomaly, Across Time*
+#' *Single & Multi Site, Exploratory, Across Time*
 #' 
 #' Facets by main code (cdm or source) by default, with each line representing
 #' a mapping code. using plotly so the legend is interactive and codes can be isolated
@@ -570,9 +376,8 @@ scv_ms_anom_nt <- function(process_output,
 #'         time period
 #' 
 scv_ss_ms_exp_at <- function(process_output,
-                          code_type,
-                          facet,
-                          vocab_tbl = vocabulary_tbl('concept')){
+                             code_type,
+                             facet){
   
   if(code_type == 'source'){
     col <- 'source_concept_id'
@@ -586,33 +391,9 @@ scv_ss_ms_exp_at <- function(process_output,
     denom <- 'denom_concept_ct'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
-  facet <- facet %>% append(col)
-  
-  if(is.null(vocab_tbl)){
+  facet <- facet %>% append(col) %>% append('site') %>% unique()
     
     p <- process_output %>%
-      mutate(concept_id = as.character(concept_id),
-             source_concept_id = as.character(source_concept_id)) %>%
-      ggplot(aes(y = !!sym(prop), x = time_start, color = !!sym(map_col))) +
-      geom_line() +
-      facet_wrap((facet)) +
-      labs(title = 'Code Mapping Pairs Over Time')
-
-    plot <- ggplotly(p)
-    
-    ref_tbl <- generate_ref_table(tbl = process_output,
-                                  col = col,
-                                  denom = denom,
-                                  vocab_tbl = vocab_tbl,
-                                  time = TRUE)
-    
-  }else{
-    
-    process_output_plot <- join_to_vocabulary(tbl = process_output,
-                                              vocab_tbl = vocab_tbl,
-                                              col = map_col)
-    
-    p <- process_output_plot %>%
       mutate(concept_id = as.character(concept_id),
              source_concept_id = as.character(source_concept_id)) %>%
       ggplot(aes(y = !!sym(prop), x = time_start, color = !!sym(map_col),
@@ -629,9 +410,7 @@ scv_ss_ms_exp_at <- function(process_output,
     ref_tbl <- generate_ref_table(tbl = process_output,
                                   col = col,
                                   denom = denom,
-                                  vocab_tbl = vocab_tbl,
                                   time = TRUE)
-  }
   
   output <- list(plot, ref_tbl)
   
@@ -736,8 +515,7 @@ produce_multisite_mad_scv <- function(multisite_tbl,
 scv_ms_anom_at <- function(process_output,
                            code_type,
                            facet,
-                           mad_dev = 2,
-                           vocab_tbl = vocabulary_tbl('concept')){
+                           mad_dev = 2){
   
   if(code_type == 'source'){
     col <- 'source_concept_id'
@@ -759,30 +537,9 @@ scv_ms_anom_at <- function(process_output,
                                    facet_var = facet,
                                    mad_dev = mad_dev)
   
-  mad2 <- mad %>% left_join(process_output %>% distinct(site, !!sym(col), !!sym(denom)))
-  
-  if(is.null(vocab_tbl)){
+  mad2 <- mad %>% left_join(process_output %>% distinct(site, !!sym(col), !!sym(denom), concept_name))
     
-    final <- mad2 %>% mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
-                              tooltip = paste0('Total Concept Rows: ', denom_fmt))
-    
-    r <- ggplot(final, aes(x=site, y=as.character(!!sym(col)), fill=grp_outlier_prop)) +
-      geom_tile_interactive(aes(tooltip = tooltip)) +
-      facet_wrap((facet)) +
-      scale_fill_viridis_c(option = 'turbo') +
-      theme_classic() +
-      coord_flip() +
-      labs(title = 'Stability of Mappings Over Time',
-           y = 'Code',
-           fill = 'Proportion Unstable \nMappings')
-    
-    p <- girafe(ggobj = r)
-    
-  }else{
-    
-    final <- join_to_vocabulary(tbl = mad2,
-                                vocab_tbl = vocab_tbl,
-                                col = col) %>%
+    final <- mad2 %>%
       mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
              tooltip = paste0('Concept Name: ', concept_name, '\nTotal Concept Rows: ', denom_fmt))
     
@@ -797,8 +554,6 @@ scv_ms_anom_at <- function(process_output,
            fill = 'Proportion Unstable \nMappings')
     
     p <- girafe(ggobj = r)
-  
-    }
  
    return(p)
 }
@@ -832,25 +587,10 @@ scv_ss_anom_at <- function(process_output,
   
   n_mappings_yr <- process_output %>%
     group_by(!!!syms(facet), time_start) %>%
-    summarise(n_mappings = n())
+    summarise(n_mappings = n()) %>%
+    unite(facet_col, !!!syms(facet), sep = '\n')
   
-  n_mappings_yr %>% 
-    group_by(!!!syms(facet)) %>%
-    group_modify(
-      ~spc_calculate(
-        data = .x, 
-        x = time_start,
-        y = n_mappings,
-        chart = "c"
-      )
-    ) %>% 
-    ungroup() %>%
-    # plot
-    spc_plot(engine = "ggplot") + 
-    facet_wrap((facet)) + 
-    theme(panel.background = element_rect("white", "grey80")) +
-    labs(title = 'Control Chart: Number of Mappings per Code Over Time')
-  
-  
-  
+  qic(data = n_mappings_yr, x = time_start, y = n_mappings, chart = 'c', facet = ~facet_col,
+      title = 'Control Chart: Number of Mappings per Code', ylab = '# of Mappings', xlab = 'Time',
+      show.grid = TRUE)
 }

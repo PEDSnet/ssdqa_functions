@@ -1,0 +1,4 @@
+concept_group,default_tbl,field_name,date_field,codeset_name
+JIA,condition_occurrence,condition_concept_id,condition_start_date,jia_codes
+cancer,condition_occurrence,condition_concept_id,condition_start_date,dx_cancer
+TNFI,drug_exposure,drug_concept_id,drug_exposure_start_date,tnfi_codes

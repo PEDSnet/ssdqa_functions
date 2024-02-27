@@ -98,6 +98,10 @@ pf_process <- function(cohort = cohort,
   ## Step 0: Set cohort name for table output
   config('cohort', study_name)
   
+  ## parameter summary output
+  output_type <- suppressWarnings(param_csv_summ2(check_string = 'pf',
+                                                  as.list(environment())))
+  
   ## Step 1: Check Sites
   site_filter <- check_site_type(cohort = cohort,
                                  multi_or_single_site = multi_or_single_site,
@@ -123,6 +127,7 @@ pf_process <- function(cohort = cohort,
     grouped_list <- grouped_list[! grouped_list %in% 'fu']
     
     pf_final <- compute_fot(cohort = cohort_prep,
+                            site_col = site_col,
                             reduce_id = 'visit_type',
                             time_period = time_period,
                             time_span = time_span,
@@ -167,15 +172,6 @@ pf_process <- function(cohort = cohort,
       output_tbl(pf_final, 'pf_intermediate_results', file = TRUE)}
   }else{pf_intermediate_results <- NULL}
   
-  param_csv_summary(site_list = site_list,
-                    visit_list = visit_types,
-                    ms_site = multi_or_single_site,
-                    anom_exp = anomaly_or_exploratory,
-                    time = time,
-                    time_span = time_span,
-                    age = age_groups,
-                    cs = codeset) %>% output_tbl('parameter_summary', file = TRUE)
-  
   ## Step 4: Summarise (Medians, SD)
   if(!time) {
     if(anomaly_or_exploratory=='anomaly' && multi_or_single_site=='single') {
@@ -187,6 +183,10 @@ pf_process <- function(cohort = cohort,
                                             codeset=codeset)}
     
   }else{pf_output <- pf_final}
+  
+  message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
+                       output function in pf_output_gen: ', output_type, '. This is also included
+                       in the parameter_summary.csv file output to the results directory.')))
   
 }
 

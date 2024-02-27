@@ -64,6 +64,11 @@ scv_process <- function(cohort,
                         time_period = 'year'
 ){
   
+  ## parameter summary output
+  output_type <- suppressWarnings(param_csv_summ2(check_string = 'scv',
+                                                  as.list(environment())))
+  
+  
   # Add site check
   site_filter <- check_site_type(cohort = cohort,
                                  multi_or_single_site = multi_or_single_site,
@@ -111,8 +116,6 @@ scv_process <- function(cohort,
                       .f=dplyr::union)
     
   } else if(time){
-    ## Do we need a loop here? works because it groups by site as a default, not sure if
-    ## its necessary (which one is faster/more efficient)
     if(!is.vector(concept_set)){stop('For an over time output, please select 1-5 codes from your
                                    concept set and include them as a vector in the concept_set argument.')}
     if(is.vector(concept_set) && length(concept_set) > 5){stop('For an over time output, please select 1-5 
@@ -124,6 +127,7 @@ scv_process <- function(cohort,
     concept_set_prep <- copy_to_new(df = concept_set_prep)
     
     scv_tbl <- compute_fot(cohort = cohort_prep,
+                           site_col = site_col,
                            site_list = site_list_adj,
                            time_span = time_span,
                            time_period = time_period,
@@ -139,10 +143,15 @@ scv_process <- function(cohort,
     
   }
   
+  if('site_summ' %in% colnames(scv_tbl)){
+    scv_tbl <- scv_tbl %>% rename('site' = site_summ)
+  }
+  
+  message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
+                       output function in scv_output: ', output_type, '. This is also included
+                       in the parameter_summary.csv file output to the results directory.')))
   
   return(scv_tbl)
-  
-  
 }
 
 
@@ -188,38 +197,45 @@ scv_output <- function(process_output,
                        mad_dev = 2,
                        vocab_tbl = vocabulary_tbl('concept')){
   
+  
+  if(output_function %in% c('ss_exp_nt', 'ms_exp_nt', 'ss_exp_at', 'ms_exp_at')){
+    if(code_type == 'source'){col <- 'concept_id'}else{col <- 'source_concept_id'}
+  }else{
+    if(code_type == 'source'){col <- 'source_concept_id'}else{col <- 'concept_id'}
+  }
+  
+  
+  process_output <- join_to_vocabulary(tbl = process_output,
+                                       vocab_tbl = vocab_tbl,
+                                       col = col)
+  
   ## Run output functions
   if(output_function == 'scv_ms_anom_nt'){
     scv_output <- scv_ms_anom_nt(process_output = process_output,
                                  code_type = code_type,
                                  facet = facet,
-                                 rel_to_median = rel_to_median,
-                                 vocab_tbl = vocab_tbl)
+                                 rel_to_median = rel_to_median)
   }else if(output_function == 'scv_ss_anom_nt'){
     scv_output <- scv_ss_anom_nt(process_output = process_output,
                                  code_type = code_type,
                                  facet = facet,
-                                 rel_to_median = rel_to_median,
-                                 vocab_tbl = vocab_tbl)
+                                 rel_to_median = rel_to_median)
   }else if(output_function == 'scv_ms_exp_nt'){
     scv_output <- scv_ms_exp_nt(process_output = process_output,
                                 code_type = code_type,
                                 facet = facet,
-                                num_codes = num_codes,
-                                vocab_tbl = vocab_tbl)
+                                num_codes = num_codes)
   }else if(output_function == 'scv_ss_exp_nt'){
     scv_output <- scv_ss_exp_nt(process_output = process_output,
                                 code_type = code_type,
                                 facet = facet,
                                 num_codes = num_codes,
-                                num_mappings = num_mappings,
-                                vocab_tbl = vocab_tbl)
+                                num_mappings = num_mappings)
   }else if(output_function == 'scv_ms_anom_at'){
     scv_output <- scv_ms_anom_at(process_output = process_output,
                                  code_type = code_type,
                                  facet = facet,
-                                 mad_dev = mad_dev,
-                                 vocab_tbl = vocab_tbl)
+                                 mad_dev = mad_dev)
   }else if(output_function == 'scv_ss_anom_at'){
     scv_output <- scv_ss_anom_at(process_output = process_output,
                                  code_type = code_type,
@@ -227,13 +243,11 @@ scv_output <- function(process_output,
   }else if(output_function == 'scv_ms_exp_at'){
     scv_output <- scv_ss_ms_exp_at(process_output = process_output,
                                    code_type = code_type,
-                                   facet = facet,
-                                   vocab_tbl = vocab_tbl)
+                                   facet = facet)
   }else if(output_function == 'scv_ss_exp_at'){
     scv_output <- scv_ss_ms_exp_at(process_output = process_output,
                                    code_type = code_type,
-                                   facet = facet,
-                                   vocab_tbl = vocab_tbl)
+                                   facet = facet)
   }
   
   return(scv_output)
