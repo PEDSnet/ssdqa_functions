@@ -455,11 +455,12 @@ plot_ms_an_nt_conc_alt<-function(data_tbl){
   mid<-(max(dat_to_plot$n_mad,na.rm=TRUE)+min(dat_to_plot$n_mad,na.rm=TRUE))/2
   
   plt<-ggplot(dat_to_plot, aes(x=site, y=specialty_name, text=text))+
-    geom_point(aes(size=n_mad,colour=n_mad,shape=anomaly_yn))+
+    geom_point(aes(size=n_mad,colour=prop,shape=anomaly_yn))+
     scale_shape_manual(values=c(20,8))+
-    scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
+    #scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
+    scale_color_gradient(low='#dfc27d',high='#01665e')+
     theme_bw()+
-    labs(colour="No. MAD\nfrom median",
+    labs(colour="Proportion",
          shape="Anomaly",
          size="")+
     theme(axis.text.x = element_text(angle=90))
@@ -473,14 +474,18 @@ plot_ss_an_nt_conc_alt<- function(data_tbl){
                       "\nProportion: ",round(prop,2),
                       "\nMedian proportion: ",round(median,2),
                       "\nNo. MAD from median: ", round(n_mad,2)))
-  mid<-(max(dat_to_plot$n_mad,na.rm=TRUE)+min(dat_to_plot$n_mad,na.rm=TRUE))/2
+  #mid<-(max(dat_to_plot$prop,na.rm=TRUE)+min(dat_to_plot$prop,na.rm=TRUE))/2
+  mid <- median(dat_to_plot$prop, na.rm=TRUE)
+  #mid<-(max(dat_to_plot$n_mad,na.rm=TRUE)+min(dat_to_plot$n_mad,na.rm=TRUE))/2
+  
   
   plt<-ggplot(dat_to_plot, aes(x=specialty_name, y=cluster, text=text))+
-    geom_point(aes(size=n_mad,colour=n_mad,shape=anomaly_yn))+
+    geom_point(aes(size=n_mad,colour=prop,shape=anomaly_yn))+
     scale_shape_manual(values=c(20,8))+
-    scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
+    #scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
+    scale_color_gradient(low='#dfc27d',high='#01665e')+
     theme_bw()+
-    labs(colour="No. MAD\nfrom median",
+    labs(colour="Proportion",
          shape="Anomaly",
          size="")+
     theme(axis.text.x = element_text(angle=90))

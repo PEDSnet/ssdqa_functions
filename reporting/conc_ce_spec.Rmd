@@ -122,7 +122,8 @@ output_ss_expl_ot
 
   - A specialty is anomalous if its proportion of visits for the given cluster is +/- the specified number of MAD from the median proportion of visits for that specialty across all other clusters
   - Anomalous specialties for the cluster are stars, non-anomalous are points
-  - Size and fill color are based on number of MAD from median
+  - Size is based on number of MAD from the median
+  - Fill color is based on proportion of 
   - Specialties without any visits for the cluster do not have a point (is this okay or should we be counting this as a zero and including in the computation of the median?)
 
 ```{r}
@@ -194,7 +195,8 @@ output_ms_exp_ot
 The median proportion of visits with each specialty across sites is computed, and each site's proportion of visits with that specialty is compared against the median using n_mad = (absolute distance to the median)/(median absolute distance from the median)
 
   - Anomalous (more than +/- the specified MAD) specialties are stars, non-anomalous specialties are points
-  - Size and fill color are based on number of MAD from median
+  - Size is based on number of MAD from median
+  - Color is based on proportion of visits with the given specialty
   - Specialties are only shown if there is at least one site with an anomalous proportion
   - Sites without any visits to the specialty do not have a point
   
@@ -202,14 +204,14 @@ The median proportion of visits with each specialty across sites is computed, an
 ```{r}
 concept_names_nona<-concept_names_grouped%>%filter(!specialty_name%in%c('Unknown','Other'))
 output_ms_an_nt <- conc_output_gen(conc_process_output=jspa_output_full,
-                                   conc_process_names=concept_names_nona,
-                                              single_site=FALSE,
-                                              multi_site=TRUE,
-                                              exploratory=FALSE,
-                                              anomaly=TRUE,
-                                              time_dimension=FALSE,
-                                              facet_vars=c('codeset_name'),
-                                              color_var='site',
+                                   conc_process_names=concept_names_grouped,
+                                   single_site=FALSE,
+                                   multi_site=TRUE,
+                                   exploratory=FALSE,
+                                   anomaly=TRUE,
+                                   time_dimension=FALSE,
+                                   facet_vars=c('codeset_name'),
+                                   color_var='site',
                                    n_mad=3L,
                                    alt=TRUE)
 
