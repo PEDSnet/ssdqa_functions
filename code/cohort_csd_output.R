@@ -3,14 +3,19 @@
 #' *Single Site, Exploratory, No Time*
 #' 
 #' 
-#' @param process_output 
-#' @param code_type 
-#' @param facet 
-#' @param vocab_tbl 
-#' @param num_codes 
-#' @param num_mappings
+#' @param process_output the output from `csd_process`
+#' @param num_codes an integer to represent the top number of codes to include in the mappings for the exploratory analyses;
+#'                  will pick the codes based on the highest count of the most commonly appearing variables; 
+#' @param num_mappings an integer to represent the top number of mappings for a given variable in the exploratory analyses
+#' @param facet variables to facet by; defaults to NULL
+#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
+#'                  the provided codes. if not NULL, concept names will be available in either a reference
+#'                  table or in a hover tooltip
 #' 
-#' @return 
+#' @return a list with two elements: 
+#'        1) heatmap for to `n` concepts (`num_codes`)  and `x` variables (`num_mappings`), with proportion for each concept. 
+#'        If `vocab_tbl` is not NULL, then will the name of the concept when hovering; 
+#'        2) a table with each mapping and the total variable count
 #' 
 csd_ss_exp_nt <- function(process_output,
                           facet = NULL,
@@ -90,13 +95,15 @@ csd_ss_exp_nt <- function(process_output,
 #' *Single Site, Anomaly, No Time*
 #' 
 #' 
-#' @param process_output 
-#'--- @param facet 
-#' @param vocab_tbl 
-#' @param num_codes 
-#' @param num_mappings
+#' @param process_output the output from `csd_process`
+#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
+#'                  the provided codes. if not NULL, concept names will be available in either a reference
+#'                  table or in a hover tooltip
+#' @param filtered_var the variable to perform the jaccard similarity index for
 #' 
-#' @return 
+#' @return for a given variable, a heatmap of the jaccard index for each concept pair; 
+#'         if the user hovers over the heatmap, the co-occurrence count, jaccard score for the pair,
+#'         mean jaccard score for the variable, and concepts will show.
 #' 
 csd_ss_anom_nt <- function(process_output,
                           #facet,
@@ -150,11 +157,14 @@ csd_ss_anom_nt <- function(process_output,
 #' 
 #' using the CHOP-developed package called `rocqi` 
 #' 
-#' @param process_output dataframe output by `scv_process`
-#' @param code_type type of code to be used in analysis -- either `source` or `cdm`
-#' 
-#'                  should match the code_type provided when running `scv_process`
-#' @param facet the variables by which you would like to facet the graph
+#' @param process_output dataframe output by `csd_process`
+#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
+#'                  the provided codes. if not NULL, concept names will be available in either a reference
+#'                  table or in a hover tooltip
+#' @param filtered_var the variable to perform the anomaly detection for
+#' @param facet the variables by which you would like to facet the graph; defaults to NULL
+#' @param top_mapping_n integer value for the number of concepts to show mappings across time for;
+#'                      graph will be faceted by concept
 #' 
 #' @return a C control chart that highlights points in time where the number of mappings for
 #'         a particular code are anomalous; outlying points are highlighted red
@@ -177,14 +187,14 @@ csd_ss_anom_at <- function(process_output,
   #   summarise(n_mappings = n_distinct(concept_id))
   
   top_n <- 
-    process_output %>% filter(variable == variable_name) %>% 
+    process_output %>% filter(variable == filtered_var) %>% 
     ungroup() %>% 
     group_by(variable, concept_id) %>% 
     summarise(total_ct = sum(ct_concept)) %>% 
     ungroup() %>% arrange(desc(total_ct)) %>% 
     top_n(n=top_mapping_n) %>% select(concept_id) %>% pull()
   
-  c_added <- join_to_vocabulary(tbl = process_output %>% filter(variable == variable_name) %>% 
+  c_added <- join_to_vocabulary(tbl = process_output %>% filter(variable == filtered_var) %>% 
                                   filter(concept_id %in% top_n) %>% 
                                   mutate(concept_id=as.integer(concept_id)),
                               vocab_tbl = vocab_tbl,
@@ -209,7 +219,7 @@ csd_ss_anom_at <- function(process_output,
     theme(panel.background = element_rect("white", "grey80")) +
     labs(title = 'Control Chart: Proportion of Code Usage Over Time')
   
-  ref_tbl <- generate_ref_table(tbl = c_added %>% filter(variable == variable_name) %>% 
+  ref_tbl <- generate_ref_table(tbl = c_added %>% filter(variable == filtered_var) %>% 
                                   filter(concept_id %in% top_n) %>% 
                                   mutate(concept_id=as.integer(concept_id)),
                                 col = 'concept_id',
@@ -228,15 +238,12 @@ csd_ss_anom_at <- function(process_output,
 #' a mapping code. using plotly so the legend is interactive and codes can be isolated
 #' 
 #' 
-#' @param process_output dataframe output by `scv_process`
-#' 
-#'                  should match the code_type provided when running `scv_process`
-#' @param facet the variables by which you would like to facet the graph
-#'  ### IF MULTI SITE --- then will facet by site. In the case of multi-site exploration, 
-#'  the documentation should state that the exploratory should look at JUST one variable. 
-#'  ### IF SINGLE SITE, then can include more than one variable and will facet by variable
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
+#' @param process_output dataframe output by `csd_process`
+#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
+#'                  the provided codes. if not NULL, concept names will be available in either a reference
+#'                  table or in a hover tooltip
+#' @param filtered_var the variable to perform the anomaly detection for
+#' @param facet the variables by which you would like to facet the graph; defaults to NULL
 #' 
 #' @return a line graph with one facet per code displaying the proportion of mapped codes
 #'         across the user selected time period
@@ -282,7 +289,7 @@ csd_ss_ms_exp_at <- function(process_output,
                                 denom = 'ct_concept',
                                 time = TRUE)
   
-  p <-dat_to_plot %>% filter(variable %in% variable_names)  %>%
+  p <-dat_to_plot %>% filter(variable %in% filtered_var)  %>%
     mutate(concept_id=as.character(concept_id)) %>% 
     ggplot(aes(y = !!sym(output_value), x = time_start, color = concept_id,
                group=concept_id, text=text)) +
@@ -304,13 +311,11 @@ csd_ss_ms_exp_at <- function(process_output,
 
 #' *Multi Site, Exploratory, No Time*
 #' 
-#' @param process_output dataframe output by `scv_process`
-#' @param code_type type of code to be used in analysis -- either `source` or `cdm`
-#' 
-#'                  should match the code_type provided when running `scv_process`
+#' @param process_output dataframe output by `csd_process`
+#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
+#'                  the provided codes. if not NULL, concept names will be available in either a reference
+#'                  table or in a hover tooltip
 #' @param facet the variables by which you would like to facet the graph
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
 #' @param num_codes the number of top codes of code_type that should be displayed in the graph
 #' 
 #' @return a searchable and filterable table with mappings, proportion of representation, and
@@ -381,16 +386,24 @@ csd_ms_exp_nt <- function(process_output,
 
 #' *Multi-Site Anomaly No Time*
 #' 
-#' @param process_output output from csd_process
+#' @param process_output output from `csd_process`
 #' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
 #'                  concept names
+#' @param text_wrapping_char the number of characters for the `concept_name` or `concept_id` to 
+#'                           display on heatmap; limited to 80
+#' @param filtered_var the variable to perform the analysis on from the data frame; column name
+#'                     that contains the variable names should be labeled `variable`
+#' @param comparison_col the column that computes the quantitative value for comparison across sites;
+#'                       in `csd` check, it is the `prop_concept`
+#' @param grouped_vars a vector containing the variables to group by to compute the mean across the sites;
+#'                     in `csd` check, defaulted to c(`variable`, `concept_id`)
 #'                  
 #'                  
 
 csd_ms_anom_nt<-function(process_output,
                         vocab_tbl,
                         text_wrapping_char=80,
-                        filtered_var='general_jia',
+                        filtered_var='ibd',
                         comparison_col='prop_concept',
                         grouped_vars=c('variable','concept_id')){
   

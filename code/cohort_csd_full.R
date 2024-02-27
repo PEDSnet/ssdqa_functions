@@ -167,7 +167,7 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
 #'                  table or in a hover tooltip
 #' @param save_as_png 
 #' @param file_path 
-#'
+#' @param facet variables to facet by; defaults to NULL
 #' @return
 #' 
 csd_output <- function(process_output=process_output,
@@ -175,6 +175,7 @@ csd_output <- function(process_output=process_output,
                        num_codes = 10,
                        num_mappings = 10,
                        filtered_var = 'general_jia',
+                       facet=NULL,
                        save_as_png = FALSE,
                        file_path = NULL){
   
