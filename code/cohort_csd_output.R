@@ -171,7 +171,7 @@ csd_ss_anom_nt <- function(process_output,
 #' 
 csd_ss_anom_at <- function(process_output,
                            vocab_tbl=vocabulary_tbl('concept'),
-                           variable_name='ibd',
+                           filtered_var='ibd',
                            facet=NULL,
                            top_mapping_n = 6){
   
@@ -180,7 +180,7 @@ csd_ss_anom_at <- function(process_output,
   # }else if(code_type == 'cdm'){
   #   col <- 'concept_id'}
   
-  facet <- facet %>% append('concept_id')
+  facet <- facet %>% append('concept_id') %>% unique()
   
   # n_mappings_yr <- process_output %>% filter(variable == variable_name) %>% 
   #   group_by(!!!syms(facet), time_start) %>%
@@ -199,25 +199,34 @@ csd_ss_anom_at <- function(process_output,
                                   mutate(concept_id=as.integer(concept_id)),
                               vocab_tbl = vocab_tbl,
                               col = 'concept_id') 
+
   
-  c_plot <- 
-    c_added %>% 
-    #group_by(!!!syms(facet)) %>%
-    group_by(concept_id) %>% 
-    group_modify(
-      ~spc_calculate(
-        data = .x, 
-        x = time_start,
-        y = ct_concept,
-        chart = "c"
-      )
-    ) %>% 
-    ungroup() %>%
-    # plot
-    spc_plot(engine = "ggplot") + 
-    facet_wrap((facet)) + 
-    theme(panel.background = element_rect("white", "grey80")) +
-    labs(title = 'Control Chart: Proportion of Code Usage Over Time')
+  c_final <- c_added %>% group_by(!!!syms(facet), time_start, ct_concept) %>%
+    unite(facet_col, !!!syms(facet), sep = '\n')
+  
+  
+  c_plot <- qic(data = c_final, x = time_start, y = ct_concept, chart = 'c', facet = ~facet_col,
+                title = 'Control Chart: Code Usage Over Time', show.grid = TRUE)
+  
+  
+  # c_plot <- 
+  #   c_added %>% 
+  #   #group_by(!!!syms(facet)) %>%
+  #   group_by(concept_id) %>% 
+  #   group_modify(
+  #     ~spc_calculate(
+  #       data = .x, 
+  #       x = time_start,
+  #       y = ct_concept,
+  #       chart = "c"
+  #     )
+  #   ) %>% 
+  #   ungroup() %>%
+  #   # plot
+  #   spc_plot(engine = "ggplot") + 
+  #   facet_wrap((facet)) + 
+  #   theme(panel.background = element_rect("white", "grey80")) +
+  #   labs(title = 'Control Chart: Proportion of Code Usage Over Time')
   
   ref_tbl <- generate_ref_table(tbl = c_added %>% filter(variable == filtered_var) %>% 
                                   filter(concept_id %in% top_n) %>% 

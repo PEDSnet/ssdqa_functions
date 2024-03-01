@@ -46,15 +46,15 @@ prettify_kable <- function(data) {
     column_spec(1, bold = T, border_right = T)
 }
 
-no_time <- read_csv(file = paste0(config('base_dir'), '/results/ss_ms_nt.csv')) %>%
-  mutate(site = case_when(site == 'chop' ~ 'site 1',
-                          site == 'colorado' ~ 'site 2',
-                          site == 'stanford' ~ 'site 3'))
+no_time <- read_csv(file = paste0(config('base_dir'), '/results/ss_ms_nt.csv')) #%>%
+  # mutate(site = case_when(site == 'chop' ~ 'site 1',
+  #                         site == 'colorado' ~ 'site 2',
+  #                         site == 'stanford' ~ 'site 3'))
 
-across_time <- read_csv(file = paste0(config('base_dir'), '/results/ss_ms_at.csv')) %>%
-  mutate(site = case_when(site == 'chop' ~ 'site 1',
-                          site == 'colorado' ~ 'site 2',
-                          site == 'stanford' ~ 'site 3'))
+across_time <- read_csv(file = paste0(config('base_dir'), '/results/ss_ms_at.csv')) #%>%
+  # mutate(site = case_when(site == 'chop' ~ 'site 1',
+  #                         site == 'colorado' ~ 'site 2',
+  #                         site == 'stanford' ~ 'site 3'))
 
 ```
 
@@ -62,9 +62,11 @@ All output was generated in a CDM -> Source vocabulary direction, using CDM (SNO
 
 ## Single Site, Exploratory, No Time
 
+The heatmap summarizes the top user-selected number of SNOMED codes for a user-selected number of source ICD codes (code types will vary with domain & user configuration). When a vocabulary table is provided, the concept name is displayed in the tooltip while hovering over a given section. The accompanying reference table displays the total count for each concept
+
 ```{r ss_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-op <- scv_output(process_output = no_time %>% filter(site == 'site 2'),
+op <- scv_output(process_output = no_time %>% filter(site == 'colorado'),
            output_function = 'scv_ss_exp_nt',
            code_type = 'cdm',
            facet = NULL,
@@ -80,9 +82,11 @@ op[[2]]
 
 ## Single Site, Anomaly Detection, No Time
 
+This output displays the number of mappings associated with each SNOMED code. The user can select either greater or less than the median number of mappings in order to identify anomalies.
+
 ```{r ss_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-scv_output(process_output = no_time %>% filter(site == 'site 2'),
+scv_output(process_output = no_time %>% filter(site == 'colorado'),
            output_function = 'scv_ss_anom_nt',
            code_type = 'cdm',
            facet = NULL,

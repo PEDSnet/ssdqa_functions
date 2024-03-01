@@ -155,9 +155,9 @@ scv_process <- function(cohort,
 }
 
 
-#' SCV Output Generation (needs some updating)
+#' SCV Output Generation
 #'
-#' @param process_output the dataframe output by the `scv_process` function
+#' @param process_output the output of the `scv_process` function
 #' @param output_function the name of the output function that should be used provided in the `parameter_summary` csv 
 #'                        file that is output to the provided results folder after running the `scv_process` function 
 #' @param code_type the type of code that is being used in the analysis, either `source` or `cdm`
@@ -248,7 +248,7 @@ scv_output <- function(process_output,
     scv_output <- scv_ss_ms_exp_at(process_output = process_output,
                                    code_type = code_type,
                                    facet = facet)
-  }
+  }else(stop('Please enter a valid output function for this check type.'))
   
   return(scv_output)
   

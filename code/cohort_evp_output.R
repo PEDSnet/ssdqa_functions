@@ -1,7 +1,7 @@
 
 #' * Single Site, Exploratory, No Time *
 
-ecp_ss_exp_nt <- function(process_output,
+evp_ss_exp_nt <- function(process_output,
                           output_level,
                           facet){
   
@@ -27,7 +27,7 @@ ecp_ss_exp_nt <- function(process_output,
 
 #' * Multi Site, Exploratory, No Time *
 
-ecp_ms_exp_nt <- function(process_output,
+evp_ms_exp_nt <- function(process_output,
                           output_level,
                           facet){
   
@@ -56,7 +56,7 @@ ecp_ms_exp_nt <- function(process_output,
 
 #' * Single Site, Anomaly, No Time *
 
-ecp_ss_anom_nt <- function(process_output,
+evp_ss_anom_nt <- function(process_output,
                            facet){
   
   plot <- process_output %>%
@@ -82,7 +82,7 @@ ecp_ss_anom_nt <- function(process_output,
 
 #' * Multi Site, Anomaly, No Time *
 
-ecp_ms_anom_nt <- function(process_output,
+evp_ms_anom_nt <- function(process_output,
                            output_level,
                            kmeans_centers = 2, 
                            facet){
@@ -110,7 +110,7 @@ ecp_ms_anom_nt <- function(process_output,
 
 #' * Single Site, Exploratory, Across Time *
 
-ecp_ss_exp_at <- function(process_output,
+evp_ss_exp_at <- function(process_output,
                           output_level,
                           facet){
   
@@ -140,7 +140,7 @@ ecp_ss_exp_at <- function(process_output,
 
 #' * Multi Site, Exploratory, Across Time *
 
-ecp_ms_exp_at <- function(process_output,
+evp_ms_exp_at <- function(process_output,
                           output_level,
                           facet){
   
@@ -171,7 +171,7 @@ ecp_ms_exp_at <- function(process_output,
 
 #' * Single Site, Anomaly, Across Time *
 
-ecp_ss_anom_at <- function(process_output,
+evp_ss_anom_at <- function(process_output,
                            output_level,
                            facet){
   
@@ -204,19 +204,15 @@ ecp_ss_anom_at <- function(process_output,
 #' graph displays the proportion of mappings per code 
 #' that are outliers.
 #' 
-#' @param process_output dataframe output by `scv_process`
-#' @param code_type type of code to be used in analysis -- either `source` or `cdm`
-#' 
-#'                  should match the code_type provided when running `scv_process`
+#' @param process_output dataframe output by `evp_process`
+#' @param code_type type of code to be used in analysis -- either `patient` or `row`
 #' @param facet the variables by which you would like to facet the graph
 #' @param mad_dev an integer to define the deviation that should be used to compute the upper and lower MAD limits
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
 #' 
 #' @return a heatmap that shows the proportion of mappings for each code that are unstable across
 #'         time, meaning they frequently deviate from the all site centroid
 #' 
-ecp_ms_anom_at <- function(process_output,
+evp_ms_anom_at <- function(process_output,
                            output_level,
                            facet,
                            mad_dev = 2){

@@ -563,7 +563,6 @@ scv_ms_anom_at <- function(process_output,
 #' 
 #' Control chart looking at number of mappings over time
 #' 
-#' using the CHOP-developed package called `rocqi` 
 #' 
 #' @param process_output dataframe output by `scv_process`
 #' @param code_type type of code to be used in analysis -- either `source` or `cdm`

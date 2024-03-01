@@ -1,5 +1,5 @@
 
-#' ECP Process function 
+#' EVP Process function 
 #' 
 #'
 #' @param cohort A dataframe with the cohort of patients for your study. Should include the columns:
@@ -9,7 +9,7 @@
 #'                       - @site
 #' @param site_list A list of sites for which you would like to examine clinical facts. Can be one site 
 #'                  (single-site) or multiple (multi-site) 
-#' @param ecp_concept_file CSV file with information about each of the concept sets that should be
+#' @param evp_concept_file CSV file with information about each of the concept sets that should be
 #'                         examined in the function. contains the following columns:
 #'                         - @concept_group a label for the group captured by the associated codeset
 #'                         - @default_tbl CDM table where data related to the codeset is found
@@ -39,13 +39,13 @@
 #' @param time_period when time = TRUE, this argument defines the distance between dates within the specified time period. defaults
 #'                    to `year`, but other time periods such as `month` or `week` are also acceptable
 #'
-#' @return a dataframe with patient/row counts & proportions for each concept set listed in `ecp_concept_file`. 
-#'         this output should then be used in the `ecp_output` function to generate an appropriate 
+#' @return a dataframe with patient/row counts & proportions for each concept set listed in `evp_concept_file`. 
+#'         this output should then be used in the `evp_output` function to generate an appropriate 
 #'         visualization
 #' 
-ecp_process <- function(cohort,
-                        site_list,
-                        ecp_concept_file = read_codeset('ecp_concepts', 'cccc'),
+evp_process <- function(cohort,
+                        #site_list,
+                        evp_concept_file = read_codeset('evp_concepts', 'cccc'),
                         multi_or_single_site = 'single',
                         anomaly_or_exploratory='exploratory',
                         age_groups = NULL,
@@ -55,14 +55,13 @@ ecp_process <- function(cohort,
 ){
   
   ## parameter summary output
-  output_type <- suppressWarnings(param_csv_summ2(check_string = 'ecp',
+  output_type <- suppressWarnings(param_csv_summ2(check_string = 'evp',
                                                   as.list(environment())))
   
   
   # Add site check
   site_filter <- check_site_type(cohort = cohort,
-                                 multi_or_single_site = multi_or_single_site,
-                                 site_list = site_list)
+                                 multi_or_single_site = multi_or_single_site)
   cohort_filter <- site_filter$cohort
   grouped_list <- site_filter$grouped_list
   site_col <- site_filter$grouped_list
@@ -93,15 +92,15 @@ ecp_process <- function(cohort,
       
       if(multi_or_single_site == 'single' && anomaly_or_exploratory == 'anomaly'){
         
-        concept_check <- compute_ecp_ssanom(cohort = cohort_site,
+        concept_check <- compute_evp_ssanom(cohort = cohort_site,
                                             grouped_list = grouped_list,
-                                            ecp_concept_file = ecp_concept_file)
+                                            evp_concept_file = evp_concept_file)
         
       }else{
         
-        concept_check <- compute_ecp(cohort = cohort_site,
+        concept_check <- compute_evp(cohort = cohort_site,
                                      grouped_list = grouped_list,
-                                     ecp_concept_file = ecp_concept_file,
+                                     evp_concept_file = evp_concept_file,
                                      time = time)
       }
       
@@ -116,28 +115,108 @@ ecp_process <- function(cohort,
                                  time_period = time_period,
                                  reduce_id = NULL,
                                  check_func = function(dat){
-                                   compute_ecp(cohort = dat,
+                                   compute_evp(cohort = dat,
                                                grouped_list = grouped_list,
                                                time = TRUE,
-                                               ecp_concept_file = ecp_concept_file)
+                                               evp_concept_file = evp_concept_file)
                                  })
     
     site_output[[k]] <- concept_check
     
     }
     
-    ecp_tbl <- reduce(.x=site_output,
+    evp_tbl <- reduce(.x=site_output,
                       .f=dplyr::union)
     
     }
   
-  if('site_summ' %in% colnames(ecp_tbl)){
-    ecp_tbl <- ecp_tbl %>% rename('site' = site_summ)
+  if('site_summ' %in% colnames(evp_tbl)){
+    evp_tbl <- evp_tbl %>% rename('site' = site_summ)
   }
   
   message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
-                       output function in ecp_output: ', output_type, '. This is also included
+                       output function in evp_output: ', output_type, '. This is also included
                        in the parameter_summary.csv file output to the results directory.')))
   
-  return(ecp_tbl)
+  return(evp_tbl)
 }
+
+
+
+#' EVP output function
+#'
+#' @param process_output the output of the `evp_process` function
+#' @param output_function the name of the output function that should be used provided in the `parameter_summary` csv 
+#'                        file that is output to the provided results folder after running the `evp_process` function 
+#' @param output_level the type of counts the output should summarise -- either `patient` or `row`
+#' @param facet the variables by which you would like to facet the graph. available and/or recommended options for
+#'              faceting variables are provided in the `parameter_summary` csv file
+#' @param kmeans_centers the number of centers that should be included in a K-means analysis; defaults to 2
+#'                       only relevant where output_function = `scv_ms_anom_nt`
+#' @param mad_dev the number of MAD away from the median that should be considered an outlier; defaults to 2
+#'                only relevant where output_function = `scv_ms_anom_at`
+#'
+#' @return a graph to visualize the results from `evp_process` based on the parameters provided
+#' 
+evp_output <- function(process_output,
+                       output_function,
+                       output_level,
+                       facet,
+                       kmeans_centers = 2,
+                       mad_dev = 2){
+  
+  if(output_function == 'evp_ss_exp_nt'){
+    
+    evp_output <- evp_ss_exp_nt(process_output = process_output,
+                                output_level = output_level,
+                                facet = facet)
+    
+  }else if(output_function == 'evp_ss_anom_nt'){
+    
+    evp_output <- evp_ss_anom_nt(process_output = process_output,
+                                 facet = facet)
+    
+  }else if(output_function == 'evp_ss_exp_at'){
+    
+    evp_output <- evp_ss_exp_at(process_output = process_output,
+                                output_level = output_level,
+                                facet = facet)
+    
+  }else if(output_function == 'evp_ss_anom_at'){
+    
+    evp_output <- evp_ss_anom_at(process_output = process_output,
+                                 output_level = output_level,
+                                 facet = facet)
+    
+  }else if(output_function == 'evp_ms_exp_nt'){
+    
+    evp_output <- evp_ms_exp_nt(process_output = process_output,
+                                output_level = output_level,
+                                facet = facet)
+    
+  }else if(output_function == 'evp_ms_anom_nt'){
+    
+    evp_output <- evp_ms_anom_nt(process_output = process_output,
+                                 output_level = output_level,
+                                 facet = facet,
+                                 kmeans_centers = kmeans_centers)
+    
+  }else if(output_function == 'evp_ms_exp_at'){
+    
+    evp_output <- evp_ms_anom_at(process_output = process_output,
+                                 output_level = output_level,
+                                 facet = facet)
+    
+  }else if(output_function == 'evp_ms_anom_at'){
+    
+    evp_output <- evp_ss_exp_nt(process_output = process_output,
+                                output_level = output_level,
+                                facet = facet,
+                                mad_dev = 2)
+    
+  }else(stop('Please enter a valid output function for this check type.'))
+  
+  return(evp_output)
+  
+}
+
