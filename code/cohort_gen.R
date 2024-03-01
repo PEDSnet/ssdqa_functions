@@ -392,7 +392,8 @@ generate_ref_table <- function(tbl,
         fmt_number(denom_col, decimals = 0) %>%
         data_color(palette = "Dark2", columns = c(site)) %>%
         cols_label(denom_col = 'Total Count') %>%
-        tab_header('Concept Reference Table')
+        tab_header('Concept Reference Table') %>%
+        opt_interactive(use_search = TRUE)
   }else{
     
     time_inc <- tbl %>% ungroup() %>% distinct(time_increment) %>% pull()
@@ -408,7 +409,8 @@ generate_ref_table <- function(tbl,
         fmt_number(denom_col, decimals = 0) %>%
         data_color(palette = "Dark2", columns = c(site)) %>%
         cols_label(denom_col = 'Total Count (All Time Points)') %>%
-        tab_header('Concept Reference Table')
+        tab_header('Concept Reference Table') %>%
+        opt_interactive(use_search = TRUE)
       
   }
   
