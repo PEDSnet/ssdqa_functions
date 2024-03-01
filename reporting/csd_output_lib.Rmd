@@ -1,0 +1,178 @@
+---
+title: "Concept Set Distribution Output Library"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(qicharts2)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+```
+
+This report is a library of each distinct output available for the Concept Set Distribution (CSD) check. The output below was computed at the most basic level (i.e. without any additional facets). Certain customizations may be made by the user should they desire them.
+
+
+## Single Site, Exploratory, No Time
+
+The heatmap summarizes the top user-selected number of codes for a user-selected number of variables. When a vocabulary table is provided, the concept name is displayed in the tooltip while hovering over a given section. The accompanying reference table displays the overall denominator count for each variable.
+
+```{r ss_exp_nt}
+
+ss_exp_nt <- csd_output(process_output = get_results('csd_ss_exp_nt'),
+                        output_function = 'csd_ss_exp_nt',
+                        vocab_tbl = vocabulary_tbl('concept'),
+                        num_codes = 5,
+                        num_mappings = 10)
+
+ss_exp_nt[[1]]
+
+ss_exp_nt[[2]]
+
+```
+
+## Multi Site, Exploratory, No Time
+
+For each site in the cohort, this table summarizes the counts/proportions of each concept_id within a given variable to give the user an idea of which concepts contribute to the makeup of their variable.
+
+```{r ms_exp_nt}
+
+ms_exp_nt <- csd_output(process_output = get_results('csd_ms_nt'),
+                        output_function = 'csd_ms_exp_nt',
+                        vocab_tbl = vocabulary_tbl('concept'),
+                        num_codes = 10)
+
+ms_exp_nt
+
+```
+
+## Single Site, Anomaly, No Time
+
+This heatmap displays the Jaccard similarity index between concepts within one user-selected variable. A high similarity index indicates the concepts co-occur (i.e. exist within the same patient's record) frequently.
+
+```{r ss_anom_nt}
+
+ss_anom_nt <- csd_output(process_output = get_results('csd_ss_anom_nt'),
+                         output_function = 'csd_ss_anom_nt',
+                         vocab_tbl = vocabulary_tbl('concept'),
+                         filtered_var = 'general_jia')
+
+ss_anom_nt
+
+```
+
+## Multi Site, Anomaly, No Time
+
+For each site in the cohort & each concept in the variable, this graph summarizes how frequently that concept appears (size of the dot), how far away from the mean proportion that concept falls (color of the dot), and whether the distance from the mean constitutes an anomaly (stars).
+
+```{r ms_anom_nt}
+
+ms_anom_nt <- csd_output(process_output = get_results('csd_ms_nt'),
+                        output_function = 'csd_ms_anom_nt',
+                        vocab_tbl = vocabulary_tbl('concept'),
+                        filtered_var = 'uveitis',
+                        text_wrapping_char = 80,
+                        comparison_col = 'prop_concept',
+                        grouped_vars = c('variable', 'concept_id'))
+
+ms_anom_nt
+
+```
+
+## Single Site, Exploratory, Across Time
+
+This line graph displays the proportion of concepts within each variable and how they behave across a user provided time interval. Additional information can be found in the tooltip when the user hovers over a particular line. If they wish to isolate a given concept_id, the user can double click on the appropriate entry in the legend.
+
+```{r ss_exp_at}
+
+ss_exp_at <- csd_output(process_output = get_results('csd_ss_at'),
+                        output_function = 'csd_ss_exp_at',
+                        vocab_tbl = vocabulary_tbl('concept'),
+                        filtered_var = c('general_jia', 'ibd','uveitis'),
+                        output_value = 'prop_concept')
+
+ss_exp_at[[1]]
+
+ss_exp_at[[2]]
+
+```
+
+## Multi Site, Exploratory, Across Time
+
+This output is currently in progress and will be added to this report at a later date
+
+```{r ms_exp_at}
+
+# ms_exp_at <- csd_output(process_output = get_results('csd_ms_at'),
+#                         output_function = 'csd_ms_exp_at',
+#                         vocab_tbl = vocabulary_tbl('concept'),
+#                         filtered_var = c('general_jia', 'ibd','uveitis'),
+#                         output_value = 'prop_concept')
+# 
+# ms_exp_at
+
+```
+
+## Single Site, Anomaly, Across Time
+
+This check outputs a control chart that highlights anomalies in the count of patients per concept_id in the provided variable. Blue dots along the line indicate non-anomalous values, while orange dots are anomalies.
+
+```{r ss_anom_at}
+
+ss_anom_at <- csd_output(process_output = get_results('csd_ss_at'),
+                        output_function = 'csd_ss_anom_at',
+                        vocab_tbl = vocabulary_tbl('concept'),
+                        num_mappings = 10,
+                        filtered_var = 'polyarticular_jia'
+                        )
+
+ss_anom_at[[1]]
+
+ss_anom_at[[2]]
+
+```
+
+## Multi Site, Anomaly, Across Time
+
+This output is currently in progress and will be added to this report at a later date
+
+```{r ms_anom_at}
+
+
+```
