@@ -1,7 +1,11 @@
 ---
 title: 'Concordance: Clinical Events and Specialties'
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    toc: TRUE
+    toc_collapsed: TRUE
+    toc_float: TRUE
 ---
 
 ```{r setup, include=FALSE}

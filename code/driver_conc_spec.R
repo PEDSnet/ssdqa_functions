@@ -26,38 +26,47 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
   # required at each step.
   init_sum(cohort = 'Start', persons = 0)
 
-  cohort <- results_tbl('cohort_jspa') %>% compute_new()
+  cohort <- results_tbl('jspa_cohort') %>% compute_new()
+  cohort_limited <- cohort %>% filter(site%in%c('seattle', 'colorado'))
+  cnc_sp_ss_nt <- conc_process(cohort=cohort,
+                               multi_or_single_site='single',
+                               care_site=FALSE,
+                               provider=TRUE,
+                               codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
+                               vocab_tbl = vocabulary_tbl('concept'))
+  output_tbl(cnc_sp_ss_nt,
+             name='cnc_sp_ss_nt')
+  cnc_sp_ms_nt <- conc_process(cohort=cohort,
+                               multi_or_single_site='multi',
+                               care_site=TRUE,
+                               provider=TRUE,
+                               codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
+                               visit_type_tbl=read_codeset('conc_visit_types', col_type='ic'))
+  output_tbl(cnc_sp_ms_nt,
+             name='cnc_sp_ms_nt')
   
-  compute_conc_full <- conc_process(cohort,
-                                    grouped_list=c('site'),
-                                    codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
-                                    care_site=TRUE,
-                                    provider=TRUE,
-                                    visit_type_tbl=read_codeset('conc_visit_types', col_type='ic'))%>%
-    collect()
-  output_tbl(compute_conc_full,
-             name='conc_jspa_visit_cluster')
   
-  compute_conc_time <- conc_process(cohort,
-                                    grouped_list=c('site'),
-                                    codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
-                                    care_site=TRUE,
-                                    provider=TRUE,
-                                    visit_type_tbl=read_codeset('conc_visit_types', col_type='ic'),
-                                    time=TRUE,
-                                    time_span=c('2012-01-01', '2022-01-01'),
-                                    time_period='year',
-                                    site_list=list('cchmc',
-                                                   'chop',
-                                                   'colorado',
-                                                   'lurie',
-                                                   'nationwide',
-                                                   'nemours',
-                                                   'seattle',
-                                                   'stanford'))%>%
-    collect()
-  output_tbl(compute_conc_time,
-             name='conc_jspa_visit_cluster_time')
+  
+  # compute_conc_ss_time <- conc_process(cohort,
+  #                                   grouped_list=c('site'),
+  #                                   codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
+  #                                   care_site=TRUE,
+  #                                   provider=TRUE,
+  #                                   visit_type_tbl=read_codeset('conc_visit_types', col_type='ic'),
+  #                                   time=TRUE,
+  #                                   time_span=c('2012-01-01', '2022-01-01'),
+  #                                   time_period='year',
+  #                                   site_list=list('cchmc',
+  #                                                  'chop',
+  #                                                  'colorado',
+  #                                                  'lurie',
+  #                                                  'nationwide',
+  #                                                  'nemours',
+  #                                                  'seattle',
+  #                                                  'stanford'))%>%
+  #   collect()
+  # output_tbl(compute_conc_time,
+  #            name='conc_jspa_visit_cluster_time')
   
   # Write step summary log to CSV and/or database,
   # as determined by configuration

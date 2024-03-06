@@ -40,10 +40,10 @@
 #' @param time TRUE if results should be over time. Defaults to FALSE
 #' @param time_period if time=TRUE, indicates time period (e.g. 'year', 'month') over which to measure
 #' @param time_span if time=TRUE, vector containing minimum and maximum dates over which to measure
-#' @param site_list if supplied, sites to filter the results to
 #'        
 conc_process <- function(cohort,
-                         grouped_list=c('site'),
+                         #grouped_list=c('site'),
+                         multi_or_single_site='multi',
                          age_groups=NULL,
                          codeset_tbl=NULL,
                          care_site,
@@ -52,17 +52,20 @@ conc_process <- function(cohort,
                          time=FALSE,
                          time_span=c('2012-01-01', '2020-01-01'),
                          time_period='year',
-                         site_list=NULL){
-  ## Step 0: Set cohort name for table output
-  #config('cohort', study_name)
+                         vocab_tbl=NULL){
+ 
   message('Preparing cohort')
-  ## Step 1: Prepare cohort
+  ## Step 0: Site check
+  site_filter <- check_site_type(cohort = cohort,
+                                 multi_or_single_site = multi_or_single_site)
+  cohort_filter <- site_filter$cohort
+  grouped_list <- site_filter$grouped_list
+  site_col <- site_filter$grouped_list
+  site_list_adj <- site_filter$site_list_adj
   
-  ### Include time component, if desired
-  # if(time){
-  #   grouped_list <- grouped_list%>%append('year')
-  # }
-  ### Include age groups, if desired
+  ## Step 1: Prepare cohort
+
+  ## Include age groups, if desired
   if(is.data.frame(age_groups)){
     grouped_list_prep<-grouped_list%>%
       append('age_grp')
@@ -75,16 +78,25 @@ conc_process <- function(cohort,
   
   ## Step 2: Run function
   message('Computing specialty concordance')
+  site_output<-list()
   if(!time){
-    site_list_v <- unlist(site_list)
-    cohort<-cohort%>%filter(site%in%site_list_v)
-    conc_final <- compute_conc(cohort=cohort,
-                               grouped_list=grouped_list_prep,
-                               codeset_tbl=codeset_tbl,
-                               care_site=care_site,
-                               provider=provider,
-                               visit_type_tbl=visit_type_tbl,
-                               age_gp_tbl=age_groups)
+    for(k in 1:length(site_list_adj)){
+      site_list_thisrnd <- site_list_adj[[k]]
+      # filters by site
+      cohort_site <- cohort_filter %>% filter(!!sym(site_col)%in%c(site_list_thisrnd))
+
+      conc_site <- compute_conc(cohort=cohort_site,
+                                 grouped_list=grouped_list_prep,
+                                 codeset_tbl=codeset_tbl,
+                                 care_site=care_site,
+                                 provider=provider,
+                                 visit_type_tbl=visit_type_tbl,
+                                 age_gp_tbl=age_groups)
+      site_output[[k]]<-conc_site%>%mutate(site=site_list_thisrnd)
+    }
+    conc_tbl<-reduce(.x=site_output,
+                       .f=dplyr::union)
+
   }
   else{
     conc_final<-compute_fot(cohort=cohort,
@@ -103,14 +115,20 @@ conc_process <- function(cohort,
                                            time=TRUE)
                             })
   }
-  
+
   message('Outputting specialty names to specs directory')
-  spec_concept_names <- find_distinct_concepts(conc_final)
-  output_tbl(spec_concept_names,
+  spec_names<-join_to_vocabulary(tbl=conc_tbl,
+                                 vocab_tbl=vocab_tbl,
+                                 col='specialty_concept_id')%>%
+    distinct(specialty_concept_id, concept_name)%>%
+    rename(specialty_concept_name=concept_name)
+  output_tbl(spec_names,
              name='specialty_concept_names',
              db=FALSE,
              file=TRUE)
-  return(conc_final)
+
+  final_conc_tbl<-replace_site_col(conc_tbl)
+  return(final_conc_tbl)
 }
 
 

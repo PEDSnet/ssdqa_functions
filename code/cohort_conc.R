@@ -111,43 +111,41 @@ find_fact_spec_conc <- function(cohort,
   
   if(!'cluster'%in%colnames(fact_codes)){fact_codes<-fact_codes%>%mutate(cluster=concept_name)}
   if(!'category'%in%colnames(fact_codes)){fact_codes<-fact_codes%>%mutate(category='all')}
-  
+  message('Finding code occurrences')
   fact_occurrences <- 
-    fact_tbl %>%
+    fact_tbl %>% select(person_id, visit_occurrence_id, concept_id)%>%
     inner_join(cohort) %>% 
-    select(person_id, concept_id,
-           visit_occurrence_id, site) %>% 
+    # select(person_id, concept_id,
+    #        visit_occurrence_id, site) %>% 
     inner_join(select(fact_codes,
                       concept_id, concept_name,
                       category, cluster)) %>% 
     compute_new(temporary=TRUE,
                 indexes=list('person_id',
                              'visit_occurrence_id'))
-  
+  message('Finding specialties')
   if(time){
     visits <- cdm_tbl('visit_occurrence') %>% 
       inner_join(select(cohort,c(person_id,time_start,time_increment,start_date,end_date)))%>%
       filter(visit_start_date>=start_date&
-               visit_start_date<=end_date)#%>%
-      # select(person_id, visit_occurrence_id,visit_concept_id,
-      #        provider_id, care_site_id, visit_start_date,
-      #        time_start,time_increment)
+               visit_start_date<=end_date)
   }else{
     visits <- 
       cdm_tbl('visit_occurrence') %>%
-      inner_join(select(cohort,person_id))
-      # select(person_id, visit_occurrence_id,visit_concept_id,
-      #        provider_id, care_site_id, visit_start_date)
+      #inner_join(select(cohort,person_id))
+      inner_join(cohort)
   }
     
   
   if(care_site&provider){
-    pv_spec <-  visits %>%
+    pv_spec <-  visits %>% select(visit_occurrence_id, provider_id)%>%
+      inner_join(select(fact_occurrences, visit_occurrence_id))%>%
       left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id)),
                 by = 'provider_id')%>%
       rename(specialty_concept_id_pv=specialty_concept_id) %>%
       select(visit_occurrence_id,specialty_concept_id_pv)
-    cs_spec <- visits %>% 
+    cs_spec <- visits %>% select(visit_occurrence_id, care_site_id)%>%
+      inner_join(select(fact_occurrences,visit_occurrence_id))%>%
       left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id)),
                 by = 'care_site_id')%>%
       rename(specialty_concept_id_cs=specialty_concept_id)%>%
@@ -164,10 +162,14 @@ find_fact_spec_conc <- function(cohort,
     
   }else if(provider&!care_site){
     spec_full <- visits %>%
+      select(visit_occurrence_id, provider_id)%>%
+      inner_join(select(fact_occurrences, visit_occurrence_id))%>%
       left_join(select(cdm_tbl('provider'),c(provider_id, specialty_concept_id)),
                 by = 'provider_id')
   }else if(care_site&!provider){
     spec_full <- visits %>%
+      select(visit_occurrence_id, provider_id)%>%
+      inner_join(select(fact_occurrences, visit_occurrence_id))%>%
       left_join(select(cdm_tbl('care_site'),c(care_site_id, specialty_concept_id)),
                 by = 'care_site_id')
   }
