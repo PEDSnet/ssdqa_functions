@@ -99,8 +99,9 @@ conc_process <- function(cohort,
 
   }
   else{
-    conc_final<-compute_fot(cohort=cohort,
-                            site_list=site_list,
+    conc_tbl<-compute_fot(cohort=cohort_filter,
+                            site_list=site_list_adj,
+                            site_col=site_col,
                             time_span=time_span,
                             time_period=time_period,
                             reduce_id=NULL,
@@ -123,7 +124,7 @@ conc_process <- function(cohort,
     distinct(specialty_concept_id, concept_name)%>%
     rename(specialty_concept_name=concept_name)
   output_tbl(spec_names,
-             name='specialty_concept_names',
+             name=paste0('specialty_concept_names_',multi_or_single_site,"_",format(Sys.time(), '%Y%m%d')),
              db=FALSE,
              file=TRUE)
 

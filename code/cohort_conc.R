@@ -126,7 +126,8 @@ find_fact_spec_conc <- function(cohort,
   message('Finding specialties')
   if(time){
     visits <- cdm_tbl('visit_occurrence') %>% 
-      inner_join(select(cohort,c(person_id,time_start,time_increment,start_date,end_date)))%>%
+      inner_join(cohort)%>%
+      #inner_join(select(cohort,c(person_id,time_start,time_increment,start_date,end_date)))%>%
       filter(visit_start_date>=start_date&
                visit_start_date<=end_date)
   }else{
