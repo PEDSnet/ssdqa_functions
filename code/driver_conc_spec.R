@@ -15,27 +15,26 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
 #'   analysis results.  The value is not used by the framework itself.
 #' @md
 .run  <- function() {
-
-    setup_pkgs() # Load runtime packages as specified above
-
-    message('Starting execution with framework version ',
+  
+  setup_pkgs() # Load runtime packages as specified above
+  
+  message('Starting execution with framework version ',
           config('framework_version'))
-
-  # Set up the step log with as many attrition columns as you need.
-  # For example, this call sets up the log with a `persons` count that will be
-  # required at each step.
-  init_sum(cohort = 'Start', persons = 0)
-
+  
   cohort <- results_tbl('jspa_cohort') %>% compute_new()
-  cohort_limited <- cohort %>% filter(site%in%c('seattle', 'colorado'))
+  
+  message('single site, no time')
   cnc_sp_ss_nt <- conc_process(cohort=cohort,
                                multi_or_single_site='single',
-                               care_site=FALSE,
+                               care_site=TRUE,
                                provider=TRUE,
                                codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
-                               vocab_tbl = vocabulary_tbl('concept'))
+                               vocab_tbl = vocabulary_tbl('concept'),
+                               visit_type_tbl=read_codeset('conc_visit_types', col_type='ic'))
   output_tbl(cnc_sp_ss_nt,
              name='cnc_sp_ss_nt')
+  
+  message('multi site, no time')
   cnc_sp_ms_nt <- conc_process(cohort=cohort,
                                multi_or_single_site='multi',
                                care_site=TRUE,
@@ -45,35 +44,46 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
   output_tbl(cnc_sp_ms_nt,
              name='cnc_sp_ms_nt')
   
+  message('site site, over time')
+  cnc_sp_ss_at <- conc_process(cohort=cohort,
+                               multi_or_single_site='single',
+                               care_site=TRUE,
+                               provider=TRUE,
+                               codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
+                               visit_type_tbl=read_codeset('conc_visit_types', col_type='ic'),
+                               time=TRUE,
+                               time_span=c('2012-01-01', '2022-01-01'),
+                               time_period='year')
+  output_tbl(cnc_sp_ss_at,
+             name='cnc_sp_ss_at')
+  
+  message('multi site, over time')
+  cnc_sp_ss_at <- conc_process(cohort=cohort,
+                               multi_or_single_site='single',
+                               care_site=TRUE,
+                               provider=TRUE,
+                               codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
+                               visit_type_tbl=read_codeset('conc_visit_types', col_type='ic'),
+                               time=TRUE,
+                               time_span=c('2012-01-01', '2022-01-01'),
+                               time_period='year')
+  output_tbl(cnc_sp_ss_at,
+             name='cnc_sp_ss_at')
+  
+  cnc_sp_ms_at <- conc_process(cohort=cohort,
+                               multi_or_single_site='multi',
+                               care_site=TRUE,
+                               provider=TRUE,
+                               codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
+                               visit_type_tbl=read_codeset('conc_visit_types', col_type='ic'),
+                               time=TRUE,
+                               time_span=c('2012-01-01', '2022-01-01'),
+                               time_period='year')
+  output_tbl(cnc_sp_ms_at,
+             name='cnc_sp_ms_at')
   
   
-  # compute_conc_ss_time <- conc_process(cohort,
-  #                                   grouped_list=c('site'),
-  #                                   codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
-  #                                   care_site=TRUE,
-  #                                   provider=TRUE,
-  #                                   visit_type_tbl=read_codeset('conc_visit_types', col_type='ic'),
-  #                                   time=TRUE,
-  #                                   time_span=c('2012-01-01', '2022-01-01'),
-  #                                   time_period='year',
-  #                                   site_list=list('cchmc',
-  #                                                  'chop',
-  #                                                  'colorado',
-  #                                                  'lurie',
-  #                                                  'nationwide',
-  #                                                  'nemours',
-  #                                                  'seattle',
-  #                                                  'stanford'))%>%
-  #   collect()
-  # output_tbl(compute_conc_time,
-  #            name='conc_jspa_visit_cluster_time')
-  
-  # Write step summary log to CSV and/or database,
-  # as determined by configuration
-  output_sum()
-
   message('Done.')
-
-  invisible(rslt)
-
+  
+  
 }
