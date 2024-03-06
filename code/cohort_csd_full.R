@@ -171,11 +171,16 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
 #' @return
 #' 
 csd_output <- function(process_output=process_output,
+                       output_function,
                        vocab_tbl = vocabulary_tbl('concept'),
                        num_codes = 10,
                        num_mappings = 10,
                        filtered_var = 'general_jia',
                        facet=NULL,
+                       text_wrapping_char = 80,
+                       comparison_col = 'prop_concept',
+                       grouped_vars = c('variable', 'concept_id'),
+                       output_value = 'prop_concept',
                        save_as_png = FALSE,
                        file_path = NULL){
   
@@ -192,15 +197,17 @@ csd_output <- function(process_output=process_output,
   }else if(output_function == 'csd_ss_exp_at'){
     csd_output <- csd_ss_ms_exp_at(process_output,
                                   facet=facet,
-                                  variable_names = variable_names,
+                                  #variable_names = variable_names,
+                                  filtered_var = filtered_var,
                                   vocab_tbl = vocab_tbl,
                                   output_value=output_value)
   }else if(output_function == 'csd_ss_anom_at'){
     csd_output <- csd_ss_anom_at(process_output=process_output,
                                 vocab_tbl=vocab_tbl,
-                                variable_name=variable_name,
+                                filtered_var=filtered_var,
                                 facet=facet,
-                                top_mapping_n = top_mapping_n)
+                                top_mapping_n = num_mappings
+                                )
   }else if(output_function == 'csd_ms_exp_nt'){
     csd_output <- csd_ms_exp_nt(process_output=process_output,
                                  facet=facet,
@@ -220,7 +227,8 @@ csd_output <- function(process_output=process_output,
                                    grouped_vars=grouped_vars)
   }else if(output_function == 'csd_ms_exp_at'){
     csd_output <- csd_ss_ms_exp_at(process_output = process_output,
-                                   code_type = code_type,
+                                   filtered_var = filtered_var,
+                                   output_value = output_value,
                                    facet = facet,
                                    vocab_tbl = vocab_tbl)
   }

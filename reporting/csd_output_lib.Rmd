@@ -135,17 +135,18 @@ ss_exp_at[[2]]
 
 ## Multi Site, Exploratory, Across Time
 
-This output is currently in progress and will be added to this report at a later date
+This line graph displays the proportion of concepts at each site for a selection of variable(s) and how they behave across a user provided time interval. Additional information can be found in the tooltip when the user hovers over a particular line. If they wish to isolate a given concept_id, the user can double click on the appropriate entry in the legend.
 
 ```{r ms_exp_at}
 
-# ms_exp_at <- csd_output(process_output = get_results('csd_ms_at'),
-#                         output_function = 'csd_ms_exp_at',
-#                         vocab_tbl = vocabulary_tbl('concept'),
-#                         filtered_var = c('general_jia', 'ibd','uveitis'),
-#                         output_value = 'prop_concept')
-# 
-# ms_exp_at
+ms_exp_at <- csd_output(process_output = get_results('csd_ms_at'),
+                        output_function = 'csd_ms_exp_at',
+                        vocab_tbl = vocabulary_tbl('concept'),
+                        filtered_var = c('ibd'),
+                        output_value = 'prop_concept')
+
+ms_exp_at[[1]]
+ms_exp_at[[2]]
 
 ```
 
