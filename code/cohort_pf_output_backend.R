@@ -12,6 +12,7 @@
 #'         study 
 #' 
 compute_pf_medians <- function(data_input,
+                               site_col,
                                agegrp=NULL,
                                codeset=NULL) {
   
@@ -42,7 +43,7 @@ compute_pf_medians <- function(data_input,
     data_input_grp %>% 
     left_join(site_distance_medians_tbl) %>% 
     group_by(study,
-             site,
+             !!sym(site_col),
              visit_type,
              domain,
              median_all_with0s,
@@ -77,7 +78,8 @@ compute_pf_medians <- function(data_input,
 #'                           visit_type, n_fact, zscore_fact, outlier_fact, prop_outlier_fact, n_site_fact,
 #'                           zscore_site_fact, outlier_site_fact, prop_outlier_site_fact
 #' 
-compute_dist_mean <- function(data_input,
+compute_dist_mean_pf <- function(data_input,
+                                 site_col,
                               agegrp = NULL,
                               codeset = NULL) {
   
@@ -109,7 +111,7 @@ compute_dist_mean <- function(data_input,
     data_input %>% 
     left_join(site_dist_means_tbl) %>% 
     group_by(study,
-             site,
+             !!sym(site_col),
              visit_type,
              domain,
              n_fact,
@@ -440,9 +442,13 @@ check_fot_multisite <- function(tblx,
   
   for(i in 1:length(domain_list)) {
     
-    tblx_input <- tblx %>% filter(domain == domain_list[[i]])
+    tblx_input <- tblx %>% filter(domain == domain_list[[i]]) %>% 
+      group_split(!!!syms(facet_var))
     
-    fot_output <- fot_check(tblx=tblx_input,
+    temp_rslt <- list()
+    
+    for(k in 1:length(tblx_input)){
+    fot_output <- fot_check(tblx=tblx_input[[k]] %>% ungroup(),
                             target_col=target_col,
                             site_col=site_col,
                             time_col=time_col,
@@ -450,6 +456,10 @@ check_fot_multisite <- function(tblx,
     
     fot_distance <- check_fot_all_dist(fot_output$fot_heuristic) %>% 
       mutate(grp_check=domain_list[[i]])
+    
+    temp_rslt[[k]] <- fot_distance
+    
+    }
     
     final_all[[i]] <- fot_distance
     

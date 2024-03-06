@@ -257,11 +257,11 @@ loop_through_visits <- function(cohort_tbl,
       if(!time) {
         domain_compute <- compute_pf(cohort=cohort_site, pf_input_tbl=visits,
                                      grouped_list=grouped_list,
-                                     domain_tbl=domain_tbl) %>% add_site()
+                                     domain_tbl=domain_tbl) #%>% add_site()
       } else {
         domain_compute <- compute_pf_for_fot(cohort=cohort_site, pf_input_tbl=visits,
                                              grouped_list=grouped_list,
-                                             domain_tbl=domain_tbl) %>% add_site()
+                                             domain_tbl=domain_tbl) #%>% add_site()
       }
       
       

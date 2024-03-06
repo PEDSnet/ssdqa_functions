@@ -269,7 +269,8 @@ compute_pf_for_fot <- function(cohort, pf_input_tbl,
         summarise(fact_ct_denom=n(),
                   sum_fact_ct=sum(total_strat_ct),
                   median_fact_ct=median(total_strat_ct)) %>% 
-      relocate(site) %>% ungroup() 
+      #relocate(site) %>% 
+      ungroup() 
     
     
     finalized <- 

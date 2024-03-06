@@ -81,7 +81,7 @@
 #'         
  
 pf_process <- function(cohort = cohort,
-                       site_list = c('seattle','cchmc'),
+                       #site_list = c('seattle','cchmc'),
                        study_name = 'glom',
                        intermediate_tbl = 'r_dataframe',
                        visit_types = c('outpatient','inpatient'),
@@ -104,8 +104,7 @@ pf_process <- function(cohort = cohort,
   
   ## Step 1: Check Sites
   site_filter <- check_site_type(cohort = cohort,
-                                 multi_or_single_site = multi_or_single_site,
-                                 site_list = site_list)
+                                 multi_or_single_site = multi_or_single_site)
   cohort_filter <- site_filter$cohort
   grouped_list <- site_filter$grouped_list
   site_col <- site_filter$grouped_list
@@ -175,10 +174,20 @@ pf_process <- function(cohort = cohort,
   ## Step 4: Summarise (Medians, SD)
   if(!time) {
     if(anomaly_or_exploratory=='anomaly' && multi_or_single_site=='single') {
-      pf_output <- compute_dist_mean(pf_final,
-                                     agegrp= age_groups,
-                                     codeset = codeset)
+      pf_output <- compute_dist_mean_pf(pf_final,
+                                        site_col = site_col,
+                                        agegrp= age_groups,
+                                        codeset = codeset)
+      # pf_output <- compute_dist_mean_conc(tbl = pf_final,
+      #                                     grp_vars = c('study',
+      #                                                  'visit_type',
+      #                                                  'domain'),
+      #                                     var_col = 'var_val',
+      #                                     site_col = site_col,
+      #                                     num_sd = 2,
+      #                                     num_mad = 2)
     } else {pf_output <- compute_pf_medians(data_input=pf_final,
+                                            site_col = site_col,
                                             agegrp = age_groups,
                                             codeset=codeset)}
     
@@ -187,6 +196,8 @@ pf_process <- function(cohort = cohort,
   message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
                        output function in pf_output_gen: ', output_type, '. This is also included
                        in the parameter_summary.csv file output to the results directory.')))
+  
+  return(pf_output)
   
 }
 
