@@ -1,0 +1,152 @@
+---
+title: "PF Check Output Library"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(ggiraph)
+require(gt)
+require(plotly)
+require(qicharts2)
+require(ggcharts)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+
+
+```
+
+## Single Site, Exploratory, No Time
+
+This output summarises the median number of facts per patient based on the domain and any user provided facets (i.e. visit type)
+
+```{r ss_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
+
+pf_output_gen(pf_process = get_results('pf_ss_exp_nt') %>% mutate(site = site_summ),
+              output_function = 'pf_ss_exp_nt',
+              facet = c('visit_type'),
+              output = 'median_site_without0s')
+
+```
+
+## Single Site, Anomaly Detection, No Time
+
+This output displays the proportion of patients that fall +/- 2 SD away from the mean number of facts per patient. This proportion is computed for each domain and any user provided facets
+
+```{r ss_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
+
+pf_output_gen(pf_process = get_results('pf_ss_anom_nt') %>% mutate(site = site_summ),
+              output_function = 'pf_ss_anom_nt',
+              facet = c('visit_type'),
+              output = 'prop_outlier_site_fact')
+
+```
+
+## Multi Site, Exploratory, No Time
+
+The dot plot below shows the median number of facts per patient for each site. The star icon is the overall median.
+
+```{r ms_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
+
+pf_output_gen(pf_process = get_results('pf_ms_nt'),
+              output_function = 'pf_ms_exp_nt',
+              facet = c('visit_type'),
+              output = 'median_site_without0s')
+
+```
+
+## Multi Site, Anomaly Detection, No Time
+
+This is a K-means cluster analysis comparing each site in order to identify potential outliers. One k-means cluster graph is output for each of the user provided facets
+
+```{r ms_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
+
+pf_output_gen(pf_process = get_results('pf_ms_nt'),
+              output_function = 'pf_ms_anom_nt',
+              facet = c('visit_type'),
+              output = 'median_site_without0s')
+
+```
+
+## Single Site, Exploratory, Across Time
+
+This line and dot graph shows the median fact count for each domain and how it changes across the user provided time period.
+
+```{r ss_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
+
+pf_output_gen(pf_process = get_results('pf_ss_at') %>% mutate(site = site_summ),
+              output_function = 'pf_ss_exp_at',
+              facet = c('visit_type'),
+              output = 'median_fact_ct')
+
+```
+
+## Single Site, Anomaly Detection, Across Time
+
+This plot identifies outliers in the median fact count over time. Any red dots on the graph will indicate that time point for that domain + facet group.
+
+```{r ss_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
+
+pf_output_gen(pf_process = get_results('pf_ss_at') %>% mutate(site = site_summ),
+              output_function = 'pf_ss_anom_at',
+              facet = c('visit_type'),
+              output = 'median_fact_ct')
+
+```
+
+## Multi Site, Exploratory, Across Time
+
+```{r ms_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
+
+# pf_output_gen(pf_process = get_results('pf_ms_at'),
+#               output_function = 'pf_ms_exp_at',
+#               facet = c('visit_type'),
+#               output = 'median_fact_ct')
+
+```
+
+## Multi Site, Anomaly Detection, Across Time
+
+```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
+
+# pf_output_gen(pf_process = get_results('pf_ms_at'),
+#               output_function = 'pf_ms_anom_at',
+#               facet = c('visit_type'),
+#               output = 'median_fact_ct')
+
+```

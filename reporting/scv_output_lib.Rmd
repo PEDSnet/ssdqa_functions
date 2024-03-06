@@ -97,6 +97,8 @@ scv_output(process_output = no_time %>% filter(site == 'colorado'),
 
 ## Multi Site, Exploratory, No Time
 
+For each site in the cohort, this table summarizes the counts/proportions of each concept_id mapping pair to give the user an idea of the distributions of mappings for, in this case, a given concept_id
+
 ```{r ms_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
 scv_output(process_output = no_time,
@@ -104,11 +106,13 @@ scv_output(process_output = no_time,
            code_type = 'cdm',
            facet = 'site',
            num_codes = 10,
-           vocab_tbl = NULL)
+           vocab_tbl = vocabulary_tbl('concept'))
 
 ```
 
 ## Multi Site, Anomaly Detection, No Time
+
+This output calculates the number of mappings per concept_id, then displays the number of MAD that concept_id from the all site median number of mappings. Here, warmer colors indicate outlying concept_ids.
 
 ```{r ms_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -124,13 +128,15 @@ scv_output(process_output = no_time,
 
 ## Single Site, Exploratory, Across Time
 
+For each concept_id, this graph displays the proportion of each source_concept_id across the user-specified time period. Additional metadata about each source_concept_id and time point can be found in the tooltip on hover. A reference table with total counts for each concept_id is also output. 
+
 ```{r ss_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-op <- scv_output(process_output = across_time %>% filter(site == 'site 2'),
+op <- scv_output(process_output = across_time %>% filter(site == 'colorado'),
            output_function = 'scv_ss_exp_at',
            code_type = 'cdm',
            facet = NULL,
-           vocab_tbl = NULL)
+           vocab_tbl = vocabulary_tbl('concept'))
 
 op[[1]]
 op[[2]]
@@ -139,9 +145,11 @@ op[[2]]
 
 ## Single Site, Anomaly Detection, Across Time
 
+This check outputs a control chart that highlights anomalies in the number of mappings per concept_id. Blue dots along the line indicate non-anomalous values, while orange dots are anomalies.
+
 ```{r ss_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-scv_output(process_output = across_time %>% filter(site == 'site 2'),
+scv_output(process_output = across_time %>% filter(site == 'colorado'),
            output_function = 'scv_ss_anom_at',
            code_type = 'cdm',
            facet = NULL)
@@ -149,6 +157,8 @@ scv_output(process_output = across_time %>% filter(site == 'site 2'),
 ```
 
 ## Multi Site, Exploratory, Across Time
+
+For each concept_id & site, this graph displays the proportion of each source_concept_id across the user-specified time period. Additional metadata about each source_concept_id and time point can be found in the tooltip on hover. A reference table with total counts for each concept_id & site is also output. 
 
 ```{r ms_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -164,6 +174,8 @@ op[[2]]
 ```
 
 ## Multi Site, Anomaly Detection, Across Time
+
+This heat map shows the proportion of "unstable" concept_ids across time. The check will look for concept_ids that fall a certain number of MAD (provided by the user) away from the all site median number of mappings throughout the user specified time span. The "instability" of the concept is represented by both the number and proportion of outliers within a given site + concept_id pair.
 
 ```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 

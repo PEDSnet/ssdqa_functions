@@ -58,7 +58,7 @@ This report is a library of each distinct output available for the Expected Vari
 
 ## Single Site, Exploratory, No Time
 
-This output summarizes the proportion of patients that meet the criteria for a given variable / concept group at a given site.
+This output summarizes the proportion of patients that meet the criteria (have at least one occurrence of a concept_id in the related codeset) for a selection of variables.
 
 ```{r ss_exp_nt}
 
@@ -100,7 +100,7 @@ g
 
 ## Multi Site, Anomaly, No Time
 
-This check performs a K-means cluster analysis to identify which site has a "profile" of represented concepts that may be very different from the rest. When a facet is included, one graph is produced per group as facetting is not native to the K-means graph type.
+This check performs a K-means cluster analysis to identify which site has a proportion of patients or rows (decided by the user) that may be very different from the rest. The number of clusters used in the analysis is decided by the user. When a facet is included, one graph is produced per group as facetting is not native to the K-means graph type.
 
 ```{r ms_anom_nt}
 
