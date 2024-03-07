@@ -130,15 +130,11 @@ evp_process <- function(cohort,
     
     }
   
-  if('site_summ' %in% colnames(evp_tbl)){
-    evp_tbl <- evp_tbl %>% rename('site' = site_summ)
-  }
-  
   message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
                        output function in evp_output: ', output_type, '. This is also included
                        in the parameter_summary.csv file output to the results directory.')))
   
-  return(evp_tbl)
+  return(evp_tbl %>% replace_site_col())
 }
 
 
@@ -203,13 +199,13 @@ evp_output <- function(process_output,
     
   }else if(output_function == 'evp_ms_exp_at'){
     
-    evp_output <- evp_ms_anom_at(process_output = process_output,
+    evp_output <- evp_ms_exp_at(process_output = process_output,
                                  output_level = output_level,
                                  facet = facet)
     
   }else if(output_function == 'evp_ms_anom_at'){
     
-    evp_output <- evp_ss_exp_nt(process_output = process_output,
+    evp_output <- evp_ms_anom_at(process_output = process_output,
                                 output_level = output_level,
                                 facet = facet,
                                 mad_dev = 2)
