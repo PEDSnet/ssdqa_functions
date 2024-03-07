@@ -51,7 +51,7 @@
 #'         the `scv_output` function to generate an appropriate visualization
 #' 
 scv_process <- function(cohort,
-                        site_list,
+                        #site_list,
                         concept_set,
                         domain_tbl=read_codeset('scv_domains', 'cccc'),
                         code_type = 'source',
@@ -71,8 +71,7 @@ scv_process <- function(cohort,
   
   # Add site check
   site_filter <- check_site_type(cohort = cohort,
-                                 multi_or_single_site = multi_or_single_site,
-                                 site_list = site_list)
+                                 multi_or_single_site = multi_or_single_site)
   cohort_filter <- site_filter$cohort
   grouped_list <- site_filter$grouped_list
   site_col <- site_filter$grouped_list
@@ -143,15 +142,11 @@ scv_process <- function(cohort,
     
   }
   
-  if('site_summ' %in% colnames(scv_tbl)){
-    scv_tbl <- scv_tbl %>% rename('site' = site_summ)
-  }
-  
   message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
                        output function in scv_output: ', output_type, '. This is also included
                        in the parameter_summary.csv file output to the results directory.')))
   
-  return(scv_tbl)
+  return(scv_tbl %>% replace_site_col())
 }
 
 
