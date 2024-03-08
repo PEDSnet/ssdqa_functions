@@ -7,23 +7,23 @@
 #'                visit type (user will provide groupings)
 #'                time (by year)
 #' @param cohort - A dataframe with the cohort of patients for your study. Should include the columns:
-#'                       - @person_id
-#' @param grouped_list a list containing the variables to group by:
-#'                can contain:
-#'                  `site` if want to stratify by site (and there is a `site` column in the input data)
+#'          `site` | `person_id` | `start_date` | `end_date`
+#' @param multi_or_single_site Option to run the function on a single vs multiple sites
+#'                      - 'single': run on a single site, or treat all of the sites as one
+#'                      - 'multi': run on a group of sites, treating each site separately
 #'@param age_groups- If you would like to stratify the results by age group, fill out the provided `age_group_definitions.csv` file
 #'                     with the following information:
-#'                     - @min_age: the minimum age for the group (i.e. 10)
-#'                     - @max_age: the maximum age for the group (i.e. 20)
-#'                     - @group: a string label for the group (i.e. 10-20, Young Adult, etc.)
+#'                     - min_age: the minimum age for the group (i.e. 10)
+#'                     - max_age: the maximum age for the group (i.e. 20)
+#'                     - group: a string label for the group (i.e. 10-20, Young Adult, etc.)
 #'                     
 #'                     Then supply this csv file as the age_groups argument (i.e. read.csv('path/to/age_group_definitions.csv'))
 #'                     If you do not wish to stratify by age, keep as NULL
 #' @param codeset_tbl table in the specs directory with the columns:
-#'                        domain: name of the domain
-#'                        default_tbl: name of the cdm_tbl
-#'                        field_name: column name in the default_tbl for which to search the codeset concept_ids
-#'                        codeset_name: name of a codeset in the specs directory
+#'                    - domain: name of the domain
+#'                    - default_tbl: name of the cdm_tbl
+#'                    - field_name: column name in the default_tbl for which to search the codeset concept_ids
+#'                    - codeset_name: name of a codeset in the specs directory
 #' @param care_site TRUE if want to look at care_site specialty
 #'                  FALSE if do not want to look at care_site specialty
 #' @param provider TRUE if want to look at provider specialty
@@ -32,17 +32,17 @@
 #'                        provider specialty will be prioritized if provider and care_site are discordant for the visit
 #' @param visit_type_tbl - a csv file that defines available visit types that are called in @visit_types. defaults to the provided
 #'                           `conc_visit_types.csv` file, which contains the following fields:
-#'                           - @visit_concept_id: the visit_concept_id that represents the visit type of interest (i.e. 9201)
-#'                           - @visit_type: the string label to describe the visit type; this label can be used multiple times
+#'                           - visit_concept_id: the visit_concept_id that represents the visit type of interest (i.e. 9201)
+#'                           - visit_type: the string label to describe the visit type; this label can be used multiple times
 #'                                          within the file if multiple visit_concept_ids represent the visit type
 #'                          
 #'                           This CSV can be altered to fit the users needs, or another csv with the same columns and formatting can be supplied.
 #' @param time TRUE if results should be over time. Defaults to FALSE
 #' @param time_period if time=TRUE, indicates time period (e.g. 'year', 'month') over which to measure
 #' @param time_span if time=TRUE, vector containing minimum and maximum dates over which to measure
+#' @param vocab_tbl location of vocabulary table containing concept_id to concept_name mapping. If a vocabulary table is not available, will default to NULL
 #'        
 conc_process <- function(cohort,
-                         #grouped_list=c('site'),
                          multi_or_single_site='multi',
                          age_groups=NULL,
                          codeset_tbl=NULL,
@@ -70,6 +70,7 @@ conc_process <- function(cohort,
     grouped_list_prep<-grouped_list%>%
       append('age_grp')
   }else{grouped_list_prep<-grouped_list}
+  
   ### Include visit types, if desired
   if(is.data.frame(visit_type_tbl)){
     grouped_list_prep<-grouped_list_prep%>%
@@ -79,6 +80,7 @@ conc_process <- function(cohort,
   ## Step 2: Run function
   message('Computing specialty concordance')
   site_output<-list()
+  # not over time
   if(!time){
     for(k in 1:length(site_list_adj)){
       site_list_thisrnd <- site_list_adj[[k]]
@@ -99,6 +101,7 @@ conc_process <- function(cohort,
 
   }
   else{
+    # over time
     conc_tbl<-compute_fot(cohort=cohort_filter,
                             site_list=site_list_adj,
                             site_col=site_col,
@@ -138,10 +141,8 @@ conc_process <- function(cohort,
 #' @param conc_process_names classified names from the output from `find_distinct_concepts`
 #'                            with specialties grouped based on a `specialty_name` column,
 #'                            which can be generated by assigning groupings to `specialty_concept_names` or by renaming the `specialty_concept_names` column to `specialty_name` if no grouping is required
-#' @param single_site TRUE if should be a single site analysis
-#' @param multi_site TRUE if should be multi site analysis
-#' @param exploratory TRUE if should be exploratory analysis
-#' @param anomaly TRUE if should be anomoly detection
+#' @param multi_or_single_site string indicating whether to generate output for 'multi' or 'single' site
+#' @param anomaly_or_exploratory string indicating whether to generate output for 'anomaly' or 'exploratory' analsis
 #' @param time_dimension TRUE if should have a time dimension
 #' @param facet_vars vector of variable names to facet by
 #' @param color_var variable in conc_process_output to color/fill by
@@ -166,10 +167,8 @@ conc_process <- function(cohort,
 #'        color_var: site           
 conc_output_gen <- function(conc_process_output,
                             conc_process_names,
-                            single_site,
-                            multi_site,
-                            exploratory,
-                            anomaly,
+                            multi_or_single_site,
+                            anomaly_or_exploratory,
                             time_dimension,
                             facet_vars,
                             color_var=NULL,
@@ -189,10 +188,10 @@ conc_output_gen <- function(conc_process_output,
   if(time_dimension){
     gp_vars <- gp_vars %>%append('time_start')
   }
-  if(multi_site){
+  if(multi_or_single_site=='multi'){
     gp_vars <- gp_vars %>% append('site')
   }
-  if(single_site&anomaly){
+  if(multi_or_single_site=='single'&anomaly_or_exploratory=='anomaly'){
     gp_vars <- gp_vars %>% append('cluster')
   }
   
@@ -219,13 +218,9 @@ conc_output_gen <- function(conc_process_output,
   }
   
   # compute means and sd for anomaly detection
-  if(anomaly&multi_site){
+  if(anomaly_or_exploratory=='anomaly'&multi_or_single_site=='multi'){
     gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site']
     message('Computing mean and distance to mean')
-    # conc_output_pp <- compute_dist_mean_conc(conc_output_pp,
-    #                                          grp_vars=gp_vars_no_site,
-    #                                          var_col='prop',
-    #                                          num_sd=2L)
     conc_output_pp <- compute_dist_median_conc(tbl=conc_output_pp,
                                                grp_vars=gp_vars_no_site,
                                                var_col='prop',
@@ -238,7 +233,7 @@ conc_output_gen <- function(conc_process_output,
                                     distinct_vars=c('codeset_name', 'specialty_name'))
       
   }
-  if(anomaly&single_site&!time_dimension){
+  if(anomaly_or_exploratory=='anomaly'&multi_or_single_site=='single'&!time_dimension){
     gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site'&!spec_gp_vars=='cluster']
     message('Computing mean and distance to mean')
     conc_output_pp <- compute_dist_median_conc(conc_output_pp,
@@ -266,7 +261,7 @@ conc_output_gen <- function(conc_process_output,
   
   message('Building visualization')
   ## SINGLE SITE, EXPLORATORY
-  if(single_site&exploratory){
+  if(multi_or_single_site=='single'&anomaly_or_exploratory=='exploratory'){
     # over time
     if(time_dimension){
       conc_output_plot <- plot_ss_exp_ot_conc(data_tbl=conc_output_pp,
@@ -288,7 +283,7 @@ conc_output_gen <- function(conc_process_output,
                                          pal_map=conc_colors)
     }
     
-  }else if(single_site&anomaly){
+  }else if(multi_or_single_site=='single'&anomaly_or_exploratory=='anomaly'){
     ## SINGLE SITE, ANOMALY
     if(time_dimension){
       # over time
@@ -298,7 +293,7 @@ conc_output_gen <- function(conc_process_output,
       conc_output_plot <- plot_ss_an_nt_conc_alt(data_tbl=conc_output_pp)
     }
     
-  }else if(multi_site&exploratory){
+  }else if(multi_or_single_site=='multi'&anomaly_or_exploratory=='exploratory'){
     ## MULTI SITE, EXPLORATORY
     if(time_dimension){
       # over time
@@ -318,7 +313,7 @@ conc_output_gen <- function(conc_process_output,
                                                     pal_map=conc_colors)
     }
     ## MULTI SITE, ANOMALY
-  }else if(multi_site&anomaly){
+  }else if(multi_or_single_site=='multi'&anomaly_or_exploratory=='anomaly'){
     if(time_dimension){
       # over time
       conc_output_plot <- plot_ms_an_ot_conc(data_tbl=conc_output_pp)
@@ -330,5 +325,4 @@ conc_output_gen <- function(conc_process_output,
     
   }
   return(conc_output_plot)
-  #return(conc_output_pp)
 }
