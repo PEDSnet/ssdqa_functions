@@ -119,7 +119,8 @@ scv_ss_exp_nt <- function(process_output,
       geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
       scale_fill_viridis_c(option = 'turbo') +
       facet_wrap((facet), scales = 'free') +
-      theme(axis.text.x = element_blank()) +
+      theme(axis.text.x = element_blank(),
+            text = element_text(size = 7)) +
       labs(title = title,
            x = col,
            y = map_col)
@@ -525,10 +526,11 @@ scv_ms_anom_at <- function(process_output,
     denom <- 'denom_concept_ct'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
-  fot <- fot_check(tblx = process_output %>% ungroup() %>%
-                     mutate(start_date = time_start),
+  fot <- check_fot_multisite(tblx = process_output %>% ungroup() %>%
+                     mutate(start_date = time_start, domain = concept_id),
+                     domain_list = process_output %>% distinct(concept_id) %>% pull(),
                    target_col = 'ct',
-                   facet_var = facet %>% append(c('concept_id', 'source_concept_id')))
+                   facet_var = facet %>% append(c('source_concept_id')))
   
   fot2 <- check_fot_all_dist(fot_check_output = fot$fot_heuristic)
   

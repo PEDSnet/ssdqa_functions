@@ -1,11 +1,18 @@
 ---
 title: 'Concordance: Clinical Events and Specialties'
 date: "`r Sys.Date()`"
-output: 
-  html_document:
+output:
+  bookdown::html_document2:
+    fig_cap: TRUE
+    df_print: paged
     toc: TRUE
+    toc_depth: 5
     toc_collapsed: TRUE
     toc_float: TRUE
+    number_sections: FALSE
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, 
+  output_file = paste0('conc_ce_spec_', format(Sys.time(), '%Y%m%d'), '.html') )}) 
 ---
 
 ```{r setup, include=FALSE}
@@ -34,19 +41,19 @@ jspa_output_ms_at<-results_tbl('cnc_sp_ms_at')%>%collect()
 concept_names_grouped <- read.csv('../results/specialty_concept_names_named.csv')
 ```
 
-## Single Site, Exploratory, No Time
+## Single Site, Exploratory, No Time (cnc_sp_ss_exp_nt)
+
+Bar graph with proportion of total visits with each specialty. Output can optionally be stratified by visit type or code subset (i.e. "cluster").
 
 ### No stratification
 
-Only showing top n=10 proportions. Can be adjusted by user
+  - Only showing top 10 most frequently visited proportions. Can be adjusted by user
 
 ```{r}
 output_ss_expl <- conc_output_gen(conc_process_output=jspa_output_ss_nt,
                                   conc_process_names=concept_names_grouped,
-                                  single_site=TRUE,
-                                  multi_site=FALSE,
-                                  exploratory=TRUE,
-                                  anomaly=FALSE,
+                                  multi_or_single_site='single',
+                                  anomaly_or_exploratory='exploratory',
                                   time_dimension=FALSE,
                                   facet_vars=c('codeset_name'),
                                   color_var='specialty_name',
@@ -64,10 +71,8 @@ jspa_output_edopip <- jspa_output_ss_nt %>%
   filter(visit_type%in%c('emergency_dept', 'outpatient', 'inpatient'))
 output_ss_expl_vis <- conc_output_gen(conc_process_output=jspa_output_edopip,
                                       conc_process_names=concept_names_grouped,
-                                      single_site=TRUE,
-                                      multi_site=FALSE,
-                                      exploratory=TRUE,
-                                      anomaly=FALSE,
+                                      multi_or_single_site='single',
+                                      anomaly_or_exploratory='exploratory',
                                       time_dimension=FALSE,
                                       facet_vars=c('codeset_name', 'visit_type'),
                                       color_var='specialty_name',
@@ -82,10 +87,8 @@ output_ss_expl_vis
 ```{r}
 output_ss_expl_clus <- conc_output_gen(conc_process_output=jspa_output_ss_nt,
                                        conc_process_names=concept_names_grouped,
-                                       single_site=TRUE,
-                                       multi_site=FALSE,
-                                       exploratory=TRUE,
-                                       anomaly=FALSE,
+                                       multi_or_single_site='single',
+                                       anomaly_or_exploratory='exploratory',
                                        time_dimension=FALSE,
                                        facet_vars=c('codeset_name', 'cluster'),
                                        color_var='specialty_name',
@@ -93,103 +96,106 @@ output_ss_expl_clus <- conc_output_gen(conc_process_output=jspa_output_ss_nt,
 output_ss_expl_clus
 ```
 
-## Single Site, Exploratory, Over Time
+## Single Site, Exploratory, Over Time (cnc_sp_ss_exp_at)
+
+Line plot with time on the x axis, proportion of visits with each specialty for the given time period on the y axis, and colors indicating specialty. Can optionally be stratified by code subset (i.e. "cluster")
 
 ### No stratification
 
 ```{r}
-output_ss_expl_ot <- conc_output_gen(conc_process_output=jspa_output_ss_at,
+output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at,
                                          conc_process_names=concept_names_grouped,
-                                         single_site=TRUE,
-                                         multi_site=FALSE,
-                                         exploratory=TRUE,
-                                         anomaly=FALSE,
+                                         multi_or_single_site='single',
+                                         anomaly_or_exploratory='exploratory',
                                          time_dimension=TRUE,
                                          facet_vars=c('codeset_name'),
                                          color_var='specialty_name')
-output_ss_expl_ot
+output_ss_expl_at
 ```
 
 ### Stratified by Cluster
 
 ```{r}
-output_ss_expl_ot <- conc_output_gen(conc_process_output=jspa_output_ss_at,
+output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at,
                                          conc_process_names=concept_names_grouped,
-                                         single_site=TRUE,
-                                         multi_site=FALSE,
-                                         exploratory=TRUE,
-                                         anomaly=FALSE,
+                                         multi_or_single_site='single',
+                                         anomaly_or_exploratory='exploratory',
                                          time_dimension=TRUE,
                                          facet_vars=c('codeset_name', 'cluster'),
                                          color_var='specialty_name')
-output_ss_expl_ot
+output_ss_expl_at
 ```
 
-## Single Site, Anomaly, No Time
+##  Single Site, Anomaly, No Time (cnc_sp_ss_an_nt)
+
+Dot plot with specialty on one axis, code subset (cluster) on the other:
 
   - A specialty is anomalous if its proportion of visits for the given cluster is +/- the specified number of MAD from the median proportion of visits for that specialty across all other clusters
   - Anomalous specialties for the cluster are stars, non-anomalous are points
-  - Size is based on number of MAD from the median
-  - Fill color is based on proportion of 
-  - Specialties without any visits for the cluster do not have a point (is this okay or should we be counting this as a zero and including in the computation of the median?)
+  - Size is based on number of MAD from the median for the given specialty
+  - Fill color is based on proportion of the cluster's visits with the specialty
+  - Specialties without any visits for the cluster do not have a point
 
 ```{r}
 output_ss_an <- conc_output_gen(conc_process_output=jspa_output_ss_nt,
                                 conc_process_names=concept_names_grouped,
-                                single_site=TRUE,
-                                multi_site=FALSE,
-                                exploratory=FALSE,
-                                anomaly=TRUE,
+                                multi_or_single_site='single',
+                                anomaly_or_exploratory='anomaly',
                                 time_dimension=FALSE,
                                 facet_vars=c('codeset_name'),
                                 color_var='specialty_name',
-                                n_mad=3,
-                                alt=TRUE)
+                                n_mad=3)
 output_ss_an
 ```
 
-## Multi Site, Exploratory, No Time
+## Single Site, Anomaly, Over Time (cnc_sp_ss_an_at)
+
+Control chart showing number of visits per specialty across time.
+
+Notes:
+  - Lots of plots if do cluster x specialty
+  - Could still do cluster x specialty, but only show them if: 
+      - Above a certain number of visits?
+      - x% of the years are anomolous? (not sure how we'd implement this without doing computation outside of the qi chart code)
+
+```{r fig.width=10, fig.height=10}
+output_ss_an_at <- conc_output_gen(conc_process_output=jspa_output_ss_at,
+                                conc_process_names=concept_names_grouped,
+                                multi_or_single_site='single',
+                                anomaly_or_exploratory='anomaly',
+                                time_dimension=TRUE,
+                                facet_vars=c('codeset_name'),
+                                color_var='specialty_name')
+output_ss_an_at
+```
+
+
+## Multi Site, Exploratory, No Time (cnc_sp_ms_exp_nt)
+
+Dot plot, with specialty on x axis, proportion of visits with the specialty at the given site on the y axis, and colors of points determined by site. Coordinates are flipped.
 
 ```{r}
 output_ms_exp_nt <- conc_output_gen(conc_process_output=jspa_output_ms_nt,
                                               conc_process_names=concept_names_grouped,
-                                              single_site=FALSE,
-                                              multi_site=TRUE,
-                                              exploratory=TRUE,
-                                              anomaly=FALSE,
+                                              multi_or_single_site='multi',
+                                              anomaly_or_exploratory='exploratory',
                                               time_dimension=FALSE,
                                               facet_vars=c('codeset_name'),
                                               color_var='site')
 output_ms_exp_nt
 ```
 
-## Multi Site, Exploratory, No Time (Alternate Approach)
+## Multi Site, Exploratory, Over Time (cnc_sp_ms_exp_at)
 
-```{r}
-output_ms_exp_nt2 <- conc_output_gen(conc_process_output=jspa_output_ms_nt,
-                                              conc_process_names=concept_names_grouped,
-                                              single_site=FALSE,
-                                              multi_site=TRUE,
-                                              exploratory=TRUE,
-                                              anomaly=FALSE,
-                                              time_dimension=FALSE,
-                                              facet_vars=c('codeset_name'),
-                                              color_var='site',
-                                     alt=TRUE)
-output_ms_exp_nt2
-```
-
-## Multi Site, Exploratory, Over Time
+Line plot with time on the x axis, proportion of site's visits with the specialty on the y axis, and colors indicating site, stratified by specialty. Dotted line is the overall proportion across all sites.
 
 Only top 6, summed across all sites across all years, is shown. Can be adjusted by user.
 
 ```{r}
 output_ms_exp_ot <- conc_output_gen(conc_process_output=jspa_output_ms_at,
                                     conc_process_names=concept_names_grouped,
-                                    single_site=FALSE,
-                                    multi_site=TRUE,
-                                    exploratory=TRUE,
-                                    anomaly=FALSE,
+                                    multi_or_single_site='multi',
+                                    anomaly_or_exploratory='exploratory',
                                     time_dimension=TRUE,
                                     facet_vars=c('codeset_name'),
                                     color_var='site',
@@ -197,10 +203,11 @@ output_ms_exp_ot <- conc_output_gen(conc_process_output=jspa_output_ms_at,
 output_ms_exp_ot
 ```
 
-## Multi-Site, Anomaly, No Time
+## Multi-Site, Anomaly, No Time (cnc_sp_ms_an_nt)
 
-The median proportion of visits with each specialty across sites is computed, and each site's proportion of visits with that specialty is compared against the median using n_mad = (absolute distance to the median)/(median absolute distance from the median)
+Dot plot with site on one axis and specialty on the other: 
 
+  - The median proportion of visits with each specialty across sites is computed, and each site's proportion of visits with that specialty is compared against the median using n_mad = (absolute distance to the median)/(median absolute distance from the median)
   - Anomalous (more than +/- the specified MAD) specialties are stars, non-anomalous specialties are points
   - Size is based on number of MAD from median
   - Color is based on proportion of visits with the given specialty
@@ -212,10 +219,8 @@ The median proportion of visits with each specialty across sites is computed, an
 concept_names_nona<-concept_names_grouped%>%filter(!specialty_name%in%c('Unknown','Other'))
 output_ms_an_nt <- conc_output_gen(conc_process_output=jspa_output_ms_nt,
                                    conc_process_names=concept_names_grouped,
-                                   single_site=FALSE,
-                                   multi_site=TRUE,
-                                   exploratory=FALSE,
-                                   anomaly=TRUE,
+                                   multi_or_single_site='multi',
+                                   anomaly_or_exploratory='anomaly',
                                    time_dimension=FALSE,
                                    facet_vars=c('codeset_name'),
                                    color_var='site',
@@ -226,19 +231,19 @@ output_ms_an_nt <- conc_output_gen(conc_process_output=jspa_output_ms_nt,
 output_ms_an_nt
 ```
 
-## Multi-Site, Anomaly, Across Time
+##  Multi-Site, Anomaly, Across Time (cnc_sp_ms_an_at)
 
-MAD is computed for each specialty for each year, and each site is compared to the median for that specialty for the given year.
+Heatmap with time on the x axis, site on the y axis, and colors indicating the number of MAD from the median for the specialty for the year:
 
-We could give the option to limit to only show "top n", but would need to figure out what that means in this context: specialties where there is the largest n_mad in one of the years, regardless of the year? something else?
+  - MAD is computed for each specialty for each year, and each site is compared to the median for that specialty for the given year
+  
+Note: We could give the option to limit to only show "top n", but would need to figure out what that means in this context: specialties where there is the largest n_mad in one of the years, regardless of the year? something else?
 
 ```{r}
 output_ms_an_ot <- conc_output_gen(conc_process_output=jspa_output_ms_at,
                                    conc_process_names=concept_names_grouped,
-                                   single_site=FALSE,
-                                   multi_site=TRUE,
-                                   exploratory=FALSE,
-                                   anomaly=TRUE,
+                                   multi_or_single_site='multi',
+                                   anomaly_or_exploratory='anomaly',
                                    time_dimension=TRUE,
                                    facet_vars=c('codeset_name'))
 

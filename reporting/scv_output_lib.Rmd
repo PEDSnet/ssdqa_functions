@@ -29,6 +29,7 @@ require(ggiraph)
 require(gt)
 require(plotly)
 require(qicharts2)
+require(gdtools)
 
 get_results <- function(tbl_name) {
   if (data_source == 'local') {
@@ -46,19 +47,9 @@ prettify_kable <- function(data) {
     column_spec(1, bold = T, border_right = T)
 }
 
-no_time <- read_csv(file = paste0(config('base_dir'), '/results/ss_ms_nt.csv')) #%>%
-  # mutate(site = case_when(site == 'chop' ~ 'site 1',
-  #                         site == 'colorado' ~ 'site 2',
-  #                         site == 'stanford' ~ 'site 3'))
-
-across_time <- read_csv(file = paste0(config('base_dir'), '/results/ss_ms_at.csv')) #%>%
-  # mutate(site = case_when(site == 'chop' ~ 'site 1',
-  #                         site == 'colorado' ~ 'site 2',
-  #                         site == 'stanford' ~ 'site 3'))
-
 ```
 
-All output was generated in a CDM -> Source vocabulary direction, using CDM (SNOMED) codes related to JIA and the source (ICD) codes they are mapped from.
+All output was generated in a CDM -> Source vocabulary direction, using CDM (SNOMED) codes related to JIA and the source (ICD) codes they are mapped from. The color schemes are temporary at the moment and are subject to change :)
 
 ## Single Site, Exploratory, No Time
 
@@ -66,7 +57,7 @@ The heatmap summarizes the top user-selected number of SNOMED codes for a user-s
 
 ```{r ss_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-op <- scv_output(process_output = no_time %>% filter(site == 'colorado'),
+op <- scv_output(process_output = get_results('scv_ss_nt'),
            output_function = 'scv_ss_exp_nt',
            code_type = 'cdm',
            facet = NULL,
@@ -86,7 +77,7 @@ This output displays the number of mappings associated with each SNOMED code. Th
 
 ```{r ss_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-scv_output(process_output = no_time %>% filter(site == 'colorado'),
+scv_output(process_output = get_results('scv_ss_nt'),
            output_function = 'scv_ss_anom_nt',
            code_type = 'cdm',
            facet = NULL,
@@ -101,7 +92,7 @@ For each site in the cohort, this table summarizes the counts/proportions of eac
 
 ```{r ms_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-scv_output(process_output = no_time,
+scv_output(process_output = get_results('scv_ms_nt'),
            output_function = 'scv_ms_exp_nt',
            code_type = 'cdm',
            facet = 'site',
@@ -114,9 +105,9 @@ scv_output(process_output = no_time,
 
 This output calculates the number of mappings per concept_id, then displays the number of MAD that concept_id from the all site median number of mappings. Here, warmer colors indicate outlying concept_ids.
 
-```{r ms_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
+```{r ms_anom_nt, echo=FALSE, message=FALSE, warning=FALSE, fig.height = 8}
 
-scv_output(process_output = no_time,
+scv_output(process_output = get_results('scv_ms_nt'),
            output_function = 'scv_ms_anom_nt',
            code_type = 'cdm',
            facet = 'site',
@@ -132,7 +123,7 @@ For each concept_id, this graph displays the proportion of each source_concept_i
 
 ```{r ss_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-op <- scv_output(process_output = across_time %>% filter(site == 'colorado'),
+op <- scv_output(process_output = get_results('scv_ss_at'),
            output_function = 'scv_ss_exp_at',
            code_type = 'cdm',
            facet = NULL,
@@ -149,7 +140,7 @@ This check outputs a control chart that highlights anomalies in the number of ma
 
 ```{r ss_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-scv_output(process_output = across_time %>% filter(site == 'colorado'),
+scv_output(process_output = get_results('scv_ss_at'),
            output_function = 'scv_ss_anom_at',
            code_type = 'cdm',
            facet = NULL)
@@ -162,7 +153,7 @@ For each concept_id & site, this graph displays the proportion of each source_co
 
 ```{r ms_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-op <- scv_output(process_output = across_time,
+op <- scv_output(process_output = get_results('scv_ms_at'),
            output_function = 'scv_ms_exp_at',
            code_type = 'cdm',
            facet = 'site',
@@ -175,15 +166,17 @@ op[[2]]
 
 ## Multi Site, Anomaly Detection, Across Time
 
-This heat map shows the proportion of "unstable" concept_ids across time. The check will look for concept_ids that fall a certain number of MAD (provided by the user) away from the all site median number of mappings throughout the user specified time span. The "instability" of the concept is represented by both the number and proportion of outliers within a given site + concept_id pair.
+Under development due to newly discovered error -- will be added at a later date
+
+<!-- This heat map shows the proportion of "unstable" concept_ids across time. The check will look for concept_ids that fall a certain number of MAD (provided by the user) away from the all site median number of mappings throughout the user specified time span. The "instability" of the concept is represented by both the number and proportion of outliers within a given site + concept_id pair. -->
 
 ```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-scv_output(process_output = across_time,
-           output_function = 'scv_ms_anom_at',
-           code_type = 'cdm',
-           facet = NULL,
-           mad_dev = 2,
-           vocab_tbl = NULL)
+# scv_output(process_output = across_time,
+#            output_function = 'scv_ms_anom_at',
+#            code_type = 'cdm',
+#            facet = NULL,
+#            mad_dev = 2,
+#            vocab_tbl = NULL)
 
 ```

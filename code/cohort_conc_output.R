@@ -493,3 +493,16 @@ plot_ss_an_nt_conc_alt<- function(data_tbl){
   ggplotly(plt, tooltip="text")
   
 }
+
+#' Function for concordance: clinical events and specialties:
+#'        single site, anomaly detection, over time
+#' @param data_tbl table from cnc_sp output grouped accordingly within the `conc_output_gen` function, with at least the columns time_start | n | specialty_name
+#' @return a control chart with time on the x axis, number of visits on the y axis, faceted by specialty_name
+plot_cnc_sp_ss_an_at<-function(data_tbl){
+  qic(data=data_tbl, x=time_start, y = n, chart='c', facets=~specialty_name, #can also do cluster~specialty_name
+      scales='free_y',
+      x.angle=45,
+      title="Control Chart: Specialty Concordance for Clusters Over Time",
+      show.grid = TRUE,
+      xlab='Time')
+}

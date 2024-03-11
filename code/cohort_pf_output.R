@@ -25,8 +25,11 @@ pf_ss_anom_at <- function(data_tbl,
                           facet,
                           time_span){
   
-  if(output=='median_fact_ct') {title='Median Facts Across Time'}
-  if(output=='sum_fact_ct') {title='Sum of Facts Across Time'}
+  if(output=='median_fact_ct'){
+    title='Median Facts Across Time'
+  }else if(output=='sum_fact_ct'){
+    title='Sum of Facts Across Time'
+  }else(stop('Please select a valid output - `median_fact_ct` or `sum_fact_ct`'))
   # if(output=='fact_ct_denom') {title='What does this represent'}
   
   facet <- facet %>% append('domain')
@@ -77,8 +80,11 @@ pf_ss_exp_at <- function(data_tbl,
                          facet,
                          date_breaks_str = '1 year'){
   
-  if(output=='median_fact_ct') {y_title='Median Fact Count'}
-  if(output=='sum_fact_ct') {y_title='Sum of Facts'}
+  if(output=='median_fact_ct'){
+    y_title='Median Fact Count'
+  }else if(output=='sum_fact_ct'){
+      y_title='Sum of Facts'
+  }else(stop('Please select a valid output - `median_fact_ct` or `sum_fact_ct`'))
   # if(output=='fact_ct_denom') {y_title='What does this represent'}
   
   domain_deframe <- 
@@ -122,8 +128,11 @@ pf_ms_anom_at <- function(data_tbl,
                           output,
                           facet){
   
-  if(output == 'grp_outlier_num'){fill_title = 'Count of \nAnomalous Measures'}
-  if(output == 'grp_outlier_prop'){fill_title = 'Proportion of \nAnomalous Measures'}
+  if(output == 'grp_outlier_num'){
+    fill_title = 'Count of \nAnomalous Measures'
+  }else if(output == 'grp_outlier_prop'){
+      fill_title = 'Proportion of \nAnomalous Measures'
+  }else(stop('Please select a valid output - `grp_outlier_num` or `grp_outlier_prop`'))
   
   domain_list <- data_tbl %>% select(domain) %>% distinct() %>% pull()
   
@@ -171,6 +180,12 @@ pf_ms_exp_at <- function(data_tbl,
                          output,
                          facet){
   
+  if(output=='median_fact_ct'){
+    pass <- TRUE
+  }else if(output=='sum_fact_ct'){
+    pass <- TRUE
+  }else(stop('Please select a valid output - `median_fact_ct` or `sum_fact_ct`'))
+  
   domain_list <- data_tbl %>% select(domain) %>% distinct() %>% pull()
   
   site_deframe <- 
@@ -215,10 +230,16 @@ pf_ss_anom_nt <- function(data_tbl,
                           output,
                           facet=c('domain')){
   
-  if(output=='outlier_fact'){y_title = 'Number of Overall Patients +/- 2 SD Away from Mean'}
-  if(output=='prop_outlier_fact'){y_title = 'Proportion of Overall Patients +/- 2 SD Away from Mean'}
-  if(output=='outlier_site_fact'){y_title = 'Number of Site Patients +/- 2 SD Away from Mean'}
-  if(output=='prop_outlier_site_fact'){y_title = 'Proportion of Site Patients +/- 2 SD Away from Mean'}
+  if(output=='outlier_fact'){
+    y_title = 'Number of Overall Patients +/- 2 SD Away from Mean'
+  }else if(output=='prop_outlier_fact'){
+    y_title = 'Proportion of Overall Patients +/- 2 SD Away from Mean'
+  }else if(output=='outlier_site_fact'){
+    y_title = 'Number of Site Patients +/- 2 SD Away from Mean'
+  }else if(output=='prop_outlier_site_fact'){
+      y_title = 'Proportion of Site Patients +/- 2 SD Away from Mean'
+  }else(stop('Please select a valid output - `outlier_fact`, `prop_outlier_fact`, `outlier_site_fact`, or 
+             `prop_outlier_site_fact`'))
   
   domain_deframe <- 
     data_tbl %>% rename(domain=domain) %>% distinct(domain) %>% 
@@ -265,8 +286,11 @@ pf_ss_exp_nt <- function(data_tbl,
                          output,
                          facet=c('domain')) {
   
-  if(output=='median_site_with0s') {y_title='Median for All Patients'}
-  if(output=='median_site_without0s') {y_title='Median for Patients with Fact'}
+  if(output=='median_site_with0s'){
+    y_title='Median for All Patients'
+  }else if(output=='median_site_without0s'){
+      y_title='Median for Patients with Fact'
+  }else(stop('Please select a valid output - `median_site_with0s` or `median_site_without0s`'))
   
   domain_deframe <- 
     data_tbl %>% distinct(domain) %>% 
@@ -319,6 +343,12 @@ pf_ms_anom_nt <- function(data_tbl,
                           facet,
                           kmeans_clusters){
   
+  if(output=='median_site_with0s'){
+    pass <- TRUE
+  }else if(output=='median_site_without0s'){
+    pass <- TRUE
+  }else(stop('Please select a valid output - `median_site_with0s` or `median_site_without0s`'))
+  
   output_prep <- prep_kmeans(dat = data_tbl, 
                              output = output,
                              facet_vars = facet)
@@ -352,10 +382,13 @@ pf_ms_exp_nt <- function(data_tbl,
                          output,
                          facet){
   
-  if(output=='median_site_with0s') {y_title='Median for All Patients Across Sites'
-  comp_var = 'median_all_with0s'}
-  if(output=='median_site_without0s') {y_title='Median for Patients with Fact Across Sites'
-  comp_var = 'median_all_without0s'}
+  if(output=='median_site_with0s'){
+    y_title='Median for All Patients Across Sites'
+    comp_var = 'median_all_with0s'
+  }else if(output=='median_site_without0s'){
+      y_title='Median for Patients with Fact Across Sites'
+      comp_var = 'median_all_without0s'
+  }else(stop('Please select a valid output - `median_site_with0s` or `median_site_without0s`'))
   
   site_deframe <- 
     data_tbl %>% distinct(site) %>% 

@@ -53,7 +53,7 @@ prettify_kable <- function(data) {
 
 ## Single Site, Exploratory, No Time
 
-This output summarises the median number of facts per patient based on the domain and any user provided facets (i.e. visit type)
+This output summarises the median number of facts per patient. The domain is along the y-axis with the median fact count along the x-axis. The user can control what facets are used -- like here, where visit type is the facet option.
 
 ```{r ss_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -66,7 +66,7 @@ pf_output_gen(pf_process = get_results('pf_ss_exp_nt') %>% mutate(site = site_su
 
 ## Single Site, Anomaly Detection, No Time
 
-This output displays the proportion of patients that fall +/- 2 SD away from the mean number of facts per patient. This proportion is computed for each domain and any user provided facets
+This output displays the proportion of patients that fall +/- 2 SD away from the mean number of facts per patient. The domain is along the y-axis with the proportion of patients that were identified as outliers along the x-axis. The user can control what facets are used -- like here, where visit type is the facet option.
 
 ```{r ss_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -79,7 +79,7 @@ pf_output_gen(pf_process = get_results('pf_ss_anom_nt') %>% mutate(site = site_s
 
 ## Multi Site, Exploratory, No Time
 
-The dot plot below shows the median number of facts per patient for each site. The star icon is the overall median.
+The dot plot below shows the median number of facts per patient for each site. The domain is along the y-axis with the median fact count along the x-axis. Each dot is a site value, while the star icon represents the overall median. The user can control what facets are used -- like here, where visit type is the facet option.
 
 ```{r ms_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -92,20 +92,23 @@ pf_output_gen(pf_process = get_results('pf_ms_nt'),
 
 ## Multi Site, Anomaly Detection, No Time
 
-This is a K-means cluster analysis comparing each site in order to identify potential outliers. One k-means cluster graph is output for each of the user provided facets
+This is a K-means cluster analysis comparing each site in order to identify potential outliers. One k-means cluster graph is output for each of the user provided facets, so here, one graph is output per visit type. Any site that is far away from others or not part of a "main" cluster can be considered an outlier.
+
+The number of clusters used in the analysis is controlled by the user.
 
 ```{r ms_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
 pf_output_gen(pf_process = get_results('pf_ms_nt'),
               output_function = 'pf_ms_anom_nt',
               facet = c('visit_type'),
+              kmeans_clusters = 3,
               output = 'median_site_without0s')
 
 ```
 
 ## Single Site, Exploratory, Across Time
 
-This line and dot graph shows the median fact count for each domain and how it changes across the user provided time period.
+This line and dot graph shows the median fact count for each domain and how it changes across the user provided time period. Median fact count along the y-axis, and time (in years) along the x-axis with each line representing a domain. Facets are controlled by the user.
 
 ```{r ss_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -118,7 +121,7 @@ pf_output_gen(pf_process = get_results('pf_ss_at') %>% mutate(site = site_summ),
 
 ## Single Site, Anomaly Detection, Across Time
 
-This plot identifies outliers in the median fact count over time. Any red dots on the graph will indicate that time point for that domain + facet group.
+This plot identifies outliers in the median fact count over time. The output will facet by domain as a default, but the user can add additional facets if so desired. If an outlier is present for a particular time point, there will be a red dot at that point on the line.
 
 ```{r ss_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -131,6 +134,8 @@ pf_output_gen(pf_process = get_results('pf_ss_at') %>% mutate(site = site_summ),
 
 ## Multi Site, Exploratory, Across Time
 
+This output is under development due to a recently discovered error -- will be added at a later date
+
 ```{r ms_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
 
 # pf_output_gen(pf_process = get_results('pf_ms_at'),
@@ -141,6 +146,8 @@ pf_output_gen(pf_process = get_results('pf_ss_at') %>% mutate(site = site_summ),
 ```
 
 ## Multi Site, Anomaly Detection, Across Time
+
+This output is under development due to a recently discovered error -- will be added at a later date
 
 ```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 

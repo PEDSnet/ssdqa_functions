@@ -155,49 +155,46 @@ pf_process <- function(cohort = cohort,
     )
     
     ### NEED TO MAKE SURE THAT CREATING LONG TABLE IS A GOOD DECISION FOR REPRODUCIBILITY 
-    pf_final <- combine_study_facts(pf_tbl=pf_tbl,
-                                    domain_list = domain_tbl,
-                                    study_abbr = study_name, 
-                                    time = time, 
-                                    visit_type_list = visit_types) %>% collect()}
+    pf_int <- combine_study_facts(pf_tbl=pf_tbl,
+                                  domain_list = domain_tbl,
+                                  study_abbr = study_name, 
+                                  time = time, 
+                                  visit_type_list = visit_types) %>% collect()
+    }
   
   # Output intermediate results if requested
   if(!is.null(intermediate_tbl)){
     if(intermediate_tbl == 'r_dataframe'){
-      pf_intermediate_results <<- pf_final
+      pf_intermediate_results <<- pf_int
     }else if(intermediate_tbl == 'database_table'){
-        output_tbl(pf_final, 'pf_intermediate_results')
+        output_tbl(pf_int, 'pf_intermediate_results')
     }else if(intermediate_tbl == 'csv'){
-      output_tbl(pf_final, 'pf_intermediate_results', file = TRUE)}
+      output_tbl(pf_int, 'pf_intermediate_results', file = TRUE)}
   }else{pf_intermediate_results <- NULL}
   
   ## Step 4: Summarise (Medians, SD)
   if(!time) {
     if(anomaly_or_exploratory=='anomaly' && multi_or_single_site=='single') {
-      pf_output <- compute_dist_mean_pf(pf_final,
+      pf_final <- compute_dist_mean_pf(pf_int,
                                         site_col = site_col,
                                         agegrp= age_groups,
                                         codeset = codeset)
-      # pf_output <- compute_dist_mean_conc(tbl = pf_final,
-      #                                     grp_vars = c('study',
-      #                                                  'visit_type',
-      #                                                  'domain'),
-      #                                     var_col = 'var_val',
-      #                                     site_col = site_col,
-      #                                     num_sd = 2,
-      #                                     num_mad = 2)
-    } else {pf_output <- compute_pf_medians(data_input=pf_final,
+    } else {pf_final <- compute_pf_medians(data_input=pf_int,
                                             site_col = site_col,
                                             agegrp = age_groups,
                                             codeset=codeset)}
     
-  }else{pf_output <- pf_final}
+  }else{pf_final <- pf_int}
   
   message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
                        output function in pf_output_gen: ', output_type, '. This is also included
                        in the parameter_summary.csv file output to the results directory.')))
   
-  return(pf_output)
+  pf_final %>%
+    replace_site_col() %>%
+    output_tbl('pf_process_results', file = TRUE)
+  
+  return(pf_output %>% replace_site_col())
   
 }
 
@@ -236,16 +233,14 @@ pf_process <- function(cohort = cohort,
 #' @return if save_as_png = TRUE, a png file with the graphical output
 #' 
 
-pf_output_gen <- function(pf_process,
-                          output_function,
-                          output,
-                          facet,
-                          color = 'auto',
-                          time_span = c('2012-01-01', '2023-01-01'),
-                          date_breaks_str = '1 year',
-                          kmeans_clusters = 2,
-                          save_as_png = FALSE,
-                          file_path = NULL){
+pf_output <- function(process_output,
+                      output_function,
+                      output,
+                      facet,
+                      color = 'auto',
+                      time_span = c('2012-01-01', '2023-01-01'),
+                      date_breaks_str = '1 year',
+                      kmeans_clusters = 2){
   
   ## Create color palettes for sites and domains
   
@@ -293,302 +288,8 @@ pf_output_gen <- function(pf_process,
                               output = output,
                               facet = facet,
                               date_breaks_str = date_breaks_str)
-  }
-  
-  ## Saving PNG images of graphical output
-  if(save_as_png){
-    
-    int_labels <- c("pf_ms_exp_nt","pf_ms_exp_at")
-    
-    if(output_function == 'pf_ms_anom_nt'){
-      
-      for(plot in 1:length(pf_output)){
-        num <- plot
-        ggsave(plot = pf_output[[plot]],
-               height = 15,
-               width = 25,
-               units = c('cm'),
-               filename = paste0(file_path, '/', output_function, '_', num, '.png'))
-        }
-    
-      }else{
-        if(output_function %in% int_labels){
-          
-          htmltools::save_html(html = pf_output, file = paste0(file_path, '/', output_function, '.html'))
-          
-          }else{
-            ggsave(plot = pf_output,
-                   height = 15,
-                   width = 25,
-                   units = c('cm'),
-                   filename = paste0(file_path, '/', output_function, '.png'))
-      }
-    }
-  }
+  }else(stop('Please enter a valid output function for this check type.'))
   
   ## Return "raw" output in place of or in addition to .png files
   return(pf_output)
 }
-
-
-# pf_output_gen <- function(pf_process,
-#                           site_list,
-#                           colors = 'auto',
-#                           visit_types = c('all'),
-#                           multi_or_single_site = 'single',
-#                           time = FALSE,
-#                           time_span = c('2012-01-01', '2023-01-01'),
-#                           age_groups = FALSE,
-#                           codeset = FALSE,
-#                           anomaly_or_exploratory = 'exploratory',
-#                           domain_tbl=read_codeset('pf_domains_short','cccc'),
-#                           save_as_png = FALSE,
-#                           file_path = NULL){
-#   
-#   ## Create Brewer color palettes for sites and domains
-#   
-#   create_color_scheme(type = colors)
-#   
-#   ## Generate appropriate output based on selections
-#   if(time){
-#     if(multi_or_single_site == 'single'){
-#       if(anomaly_or_exploratory == 'anomaly'){
-#         if(age_groups){
-#           output <- pf_ss_anom_at(data_tbl = pf_output,
-#                                   site_list = site_list,
-#                                   age_groups = TRUE)
-#           label <- "pf_ss_age_anom_at"
-#         }else if(codeset){
-#           output <- pf_ss_anom_at(data_tbl = pf_output,
-#                                   site_list = site_list,
-#                                   codeset = TRUE)
-#           label <- "pf_ss_code_anom_at"
-#         }else if(length(visit_types) > 1){
-#           output <- pf_ss_anom_at(data_tbl = pf_output,
-#                                   site_list = site_list,
-#                                   visit_types = TRUE)
-#           label <- "pf_ss_visit_anom_at"
-#         }else{
-#           output <- pf_ss_anom_at(data_tbl = pf_output,
-#                                   site_list = site_list)
-#           label <- "pf_ss_nostrat_anom_at"
-#       }
-#         } else {
-#         if(age_groups){
-#           output <- pf_ss_exp_at(data_tbl = pf_output,
-#                                  site_list = site_list,
-#                                  domain_colors = domain_colors,
-#                                  age_groups = TRUE)
-#           label <- "pf_ss_age_exp_at"
-#         }else if(codeset){
-#           output <- pf_ss_exp_at(data_tbl = pf_output,
-#                                  site_list = site_list,
-#                                  domain_colors = domain_colors,
-#                                  codeset = TRUE)
-#           label <- "pf_ss_code_exp_at"
-#         }else if(length(visit_types) > 1){
-#           output <- pf_ss_exp_at(data_tbl = pf_output,
-#                                  site_list = site_list,
-#                                  domain_colors = domain_colors,
-#                                  visit_types = TRUE)
-#           label <- "pf_ss_visit_exp_at"
-#         }else{
-#           output <- pf_ss_exp_at(data_tbl = pf_output,
-#                                  domain_colors = domain_colors,
-#                                  site_list = site_list)
-#           label <- "pf_ss_nostrat_exp_at"
-#     }
-#           }
-#       } else {
-#       if(anomaly_or_exploratory == 'anomaly'){
-#         if(age_groups){
-#           output <- pf_ms_anom_at(data_tbl = pf_output,
-#                                   domain_list = domain_tbl,
-#                                   age_groups = TRUE)
-#           label <- "pf_ms_age_anom_at"
-#         }else if(codeset){
-#           output <- pf_ms_anom_at(data_tbl = pf_output,
-#                                   domain_list = domain_tbl,
-#                                   codeset = TRUE)
-#           label <- "pf_ms_code_anom_at"
-#         }else if(length(visit_types) > 1){
-#           output <- pf_ms_anom_at(data_tbl = pf_output,
-#                                   domain_list = domain_tbl,
-#                                   visit_types = TRUE)
-#           label <- "pf_ms_visit_anom_at"
-#         }else{
-#           output <- pf_ms_anom_at(data_tbl = pf_output,
-#                                   domain_list = domain_tbl)
-#           label <- "pf_ms_nostrat_anom_at"
-#         }
-#       } else {
-#         if(age_groups){
-#           output <- pf_ms_exp_at(data_tbl = pf_output,
-#                                  site_colors = site_colors,
-#                                  domain_list = domain_tbl,
-#                                  time_span = time_span,
-#                                  age_groups = TRUE)
-#           label <- "pf_ms_age_exp_at"
-#         }else if(codeset){
-#           output <- pf_ms_exp_at(data_tbl = pf_output,
-#                                  site_colors = site_colors,
-#                                  domain_list = domain_tbl,
-#                                  time_span = time_span,
-#                                  codeset = TRUE)
-#           label <- "pf_ms_code_exp_at"
-#         }else if(length(visit_types) > 1){
-#           output <- pf_ms_exp_at(data_tbl = pf_output,
-#                                  site_colors = site_colors,
-#                                  domain_list = domain_tbl,
-#                                  time_span = time_span,
-#                                  visit_types = TRUE)
-#           label <- "pf_ms_visit_exp_at"
-#         }else{
-#           output <- pf_ms_exp_at(data_tbl = pf_output,
-#                                  site_colors = site_colors,
-#                                  domain_list = domain_tbl,
-#                                  time_span = time_span)
-#           label <- "pf_ms_nostrat_exp_at"
-#         }
-#       }
-#     }
-#   } else {
-#     if(multi_or_single_site == 'single'){
-#       if(anomaly_or_exploratory == 'anomaly'){
-#         if(age_groups){
-#           output <- pf_ss_anom_nt(data_tbl = pf_output,
-#                                   site_list = site_list,
-#                                   domain_colors = domain_colors,
-#                                   age_groups = TRUE)
-#           label <- "pf_ss_age_anom_nt"
-#         }else if(codeset){
-#           output <- pf_ss_anom_nt(data_tbl = pf_output,
-#                                   site_list = site_list,
-#                                   domain_colors = domain_colors,
-#                                   codeset = TRUE)
-#           label <- "pf_ss_code_anom_nt"
-#         }else if(length(visit_types) > 1){
-#           output <- pf_ss_anom_nt(data_tbl = pf_output,
-#                                   site_list = site_list,
-#                                   domain_colors = domain_colors,
-#                                   visit_types = TRUE)
-#           label <- "pf_ss_visit_anom_nt"
-#         }else{
-#           output <- pf_ss_anom_nt(data_tbl = pf_output,
-#                                   domain_colors = domain_colors,
-#                                   site_list = site_list)
-#           label <- "pf_ss_nostrat_anom_nt"
-#         }
-#       } else {
-#         if(age_groups){
-#           output <- pf_ss_exp_nt(data_tbl = pf_output,
-#                                  site_list = site_list,
-#                                  site_colors = site_colors,
-#                                  age_groups = TRUE)
-#           label <- "pf_ss_age_exp_nt"
-#         }else if(codeset){
-#           output <- pf_ss_exp_nt(data_tbl = pf_output,
-#                                  site_list = site_list,
-#                                  site_colors = site_colors,
-#                                  codeset = TRUE)
-#           label <- "pf_ss_code_exp_nt"
-#         }else if(length(visit_types) > 1){
-#           output <- pf_ss_exp_nt(data_tbl = pf_output,
-#                                  site_list = site_list,
-#                                  site_colors = site_colors,
-#                                  visit_types = TRUE)
-#           label <- "pf_ss_visit_exp_nt"
-#         }else{
-#           output <- pf_ss_exp_nt(data_tbl = pf_output,
-#                                  site_list = site_list,
-#                                  site_colors = site_colors)
-#           label <- "pf_ss_nostrat_exp_nt"
-#         }
-#       }
-#     } else {
-#       if(anomaly_or_exploratory == 'anomaly'){
-#         if(age_groups){
-#           output <- pf_ms_anom_nt(data_tbl = pf_output,
-#                                   age_groups = TRUE)
-#           label <- "pf_ms_age_anom_nt"
-#         }else if(codeset){
-#           output <- pf_ms_anom_nt(data_tbl = pf_output,
-#                                   codeset = TRUE)
-#           label <- "pf_ms_code_anom_nt"
-#         }else if(length(visit_types) > 1){
-#           output <- pf_ms_anom_nt(data_tbl = pf_output,
-#                                   visit_types = TRUE)
-#           label <- "pf_ms_visit_anom_nt"
-#         }else{
-#           output <- pf_ms_anom_nt(data_tbl = pf_output)
-#           label <- "pf_ms_nostrat_anom_nt"
-#         }
-#       } else{
-#         if(age_groups){
-#           output <- pf_ms_exp_nt(data_tbl = pf_output,
-#                                  age_groups = TRUE)
-#           label <- "pf_ms_age_exp_nt"
-#         }else if(codeset){
-#           output <- pf_ms_exp_nt(data_tbl = pf_output,
-#                                  codeset = TRUE)
-#           label <- "pf_ms_code_exp_nt"
-#         }else if(length(visit_types) > 1){
-#           output <- pf_ms_exp_nt(data_tbl = pf_output,
-#                                  visit_types = TRUE)
-#           label <- "pf_ms_visit_exp_nt"
-#         }else{
-#           output <- pf_ms_exp_nt(data_tbl = pf_output)
-#           label <- "pf_ms_nostrat_exp_nt"
-#         }
-#       }
-#     }
-#   }
-#   
-#   ## ggsave graphs as .png if requested
-#   if(save_as_png){
-#     
-#     single_op <- c('pf_ms_age_anom_at', 'pf_ms_code_anom_at','pf_ms_visit_anom_at','pf_ms_nostrat_anom_at',
-#                    'pf_ms_age_exp_nt', 'pf_ms_code_exp_nt','pf_ms_visit_exp_nt','pf_ms_nostrat_exp_nt')
-#     
-#     int_labels <- c("pf_ms_age_exp_nt","pf_ms_code_exp_nt","pf_ms_visit_exp_nt",
-#                     "pf_ms_nostrat_exp_nt","pf_ms_age_exp_at","pf_ms_code_exp_at",
-#                     "pf_ms_visit_exp_at","pf_ms_nostrat_exp_at")
-#     
-#     if(label %in% single_op){
-#       
-#       if(label %in% int_labels){
-#         
-#         htmltools::save_html(html = output, file = paste0(file_path, '/', label, '.html'))
-#         
-#       }else{
-#       
-#       ggsave(plot = output,
-#              height = 15,
-#              width = 25,
-#              units = c('cm'),
-#              filename = paste0(file_path, '/', label, '.png'))
-#         }
-#     }else{
-#       
-#       for(plot in 1:length(output)){
-#         
-#         if(!(label %in% int_labels)){
-#         
-#         num <- plot
-#         
-#         ggsave(plot = output[[plot]],
-#                height = 15,
-#                width = 25,
-#                units = c('cm'),
-#                filename = paste0(file_path, '/', label, '_', num, '.png'))
-#         }else{
-#           num <- plot
-#           htmltools::save_html(html = output[[plot]], file = paste0(file_path, '/', label, '_', num, '.html'))}
-#       }
-#       }
-#   }
-#   
-#   ## Return "raw" output in place of or in addition to .png files
-#   return(output)
-# }
-#   
