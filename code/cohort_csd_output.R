@@ -417,11 +417,11 @@ csd_ms_anom_nt<-function(process_output,
                         grouped_vars=c('variable','concept_id')){
   
   mean_tbl <- 
-    compute_dist_mean_conc(tbl=process_output,
-                           grp_vars = grouped_vars,
-                           var_col = comparison_col,
-                           num_sd=2,
-                           num_mad=2)
+    compute_dist_mean_median(tbl=process_output,
+                             grp_vars = grouped_vars,
+                             var_col = comparison_col,
+                             num_sd=2,
+                             num_mad=2)
   
   if(is.null(vocab_tbl)) {concept_label='concept_id'
                           data_tbl=mean_tbl} else {
@@ -458,3 +458,81 @@ csd_ms_anom_nt<-function(process_output,
   ggplotly(plt, tooltip="text")
 }
 
+#' **Multi-Site Across Time Anomaly**
+#' Produces graphs showing AUCs
+#' 
+#' @param process_output_graph output from `csd_process`
+#' @return two graphs:
+#'    1) line graph that shows the proportion of a 
+#'    code across time computation with the AUC associated with each line
+#'    2) bar graph with each site on the x-axis, and the y-axis the AUC value, 
+#'    with a dotted line showing the all-site average
+#' 
+#' THIS GRAPH SHOWS ONLY ONE CONCEPT AT A TIME!
+#' 
+
+csd_ms_anom_at <- function(process_output_graph) {
+  
+  allsites <- 
+    process_output_graph %>% 
+    #filter(concept_id == 81893) %>% 
+    select(time_start,concept_id,mean_allsiteprop,auc_gold_standard) %>% distinct() %>% 
+    rename(prop_concept=mean_allsiteprop) %>% 
+    mutate(site='all site average',
+           auc_value=auc_gold_standard) %>% 
+    mutate(text=paste0("Site: ", site,
+                       #"\n","Proportion: ",prop_concept,
+                       "\n","AUC Value: ",auc_value,
+                       "\n","All-Site AUC: ",auc_gold_standard)) 
+  
+  #%>% 
+  dat_to_plot <- 
+    process_output_graph %>% #filter(concept_id==81893) %>% 
+    mutate(text=paste0("Site: ", site,
+                       #"\n","Proportion: ",prop_concept,
+                       "\n","AUC Value: ",auc_value,
+                       "\n","All-Site AUC: ",auc_gold_standard)) 
+  
+  concept_id_var <- 
+    dat_to_plot %>% select(concept_id) %>% distinct() %>% pull
+  
+  if(length(concept_id_var) > 1) {'Please input only one concept_id'}
+  
+  p <- dat_to_plot %>%
+    #filter(concept_id == 81893) %>% 
+    ggplot(aes(y = prop_concept, x = time_start, color = site,group=site,text=text)) +
+    geom_line(data=filter(allsites,concept_id==concept_id_var),linewidth=1.1) +
+    #stat_smooth(geom='line',alpha=0.7,se=TRUE) +
+    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+  ggtitle(paste0('Proportion of Concept ',concept_id_var,'Across Time',
+                 '\n','All-Site in Red',
+                 '\n','AUC value in Tooltip'))
+  
+  
+  gold_standard <- test4 %>% 
+    filter(concept_id == 81893) %>% select(auc_gold_standard) %>% 
+    distinct() %>% pull()
+  
+  p2 <- dat_to_plot %>% 
+    #filter(concept_id == 81893) %>% 
+    select(site,auc_value,auc_gold_standard) %>% 
+    distinct() %>% 
+    ggplot(aes(y = auc_value, x = site, fill=site)) +
+    geom_bar(stat='identity') + 
+    geom_hline(yintercept=gold_standard,
+               linetype='dashed', color='red') +
+    coord_flip() +
+    guides(fill='none') + theme_minimal() +
+    ggtitle(paste0('Site AUC Value for Concept ',concept_id_var,
+                   '\n','All-Site in Dashed Red'))
+  
+  
+  plotly_p <- ggplotly(p,tooltip="text")
+  plotly_p2 <- ggplotly(p2,tooltip='auc_value')
+  
+  output <- list(plotly_p,
+                 plotly_p2)
+  
+}

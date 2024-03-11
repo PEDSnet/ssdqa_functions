@@ -137,10 +137,27 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
                              check_code_dist_csd(cohort_codedist = dat,
                                              concept_set = concept_set,
                                              #code_type = code_type,
-                                             code_domain = code_domain,
+                                             #code_domain = code_domain,
                                              domain_tbl = domain_tbl,
                                              time = TRUE)
                            })
+    
+    if(multi_or_single_site == 'multi' & anomaly_or_exploratory=='anomaly') {
+      
+      csd_tbl_ms <- csd_ms_anom_at_auc(csd_tbl %>%select(site,
+                                                           time_start,
+                                                           time_increment,
+                                                           variable,
+                                                           concept_id,
+                                                           prop_concept) %>% ungroup(),
+                                       grp_vars=c('time_start',
+                                                           'time_increment',
+                                                           'variable',
+                                                           'concept_id'),
+                                       var_col='prop_concept')
+      
+      csd_tbl <- csd_tbl_ms
+    }
     
   }
   

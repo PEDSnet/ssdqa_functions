@@ -31,7 +31,7 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
                   filter(variable %in% c('ibd', 'spondyloarthritis', 'systemic_jia', 'uveitis', 
                                           'general_jia', 'infliximab','polyarticular_jia'))
   time_span_var <- c('2012-01-01', '2020-01-01')
-  time_period_var <- 'year'
+  time_period_var <- 'month'
   
   ss_exp_nt <- csd_process(cohort = results_tbl('jspa_cohort'),
                            domain_tbl=read_codeset('scv_domains', 'cccc'),

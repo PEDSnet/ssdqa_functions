@@ -418,6 +418,7 @@ generate_ref_table <- function(tbl,
   
 }
 
+#' *Computing Distance From Mean*
 #' Should be able to use this for other checks,
 #' but naming this way to differentiate from
 #' the existing `compute_dist_mean` function
@@ -426,14 +427,14 @@ generate_ref_table <- function(tbl,
 #' @param var_col column to compute summary statistics on
 #' @param num_sd (integer) number of standard deviations away from the mean
 #'               from which to compute the sd_lower and sd_upper columns
-#' @return a table with the `grp_vars` | mean | sd | sd_lower | sd_upper | 
-#'                                      anomaly_yn: indicator of whether data point is +/- num_sd from mean
-#'                                      abs_diff_mean: absolute value of difference between mean for group and observation
-compute_dist_mean_conc <- function(tbl,
-                                   grp_vars,
-                                   var_col,
-                                   num_sd,
-                                   num_mad){
+#' @return a table with the `grp_vars` ** | mean | sd | sd_lower | sd_upper | **
+#'                                     ** anomaly_yn: indicator of whether data point is +/- num_sd from mean **
+#'                                     ** abs_diff_mean: absolute value of difference between mean for group and observation **
+compute_dist_mean_median <- function(tbl,
+                                      grp_vars,
+                                      var_col,
+                                      num_sd,
+                                      num_mad){
   
   site_rows <-
     tbl %>% ungroup() %>% select(site) %>% distinct()
@@ -467,3 +468,81 @@ compute_dist_mean_conc <- function(tbl,
            n_mad=abs_diff_median/mad)
   
 }
+
+
+#' *Compute AUC for checks across time*
+#' computes AUC for comparisons, iterating through a group of variables
+#' for comparative AUC's
+#' 
+#' @param tbl_name the tbl name to pass through
+#' @param iterate_var the variable to iterate and compute an AUC for; 
+#'                    defaults to `site`
+#' @param time_var  the variable that contains the time; 
+#'                   defaults to `time_start`
+#' @param outcome_var the outcome variable
+#' @param gold_standard_var the variable that contains the gold standard (e.g., all site mean)
+#' 
+#' @return the variables given as input, with the AUC computed for a given time period, 
+#' for all sites provided
+#' 
+
+compute_auc_at <- function(tbl_name,
+                           iterate_var = 'site',
+                           time_var = 'time_start',
+                           outcome_var = 'prop_concept',
+                           gold_standard_var = 'mean') {
+  
+  
+  
+  tbl_name_vars_ready <- 
+    tbl_name %>% 
+    rename(xaxis_time=!!sym(time_var),
+           yaxis=!!sym(outcome_var),
+           gold_standard=!!sym(gold_standard_var),
+           iterate=!!sym(iterate_var)) %>% 
+    select(iterate,
+           xaxis_time,
+           yaxis,
+           gold_standard,
+           iterate)
+  
+  iterate_vector <- 
+    tbl_name_vars_ready %>% select(iterate) %>% 
+    distinct() %>% pull()
+  
+  final <- list()
+  
+  for(i in 1:length(iterate_vector)) {
+    
+    tbl_norms <- 
+      tbl_name_vars_ready %>% 
+      filter(iterate==iterate_vector[i]) %>% 
+      mutate(xaxis=row_number())
+    
+    auc_val <- DescTools::AUC(tbl_norms$xaxis,tbl_norms$yaxis,method='spline')
+    
+    
+    tbl_norms_auc <- tbl_norms %>% mutate(auc_value=round(auc_val,2))
+    
+    final[[i]] <- tbl_norms_auc
+  }
+  
+  final_reduce <- reduce(.x=final,
+                         .f=dplyr::union)
+  overall <- final_reduce %>% select(xaxis_time,
+                                     gold_standard) %>% distinct() %>% 
+    mutate(xaxis=row_number()) 
+  auc_avg_val <- DescTools::AUC(overall$xaxis,overall$gold_standard,method='spline')
+  
+  output <- 
+    final_reduce %>% 
+    mutate(auc_gold_standard=round(auc_avg_val,4)) %>% 
+    rename(!!sym(time_var):=xaxis_time,
+           !!sym(outcome_var):=yaxis,
+           !!sym(gold_standard_var):=gold_standard,
+           !!sym(iterate_var):=iterate) 
+  
+  return(output)
+}
+
+
