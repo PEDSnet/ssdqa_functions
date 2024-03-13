@@ -125,7 +125,7 @@ pf_process <- function(cohort = cohort,
     
     grouped_list <- grouped_list[! grouped_list %in% 'fu']
     
-    pf_final <- compute_fot(cohort = cohort_prep,
+    pf_int <- compute_fot(cohort = cohort_prep,
                             site_col = site_col,
                             reduce_id = 'visit_type',
                             time_period = time_period,
@@ -184,7 +184,29 @@ pf_process <- function(cohort = cohort,
                                             agegrp = age_groups,
                                             codeset=codeset)}
     
-  }else{pf_final <- pf_int}
+  }else{
+    
+    if(anomaly_or_exploratory == 'anomaly' && multi_or_single_site == 'multi'){
+      
+      tbl_list <- list()
+      
+      for(i in 1:length(visit_types)){
+        
+        pf_tbl_tmp <- compute_pf_auc(process_output = pf_int %>% filter(visit_type == visit_types[[i]]),
+                                     grp_vars = c('start_date',
+                                                  'visit_type',
+                                                  'domain')) %>%
+          mutate(visit_type = visit_types[[i]])
+        
+        tbl_list[[i]] <- pf_tbl_tmp
+      }
+      
+      pf_final <- reduce(.x = tbl_list,
+                         .f = dplyr::union)
+      
+    }else{pf_final <- pf_int}
+    
+    }
   
   message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
                        output function in pf_output_gen: ', output_type, '. This is also included
@@ -194,7 +216,7 @@ pf_process <- function(cohort = cohort,
     replace_site_col() %>%
     output_tbl('pf_process_results', file = TRUE)
   
-  return(pf_output %>% replace_site_col())
+  return(pf_final %>% replace_site_col())
   
 }
 
@@ -226,8 +248,10 @@ pf_process <- function(cohort = cohort,
 #'                          if the function outputs an error, try adjusting this number as a first step for troubleshooting.
 #'                          the kmeans functionality will not work if there are not enough groups in the data to satisfy the 
 #'                          provided number of clusters.
-#' @param save_as_png - logical to tell the program if you would like to save the graphical output locally as a png file
-#' @param file_path - if save_as_png = TRUE, the file path that leads to the location where the png files should be saved
+#' @param domain_filter for `pf_ms_anom_at` only, the single domain to which the graph should be filtered for displaying
+#'                      AUC values
+#' @param visit_filter for `pf_ms_anom_at` only, the single visit type to which the graph should be filtered for displaying
+#'                     AUC values
 #'
 #' @return "raw" output that can be called within the R environment to generate the graph in the Viewer window
 #' @return if save_as_png = TRUE, a png file with the graphical output
@@ -240,12 +264,14 @@ pf_output <- function(process_output,
                       color = 'auto',
                       time_span = c('2012-01-01', '2023-01-01'),
                       date_breaks_str = '1 year',
-                      kmeans_clusters = 2){
+                      kmeans_clusters = 2,
+                      domain_filter = 'conditions_all',
+                      visit_filter = 'outpatient'){
   
   ## Create color palettes for sites and domains
   
-  site_list <- pf_process %>% select(site) %>% distinct() %>% pull()
-  domain_list <- pf_process %>% select(domain) %>% distinct() %>% pull()
+  site_list <- process_output %>% select(site) %>% distinct() %>% pull()
+  domain_list <- process_output %>% select(domain) %>% distinct() %>% pull()
   
   create_color_scheme(type = color,
                       site_list = site_list,
@@ -253,38 +279,38 @@ pf_output <- function(process_output,
   
   ## Run output functions
   if(output_function == 'pf_ms_anom_nt'){
-    pf_output <- pf_ms_anom_nt(data_tbl = pf_process,
+    pf_output <- pf_ms_anom_nt(data_tbl = process_output,
                                output = output,
                                facet = facet,
                                kmeans_clusters = kmeans_clusters)
   }else if(output_function == 'pf_ss_anom_nt'){
-    pf_output <- pf_ss_anom_nt(data_tbl = pf_process,
+    pf_output <- pf_ss_anom_nt(data_tbl = process_output,
                                output = output,
                                facet = facet)
   }else if(output_function == 'pf_ms_exp_nt'){
-    pf_output <- pf_ms_exp_nt(data_tbl = pf_process,
+    pf_output <- pf_ms_exp_nt(data_tbl = process_output,
                               output = output,
                               facet = facet)
   }else if(output_function == 'pf_ss_exp_nt'){
-    pf_output <- pf_ss_exp_nt(data_tbl = pf_process,
+    pf_output <- pf_ss_exp_nt(data_tbl = process_output,
                               output = output,
                               facet = facet)
   }else if(output_function == 'pf_ms_anom_at'){
-    pf_output <- pf_ms_anom_at(data_tbl = pf_process,
-                               output = output,
-                               facet = facet)
+    pf_output <- pf_ms_anom_at(process_output_graph = process_output,
+                               domain_filter = domain_filter,
+                               visit_filter = visit_filter)
   }else if(output_function == 'pf_ss_anom_at'){
-    pf_output <- pf_ss_anom_at(data_tbl = pf_process,
+    pf_output <- pf_ss_anom_at(data_tbl = process_output,
                                output = output,
                                facet = facet,
                                time_span = time_span)
   }else if(output_function == 'pf_ms_exp_at'){
-    pf_output <- pf_ms_exp_at(data_tbl = pf_process,
+    pf_output <- pf_ms_exp_at(data_tbl = process_output,
                               output = output,
                               facet = facet,
                               time_span = time_span)
   }else if(output_function == 'pf_ss_exp_at'){
-    pf_output <- pf_ss_exp_at(data_tbl = pf_process,
+    pf_output <- pf_ss_exp_at(data_tbl = process_output,
                               output = output,
                               facet = facet,
                               date_breaks_str = date_breaks_str)

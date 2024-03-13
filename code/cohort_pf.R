@@ -445,3 +445,69 @@ output_tbl_append <- function(data, name = NA, local = FALSE,
   
   
 }
+
+
+#' *MS Anomaly Across Time Output*
+#' 
+#' @param process_output the input tbl to compute an AUC for the multi-site across time analysis  
+#' @param grp_vars variables to group by to compute the aggregated proportion for all sites
+#' 
+#' @return a dataframe with the AUC values for each variable included in the function input table
+#' 
+
+compute_pf_auc <- function(process_output,
+                            grp_vars=c('time_start',
+                                       'time_increment',
+                                       'visit_type',
+                                       'domain')) {
+  
+  
+  process_output <- process_output %>%
+    mutate(prop_pt_fact = fact_ct_denom / pt_ct_denom)
+  
+  x <- compute_dist_mean_median(tbl=process_output,
+                                grp_vars=grp_vars,
+                                var_col='prop_pt_fact',
+                                num_sd = 2,
+                                num_mad = 2)  %>% 
+    rename(mean_allsiteprop=mean)
+  
+  x_filtered <- 
+    x %>% select(site,
+                 !!!syms(grp_vars),
+                 prop_pt_fact,
+                 mean_allsiteprop)
+  
+  # x_variableconcepts <- 
+  #   x_filtered %>% distinct(variable,concept_id)
+  
+  x_concepts <- 
+    x_filtered %>% ungroup() %>% distinct(domain) %>% pull()
+  
+  output <- list()
+  
+  for(i in 1:length(x_concepts)) {
+    
+    aucs <- compute_auc_at(tbl_name= x_filtered %>% filter(domain==x_concepts[[i]]) %>%
+                             ungroup(),
+                           iterate_var = 'site',
+                           time_var = 'start_date',
+                           outcome_var = 'prop_pt_fact',
+                           gold_standard_var = 'mean_allsiteprop') %>% 
+      mutate(domain=x_concepts[[i]],
+             auc_mean=round(mean(auc_value, na.rm = TRUE),4),
+             auc_sd=round(sd(auc_value, na.rm = TRUE),4))
+    
+    
+    
+    
+    output[[i]] <- aucs  
+    
+  }
+  
+  output_reduced <- reduce(.x=output,
+                           .f=dplyr::union) #%>% 
+  #inner_join(x_variableconcepts)
+  
+  
+}

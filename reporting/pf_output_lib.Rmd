@@ -57,7 +57,7 @@ This output summarises the median number of facts per patient. The domain is alo
 
 ```{r ss_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output_gen(pf_process = get_results('pf_ss_exp_nt') %>% mutate(site = site_summ),
+pf_output(process_output = get_results('pf_ss_exp_nt') %>% mutate(site = site_summ),
               output_function = 'pf_ss_exp_nt',
               facet = c('visit_type'),
               output = 'median_site_without0s')
@@ -70,7 +70,7 @@ This output displays the proportion of patients that fall +/- 2 SD away from the
 
 ```{r ss_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output_gen(pf_process = get_results('pf_ss_anom_nt') %>% mutate(site = site_summ),
+pf_output(process_output = get_results('pf_ss_anom_nt') %>% mutate(site = site_summ),
               output_function = 'pf_ss_anom_nt',
               facet = c('visit_type'),
               output = 'prop_outlier_site_fact')
@@ -83,7 +83,7 @@ The dot plot below shows the median number of facts per patient for each site. T
 
 ```{r ms_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output_gen(pf_process = get_results('pf_ms_nt'),
+pf_output(process_output = get_results('pf_ms_nt'),
               output_function = 'pf_ms_exp_nt',
               facet = c('visit_type'),
               output = 'median_site_without0s')
@@ -98,7 +98,7 @@ The number of clusters used in the analysis is controlled by the user.
 
 ```{r ms_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output_gen(pf_process = get_results('pf_ms_nt'),
+pf_output(process_output = get_results('pf_ms_nt'),
               output_function = 'pf_ms_anom_nt',
               facet = c('visit_type'),
               kmeans_clusters = 3,
@@ -112,7 +112,7 @@ This line and dot graph shows the median fact count for each domain and how it c
 
 ```{r ss_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output_gen(pf_process = get_results('pf_ss_at') %>% mutate(site = site_summ),
+pf_output(process_output = get_results('pf_ss_at') %>% mutate(site = site_summ),
               output_function = 'pf_ss_exp_at',
               facet = c('visit_type'),
               output = 'median_fact_ct')
@@ -125,7 +125,7 @@ This plot identifies outliers in the median fact count over time. The output wil
 
 ```{r ss_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output_gen(pf_process = get_results('pf_ss_at') %>% mutate(site = site_summ),
+pf_output(process_output = get_results('pf_ss_at') %>% mutate(site = site_summ),
               output_function = 'pf_ss_anom_at',
               facet = c('visit_type'),
               output = 'median_fact_ct')
@@ -134,26 +134,34 @@ pf_output_gen(pf_process = get_results('pf_ss_at') %>% mutate(site = site_summ),
 
 ## Multi Site, Exploratory, Across Time
 
-This output is under development due to a recently discovered error -- will be added at a later date
+This output displays either the median or total (sum) fact count per patient per time point across time, comparing across sites.
 
 ```{r ms_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-# pf_output_gen(pf_process = get_results('pf_ms_at'),
-#               output_function = 'pf_ms_exp_at',
-#               facet = c('visit_type'),
-#               output = 'median_fact_ct')
+pf_output(process_output = get_results('pf_ms_at'),
+              output_function = 'pf_ms_exp_at',
+              facet = c('visit_type'),
+              output = 'median_fact_ct')
 
 ```
 
 ## Multi Site, Anomaly Detection, Across Time
 
-This output is under development due to a recently discovered error -- will be added at a later date
+This check displays the area under the curve (AUC) for ONE domain & visit type pair across time, for every site in the cohort. The AUC computation itself takes place in the initial processing function to reduce load on the summarization end. During this computation, the all site mean is used as the "gold standard" against which the site-specific proportion associated with a given domain is compared. 
+
+Two graphs are output:
+
+  * a line graph displaying the proportion of facts per patient/domain/visit type at each site over time, with the AUC values available in the tooltip when hovering over a given line
+  * a bar graph comparing the AUC values for each site against the all site overall AUC value
 
 ```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-# pf_output_gen(pf_process = get_results('pf_ms_at'),
-#               output_function = 'pf_ms_anom_at',
-#               facet = c('visit_type'),
-#               output = 'median_fact_ct')
+op <- pf_output(process_output = get_results('pf_ms_anom_at'),
+          output_function = 'pf_ms_anom_at',
+          domain_filter = 'conditions_all',
+          visit_filter = 'outpatient')
+
+op[[1]]
+op[[2]]
 
 ```

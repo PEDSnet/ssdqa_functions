@@ -124,34 +124,98 @@ pf_ss_exp_at <- function(data_tbl,
 #' 
 #' @param facet variables to facet (e.g., `domain`); vector of strings
 
-pf_ms_anom_at <- function(data_tbl,
-                          output,
-                          facet){
+pf_ms_anom_at <- function(process_output_graph,
+                          facet = NULL,
+                          visit_filter,
+                          domain_filter){
   
-  if(output == 'grp_outlier_num'){
-    fill_title = 'Count of \nAnomalous Measures'
-  }else if(output == 'grp_outlier_prop'){
-      fill_title = 'Proportion of \nAnomalous Measures'
-  }else(stop('Please select a valid output - `grp_outlier_num` or `grp_outlier_prop`'))
+  # if(output == 'grp_outlier_num'){
+  #   fill_title = 'Count of \nAnomalous Measures'
+  # }else if(output == 'grp_outlier_prop'){
+  #     fill_title = 'Proportion of \nAnomalous Measures'
+  # }else(stop('Please select a valid output - `grp_outlier_num` or `grp_outlier_prop`'))
   
-  domain_list <- data_tbl %>% select(domain) %>% distinct() %>% pull()
+  allsites <- 
+    process_output_graph %>% 
+    filter(domain == domain_filter,
+           visit_type == visit_filter) %>% 
+    select(start_date,domain,mean_allsiteprop,auc_gold_standard) %>% distinct() %>% 
+    rename(prop_pt_fact = mean_allsiteprop) %>% 
+    mutate(site='all site average',
+           auc_value=auc_gold_standard) %>% 
+    mutate(text=paste0("Site: ", site,
+                       #"\n","Proportion: ",prop_concept,
+                       "\n","AUC Value: ",auc_value,
+                       "\n","All-Site AUC: ",auc_gold_standard)) 
   
-  prep_fot <- check_fot_multisite(tblx = data_tbl,
-                                  target_col = 'median_fact_ct',
-                                  site_col = 'site',
-                                  time_col = 'start_date',
-                                  domain_list = domain_list,
-                                  facet_var = facet)
-  prep_mad <- produce_multisite_mad(multisite_tbl = prep_fot,
-                                    facet_var = facet,
-                                    mad_dev=2)
-  r <- ggplot(prep_mad, aes(x=site, y=grp, fill=!!sym(output))) +
-    geom_tile() +
-    facet_wrap((facet)) +
-    theme_classic() +
+  #%>% 
+  dat_to_plot <- 
+    process_output_graph %>% 
+    filter(domain == domain_filter,
+           visit_type == visit_filter) %>% 
+    mutate(text=paste0("Site: ", site,
+                       #"\n","Proportion: ",prop_concept,
+                       "\n","AUC Value: ",auc_value,
+                       "\n","All-Site AUC: ",auc_gold_standard)) 
+  
+  concept_var <- 
+    dat_to_plot %>% select(domain) %>% distinct() %>% pull
+  
+  if(length(concept_var) > 1) {stop('Please input only one concept_id')}
+  
+  p <- dat_to_plot %>%
+    #filter(concept_id == 81893) %>% 
+    ggplot(aes(y = prop_pt_fact, x = start_date, color = site,group=site, text=text)) +
+    geom_line(data= filter(allsites, domain==concept_var), linewidth = 1.1) +
+    #stat_smooth(geom='line',alpha=0.7,se=TRUE) +
+    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    ggtitle(paste0('Proportion of ',concept_var, ' for ', visit_filter, ' Visits Across Time',
+                   '\n','All-Site in Red; AUC value in Tooltip'))
+  
+  
+  gold_standard <- allsites %>%
+    select(auc_gold_standard) %>%
+    distinct() %>% pull()
+  
+  p2 <- dat_to_plot %>% 
+    select(site,auc_value,auc_gold_standard) %>% 
+    distinct() %>% 
+    ggplot(aes(y = auc_value, x = site, fill=site)) +
+    geom_bar(stat='identity') + 
+    geom_hline(yintercept=gold_standard,
+               linetype='dashed', color='red') +
     coord_flip() +
-    labs(fill = fill_title,
-         y = 'Domain')
+    guides(fill='none') + theme_minimal() +
+    ggtitle(paste0('Site AUC Value for ',concept_var, ' at ', visit_filter, ' Visits',
+                   '\n','All-Site in Dashed Red'))
+  
+  
+  plotly_p <- ggplotly(p,tooltip="text")
+  plotly_p2 <- ggplotly(p2,tooltip='auc_value')
+  
+  output <- list(plotly_p,
+                 plotly_p2)
+  
+  # domain_list <- data_tbl %>% select(domain) %>% distinct() %>% pull()
+  # 
+  # prep_fot <- check_fot_multisite(tblx = data_tbl,
+  #                                 target_col = 'median_fact_ct',
+  #                                 site_col = 'site',
+  #                                 time_col = 'start_date',
+  #                                 domain_list = domain_list,
+  #                                 facet_var = facet)
+  # prep_mad <- produce_multisite_mad(multisite_tbl = prep_fot,
+  #                                   facet_var = facet,
+  #                                   mad_dev=2)
+  # r <- ggplot(prep_mad, aes(x=site, y=grp, fill=!!sym(output))) +
+  #   geom_tile() +
+  #   facet_wrap((facet)) +
+  #   theme_classic() +
+  #   coord_flip() +
+  #   labs(fill = fill_title,
+  #        y = 'Domain')
 }
 
 #' **Multi-Site, Exploratory, Across Time**
@@ -181,29 +245,23 @@ pf_ms_exp_at <- function(data_tbl,
                          facet){
   
   if(output=='median_fact_ct'){
-    pass <- TRUE
+    title <- 'Median Fact Count Across Time'
   }else if(output=='sum_fact_ct'){
-    pass <- TRUE
+    title <- 'Total Fact Count Across Time'
   }else(stop('Please select a valid output - `median_fact_ct` or `sum_fact_ct`'))
   
-  domain_list <- data_tbl %>% select(domain) %>% distinct() %>% pull()
+  facet <- facet %>% append('domain') %>% unique()
   
-  site_deframe <- 
-    data_tbl %>% distinct(site) %>% 
-    inner_join(read_codeset('site_color_config','cc')) %>% 
-    deframe()
+  p <- data_tbl %>%
+    filter(start_date >= time_span[1] &
+             end_date <= time_span[2]) %>%
+    ggplot(aes(x = start_date, y = !!sym(output), fill = site, color = site)) +
+    geom_line() +
+    facet_wrap((facet)) +
+    labs(title = title,
+         x = 'Time')
   
-  prep_fot <- check_fot_multisite(tblx = data_tbl,
-                                  target_col = output,
-                                  site_col = 'site',
-                                  time_col = 'start_date',
-                                  domain_list = domain_list,
-                                  facet_var = facet)
-  output <- create_multisite_exp(multisite_tbl = prep_fot,
-                                 date_breaks_str = '1 year',
-                                 time_span = time_span,
-                                 site_colors_v = site_deframe,
-                                 facet_var = facet)
+  ggplotly(p)
 }
 
 #' **Single Site, Anomaly Detection, No Time**
