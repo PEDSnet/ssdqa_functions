@@ -173,7 +173,8 @@ csd_ss_anom_at <- function(process_output,
                            vocab_tbl=vocabulary_tbl('concept'),
                            filtered_var='ibd',
                            facet=NULL,
-                           top_mapping_n = 6){
+                           top_mapping_n = 6,
+                           chart_type = 'c'){
   
   # if(code_type == 'source'){
   #   col <- 'source_concept_id'
@@ -202,11 +203,11 @@ csd_ss_anom_at <- function(process_output,
 
   
   c_final <- c_added %>% group_by(!!!syms(facet), time_start, ct_concept) %>%
-    unite(facet_col, !!!syms(facet), sep = '\n')
+    unite(facet_col, !!!syms(facet), sep = '\n') 
   
-  
-  c_plot <- qic(data = c_final, x = time_start, y = ct_concept, chart = 'c', facet = ~facet_col,
-                title = 'Control Chart: Code Usage Over Time', show.grid = TRUE)
+  c_plot <- qic(data = c_final, x = time_start, y = ct_concept, chart = 'pp', facet = ~facet_col,
+                title = 'Control Chart: Code Usage Over Time', show.grid = TRUE, n = ct_denom,
+                ylab = 'Proportion', xlab = 'Time')
   
   
   # c_plot <- 
@@ -462,6 +463,7 @@ csd_ms_anom_nt<-function(process_output,
 #' Produces graphs showing AUCs
 #' 
 #' @param process_output_graph output from `csd_process`
+#' @param filter_concept the concept_id that should be used for the output
 #' @return two graphs:
 #'    1) line graph that shows the proportion of a 
 #'    code across time computation with the AUC associated with each line
@@ -471,11 +473,12 @@ csd_ms_anom_nt<-function(process_output,
 #' THIS GRAPH SHOWS ONLY ONE CONCEPT AT A TIME!
 #' 
 
-csd_ms_anom_at <- function(process_output_graph) {
+csd_ms_anom_at <- function(process_output_graph,
+                           filter_concept) {
   
   allsites <- 
     process_output_graph %>% 
-    #filter(concept_id == 81893) %>% 
+    filter(concept_id == filter_concept) %>% 
     select(time_start,concept_id,mean_allsiteprop,auc_gold_standard) %>% distinct() %>% 
     rename(prop_concept=mean_allsiteprop) %>% 
     mutate(site='all site average',
@@ -485,9 +488,9 @@ csd_ms_anom_at <- function(process_output_graph) {
                        "\n","AUC Value: ",auc_value,
                        "\n","All-Site AUC: ",auc_gold_standard)) 
   
-  #%>% 
   dat_to_plot <- 
-    process_output_graph %>% #filter(concept_id==81893) %>% 
+    process_output_graph %>% 
+    filter(concept_id == filter_concept) %>% 
     mutate(text=paste0("Site: ", site,
                        #"\n","Proportion: ",prop_concept,
                        "\n","AUC Value: ",auc_value,
@@ -496,7 +499,7 @@ csd_ms_anom_at <- function(process_output_graph) {
   concept_id_var <- 
     dat_to_plot %>% select(concept_id) %>% distinct() %>% pull
   
-  if(length(concept_id_var) > 1) {'Please input only one concept_id'}
+  if(length(concept_id_var) > 1) {stop('Please input only one concept_id')}
   
   p <- dat_to_plot %>%
     #filter(concept_id == 81893) %>% 
@@ -506,13 +509,14 @@ csd_ms_anom_at <- function(process_output_graph) {
     geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
-  ggtitle(paste0('Proportion of Concept ',concept_id_var,'Across Time',
+  ggtitle(paste0('Proportion of Concept ',concept_id_var,' Across Time',
                  '\n','All-Site in Red',
                  '\n','AUC value in Tooltip'))
   
   
-  gold_standard <- test4 %>% 
-    filter(concept_id == 81893) %>% select(auc_gold_standard) %>% 
+  gold_standard <- allsites %>%
+    filter(concept_id == filter_concept) %>% 
+    select(auc_gold_standard) %>%
     distinct() %>% pull()
   
   p2 <- dat_to_plot %>% 

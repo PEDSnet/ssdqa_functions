@@ -331,8 +331,8 @@ csd_ms_anom_at_auc <- function(process_output=ms_at %>% filter(variable=='ibd') 
                            outcome_var = 'prop_concept',
                            gold_standard_var = 'mean_allsiteprop') %>% 
       mutate(concept_id=x_concepts[[i]],
-             auc_mean=round(mean(auc_value),4),
-             auc_sd=round(sd(auc_value),4))
+             auc_mean=round(mean(auc_value, na.rm = TRUE),4),
+             auc_sd=round(sd(auc_value, na.rm = TRUE),4))
     
     
     

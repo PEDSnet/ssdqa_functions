@@ -152,7 +152,7 @@ ms_exp_at[[2]]
 
 ## Single Site, Anomaly, Across Time
 
-This check outputs a control chart that highlights anomalies in the count of patients per concept_id in the provided variable. Blue dots along the line indicate non-anomalous values, while orange dots are anomalies.
+This check outputs a control chart that highlights anomalies in the proportion of patients per concept_id in the provided variable. A `P Prime` chart is used to account for the high sample size, which means that the standard deviation is multiplied by a numerical constant. Blue dots along the line indicate non-anomalous values, while orange dots are anomalies.
 
 ```{r ss_anom_at}
 
@@ -160,7 +160,7 @@ ss_anom_at <- csd_output(process_output = get_results('csd_ss_at'),
                         output_function = 'csd_ss_anom_at',
                         vocab_tbl = vocabulary_tbl('concept'),
                         num_mappings = 10,
-                        filtered_var = 'polyarticular_jia'
+                        filtered_var = 'spondyloarthritis'
                         )
 
 ss_anom_at[[1]]
@@ -171,9 +171,21 @@ ss_anom_at[[2]]
 
 ## Multi Site, Anomaly, Across Time
 
-This output is currently in progress and will be added to this report at a later date
+This check displays the area under the curve (AUC) for ONE concept_id across time, for every site in the cohort. The AUC computation itself takes place in the initial processing function to reduce load on the summarization end. During this computation, the all site mean is used as the "gold standard" against which the site-specific proportion associated with a given concept_id is compared. 
+
+Two graphs are output:
+
+  * a line graph displaying the proportion of that concept_id at each site over time, with the AUC values available in the tooltip when hovering over a given line
+  * a bar graph comparing the AUC values for each site against the all site overall AUC value
 
 ```{r ms_anom_at}
 
+ms_anom_at <- csd_output(process_output = get_results('csd_ms_anom_at'),
+                         output_function = 'csd_ms_anom_at',
+                         filter_concept = 81893)
+
+ms_anom_at[[1]]
+
+ms_anom_at[[2]]
 
 ```

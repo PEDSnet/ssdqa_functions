@@ -193,6 +193,7 @@ csd_output <- function(process_output=process_output,
                        num_codes = 10,
                        num_mappings = 10,
                        filtered_var = 'general_jia',
+                       filter_concept = 81893,
                        facet=NULL,
                        text_wrapping_char = 80,
                        comparison_col = 'prop_concept',
@@ -230,11 +231,6 @@ csd_output <- function(process_output=process_output,
                                  facet=facet,
                                  vocab_tbl = vocab_tbl,
                                  num_codes = num_codes)
-  }else if(output_function == 'csd_ms_exp_nt'){
-    csd_output <- csd_ms_exp_nt(process_output=process_output,
-                                 facet=facet,
-                                 vocab_tbl = vocab_tbl,
-                                 num_codes = num_codes)
   }else if(output_function == 'csd_ms_anom_nt'){
     csd_output <- csd_ms_anom_nt(process_output=process_output,
                                    vocab_tbl=vocab_tbl,
@@ -248,7 +244,10 @@ csd_output <- function(process_output=process_output,
                                    output_value = output_value,
                                    facet = facet,
                                    vocab_tbl = vocab_tbl)
-  }
+  }else if(output_function == 'csd_ms_anom_at'){
+    csd_output <- csd_ms_anom_at(process_output_graph=process_output,
+                                 filter_concept=filter_concept)
+  }else(stop('Please enter a valid output_function for this check'))
   
   return(csd_output)
   
