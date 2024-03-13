@@ -163,3 +163,73 @@ compute_jaccard_evp <- function(jaccard_input_tbl) {
   best
   
 }
+
+
+#' *MS Anomaly Across Time Output*
+#' 
+#' @param process_output the input tbl to compute an AUC for the multi-site across time analysis  
+#' @param grp_vars variables to group by to compute the aggregated proportion for all sites
+#' @param var_col column for which to compute the AUC
+#' 
+#' @return a dataframe with the AUC values for each variable included in the function input table
+#' 
+
+compute_evp_auc <- function(process_output,
+                            grp_vars=c('time_start',
+                                       'time_increment',
+                                       'concept_group'),
+                            output_level = 'row') {
+  
+  
+  if(output_level == 'row'){
+    var_col <- 'prop_row_concept'
+  }else if(output_level == 'patient'){
+    var_col <- 'prop_pt_concept'
+  }else(stop('Please select a valid output level for AUC computation: `patient` or `row`'))
+  
+  x <- compute_dist_mean_conc(tbl=process_output,
+                              grp_vars=grp_vars,
+                              var_col=var_col,
+                              num_sd = 2,
+                              num_mad = 2)  %>% 
+    rename(mean_allsiteprop=mean)
+  
+  x_filtered <- 
+    x %>% select(site,
+                 !!!syms(grp_vars),
+                 !!sym(var_col),
+                 mean_allsiteprop)
+  
+  # x_variableconcepts <- 
+  #   x_filtered %>% distinct(variable,concept_id)
+  
+  x_concepts <- 
+    x_filtered %>% ungroup() %>% distinct(concept_group) %>% pull()
+  
+  output <- list()
+  
+  for(i in 1:length(x_concepts)) {
+    
+    aucs <- compute_auc_at(tbl_name= x_filtered %>% filter(concept_group==x_concepts[[i]]) %>%
+                             ungroup(),
+                           iterate_var = 'site',
+                           time_var = 'time_start',
+                           outcome_var = var_col,
+                           gold_standard_var = 'mean_allsiteprop') %>% 
+      mutate(concept_group=x_concepts[[i]],
+             auc_mean=round(mean(auc_value, na.rm = TRUE),4),
+             auc_sd=round(sd(auc_value, na.rm = TRUE),4))
+    
+    
+    
+    
+    output[[i]] <- aucs  
+    
+  }
+  
+  output_reduced <- reduce(.x=output,
+                           .f=dplyr::union) #%>% 
+    #inner_join(x_variableconcepts)
+  
+  
+}

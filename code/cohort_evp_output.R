@@ -234,10 +234,12 @@ evp_ss_anom_at <- function(process_output,
                            facet){
   
   if(output_level == 'row'){
-    prop <- 'prop_row_concept'
+    ct <- 'concept_row_ct'
+    denom <- 'total_row_ct'
     title <- 'Rows'
   }else if(output_level == 'patient'){
-    prop <- 'prop_pt_concept'
+    ct <- 'concept_pt_ct'
+    denom <- 'total_pt_ct'
     title <- 'Patients'
   }else(stop('Please choose an acceptable output level: `patient` or `row`'))
   
@@ -245,14 +247,111 @@ evp_ss_anom_at <- function(process_output,
   
   final <- process_output %>%
     unite(facet_col, !!!syms(facet), sep = '\n') %>%
-    rename('ycol' = prop)
+    rename('ycol' = ct,
+           'denom' = denom)
   
-  qic(data = final, x = time_start, y = ycol, chart = 'c', facet = ~facet_col,
-      title = paste0('Control Chart: Proportion ', title, ' per Concept'), 
+  qic(data = final, x = time_start, y = ycol, chart = 'pp', facet = ~facet_col,
+      title = paste0('Control Chart: Proportion of ', title, ' per Concept'), 
       ylab = 'Proportion', xlab = 'Time',
-      show.grid = TRUE)
+      show.grid = TRUE, n = denom)
   
 }
+
+
+#' **Multi-Site Across Time Anomaly**
+#' Produces graphs showing AUCs
+#' 
+#' @param process_output_graph output from `evp_process`
+#' @param filter_variable the variable that should be used to generate output
+#' @return two graphs:
+#'    1) line graph that shows the proportion of a 
+#'    code across time computation with the AUC associated with each line
+#'    2) bar graph with each site on the x-axis, and the y-axis the AUC value, 
+#'    with a dotted line showing the all-site average
+#' 
+#' THIS GRAPH SHOWS ONLY ONE VARIABLE AT A TIME!
+#' 
+
+evp_ms_anom_at <- function(process_output_graph,
+                           output_level,
+                           filter_variable) {
+  
+  if(output_level == 'row'){
+    var_col <- 'prop_row_concept'
+  }else if(output_level == 'patient'){
+    var_col <- 'prop_pt_concept'
+  }else(stop('Please select a valid output_level: `patient` or `row`'))
+  
+  allsites <- 
+    process_output_graph %>% 
+    filter(concept_group == filter_variable) %>% 
+    select(time_start,concept_group,mean_allsiteprop,auc_gold_standard) %>% distinct() %>% 
+    rename_with(~var_col, mean_allsiteprop) %>% 
+    mutate(site='all site average',
+           auc_value=auc_gold_standard) %>% 
+    mutate(text=paste0("Site: ", site,
+                       #"\n","Proportion: ",prop_concept,
+                       "\n","AUC Value: ",auc_value,
+                       "\n","All-Site AUC: ",auc_gold_standard)) 
+  
+  #%>% 
+  dat_to_plot <- 
+    process_output_graph %>% 
+    filter(concept_group == filter_variable) %>% 
+    mutate(text=paste0("Site: ", site,
+                       #"\n","Proportion: ",prop_concept,
+                       "\n","AUC Value: ",auc_value,
+                       "\n","All-Site AUC: ",auc_gold_standard)) 
+  
+  concept_var <- 
+    dat_to_plot %>% select(concept_group) %>% distinct() %>% pull
+  
+  if(length(concept_var) > 1) {stop('Please input only one concept_id')}
+  
+  p <- dat_to_plot %>%
+    #filter(concept_id == 81893) %>% 
+    ggplot(aes(y = !!sym(var_col), x = time_start, color = site,group=site, text=text)) +
+    geom_line(data= filter(allsites, concept_group==concept_var), linewidth = 1.1) +
+    #stat_smooth(geom='line',alpha=0.7,se=TRUE) +
+    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    ggtitle(paste0('Proportion of ',concept_var,' Across Time',
+                   '\n','All-Site in Red',
+                   '\n','AUC value in Tooltip'))
+  
+  
+  gold_standard <- allsites %>%
+    filter(concept_group == filter_variable) %>% 
+    select(auc_gold_standard) %>%
+    distinct() %>% pull()
+  
+  p2 <- dat_to_plot %>% 
+    #filter(concept_id == 81893) %>% 
+    select(site,auc_value,auc_gold_standard) %>% 
+    distinct() %>% 
+    ggplot(aes(y = auc_value, x = site, fill=site)) +
+    geom_bar(stat='identity') + 
+    geom_hline(yintercept=gold_standard,
+               linetype='dashed', color='red') +
+    coord_flip() +
+    guides(fill='none') + theme_minimal() +
+    ggtitle(paste0('Site AUC Value for ',concept_var,
+                   '\n','All-Site in Dashed Red'))
+  
+  
+  plotly_p <- ggplotly(p,tooltip="text")
+  plotly_p2 <- ggplotly(p2,tooltip='auc_value')
+  
+  output <- list(plotly_p,
+                 plotly_p2)
+  
+}
+
+
+
+
+
 
 #' *Multi Site, Anomaly, Across Time*
 #' 
@@ -270,7 +369,7 @@ evp_ss_anom_at <- function(process_output,
 #' @return a heatmap that shows the proportion of mappings for each code that are unstable across
 #'         time, meaning they frequently deviate from the all site centroid
 #' 
-evp_ms_anom_at <- function(process_output,
+evp_ms_anom_at_old <- function(process_output,
                            output_level,
                            facet,
                            mad_dev = 2){

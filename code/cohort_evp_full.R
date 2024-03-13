@@ -24,6 +24,8 @@
 #' @param anomaly_or_exploratory Option to conduct an exploratory or anomaly detection analysis. Exploratory analyses give a high
 #'                               level summary of the data to examine the fact representation within the cohort. Anomaly detection
 #'                               analyses are specialized to identify outliers within the cohort.
+#' @param output_level the level of output to use for an AUC computation, exclusive to `ms_anom_at`; either `patient` or `row` -- 
+#'                     defaults to `row`
 #' @param age_groups If you would like to stratify the results by age group, fill out the provided `age_group_definitions.csv` file
 #'                     with the following information:
 #'                     - @min_age: the minimum age for the group (i.e. 10)
@@ -48,6 +50,7 @@ evp_process <- function(cohort,
                         evp_concept_file = read_codeset('evp_concepts', 'cccc'),
                         multi_or_single_site = 'single',
                         anomaly_or_exploratory='exploratory',
+                        output_level = 'row',
                         age_groups = NULL,
                         time = FALSE,
                         time_span = c('2012-01-01', '2020-01-01'),
@@ -107,19 +110,19 @@ evp_process <- function(cohort,
       site_output[[k]] <- concept_check
       
     } else if(time){
-    
-    concept_check <- compute_fot(cohort = cohort_site,
-                                 site_col = site_col,
-                                 site_list = site_list_adj,
-                                 time_span = time_span,
-                                 time_period = time_period,
-                                 reduce_id = NULL,
-                                 check_func = function(dat){
-                                   compute_evp(cohort = dat,
-                                               grouped_list = grouped_list,
-                                               time = TRUE,
-                                               evp_concept_file = evp_concept_file)
-                                 })
+        
+        concept_check <- compute_fot(cohort = cohort_site,
+                                     site_col = site_col,
+                                     site_list = site_list_adj,
+                                     time_span = time_span,
+                                     time_period = time_period,
+                                     reduce_id = NULL,
+                                     check_func = function(dat){
+                                       compute_evp(cohort = dat,
+                                                   grouped_list = grouped_list,
+                                                   time = TRUE,
+                                                   evp_concept_file = evp_concept_file)
+                                     })
     
     site_output[[k]] <- concept_check
     
@@ -128,13 +131,27 @@ evp_process <- function(cohort,
     evp_tbl <- reduce(.x=site_output,
                       .f=dplyr::union)
     
-    }
+  }
+  
+  if(time == TRUE && multi_or_single_site == 'multi' && anomaly_or_exploratory == 'anomaly'){
+    
+    evp_tbl_final <- compute_evp_auc(process_output = evp_tbl,
+                                     grp_vars = c('time_start',
+                                                  'time_increment',
+                                                  'concept_group'),
+                                     output_level = output_level)
+    
+  }else(evp_tbl_final <- evp_tbl)
+  
+  evp_tbl_final %>%
+    replace_site_col() %>%
+    output_tbl('evp_process_results', file = TRUE)
+  
+  return(evp_tbl_final %>% replace_site_col())
   
   message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
                        output function in evp_output: ', output_type, '. This is also included
                        in the parameter_summary.csv file output to the results directory.')))
-  
-  return(evp_tbl %>% replace_site_col())
 }
 
 
@@ -145,6 +162,8 @@ evp_process <- function(cohort,
 #' @param output_function the name of the output function that should be used provided in the `parameter_summary` csv 
 #'                        file that is output to the provided results folder after running the `evp_process` function 
 #' @param output_level the type of counts the output should summarise -- either `patient` or `row`
+#' @param filter_variable for `evp_ms_anom_at`, the single variable that should be displayed in the output; can be
+#'                        any of the variables listed in the `evp_process` output
 #' @param facet the variables by which you would like to facet the graph. available and/or recommended options for
 #'              faceting variables are provided in the `parameter_summary` csv file
 #' @param kmeans_centers the number of centers that should be included in a K-means analysis; defaults to 2
@@ -157,6 +176,7 @@ evp_process <- function(cohort,
 evp_output <- function(process_output,
                        output_function,
                        output_level,
+                       filter_variable,
                        facet,
                        kmeans_centers = 2,
                        mad_dev = 2){

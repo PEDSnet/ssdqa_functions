@@ -138,28 +138,33 @@ g
 
 ## Single Site, Anomaly, Across Time
 
-This check outputs a control chart that highlights anomalies in the proportion of patients per variable / concept group. Blue dots along the line indicate non-anomalous values, while orange dots are anomalies.
+This check outputs a control chart that highlights anomalies in the proportion of patients per variable. A `P Prime` chart is used to account for the high sample size, which means that the standard deviation is multiplied by a numerical constant. Blue dots along the line indicate non-anomalous values, while orange dots are anomalies.
 
 ```{r ss_anom_at}
 
 evp_output(process_output = get_results('evp_ss_at'),
            output_function = 'evp_ss_anom_at',
-           output_level = output_level,
+           output_level = 'patient',
            facet = facet)
 
 ```
 
 ## Multi Site, Anomaly, Across Time
 
-Under development due to newly discovered error -- will be added at a later date
+This check displays the area under the curve (AUC) for ONE variable across time, for every site in the cohort. The AUC computation itself takes place in the initial processing function to reduce load on the summarization end. During this computation, the all site mean is used as the "gold standard" against which the site-specific proportion associated with a given variable is compared. 
 
-<!-- This heat map shows the proportion of "unstable" concept groups across time. The check will look for concept groups that fall a certain number of MAD (provided by the user) away from the all site median throughout the user specified time span. The "instability" of the concept is represented by both the number and proportion of outliers within a given site + concept group pair. -->
+Two graphs are output:
+
+  * a line graph displaying the proportion of that variable at each site over time, with the AUC values available in the tooltip when hovering over a given line
+  * a bar graph comparing the AUC values for each site against the all site overall AUC value
 
 ```{r ms_anom_at}
 
-# evp_ms_anom_at(process_output = across_time,
-#                output_level = output_level,
-#                facet = facet,
-#                mad_dev = 1)
+ms_anom_at <- evp_ms_anom_at(process_output = get_results('evp_ms_anom_at'),
+                             output_level = 'row',
+                             filter_variable = 'JIA')
+
+ms_anom_at[[1]]
+ms_anom_at[[2]]
 
 ```
