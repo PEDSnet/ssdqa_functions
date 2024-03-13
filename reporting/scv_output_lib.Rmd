@@ -166,17 +166,24 @@ op[[2]]
 
 ## Multi Site, Anomaly Detection, Across Time
 
-Under development due to newly discovered error -- will be added at a later date
+This check displays the area under the curve (AUC) for ONE concept pair (primary concept provided by the user in the processing function and its mapped pair) across time, for every site in the cohort. The AUC computation itself takes place in the initial processing function to reduce load on the summarization end. During this computation, the all site mean is used as the "gold standard" against which the site-specific proportion associated with a given concept pair is compared. 
 
-<!-- This heat map shows the proportion of "unstable" concept_ids across time. The check will look for concept_ids that fall a certain number of MAD (provided by the user) away from the all site median number of mappings throughout the user specified time span. The "instability" of the concept is represented by both the number and proportion of outliers within a given site + concept_id pair. -->
+Two graphs are output:
+
+  * a line graph displaying the proportion of the primary concept at each site over time, with the AUC values available in the tooltip when hovering over a given line
+    + the proportion shown is that of the representation of the mapped concept of interest within the primary concept of interest. for example, if the user provides a SNOMED condition code (code_type = 'cdm'), the y-axis will display the proportion of rows with that SNOMED code that are associated with the source ICD code selected by the user.
+  * a bar graph comparing the AUC values for that concept pair at each site against the all site overall AUC value
 
 ```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-# scv_output(process_output = across_time,
-#            output_function = 'scv_ms_anom_at',
-#            code_type = 'cdm',
-#            facet = NULL,
-#            mad_dev = 2,
-#            vocab_tbl = NULL)
+op <- scv_output(process_output = get_results('scv_ms_anom_at'),
+           output_function = 'scv_ms_anom_at',
+           code_type = 'cdm',
+           facet = NULL,
+           filter_concept = 4132811,
+           filter_mapped = 45586853)
+
+op[[1]]
+op[[2]]
 
 ```

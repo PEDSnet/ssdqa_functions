@@ -503,11 +503,11 @@ compute_auc_at <- function(tbl_name,
     select(iterate,
            xaxis_time,
            yaxis,
-           gold_standard,
-           iterate)
+           gold_standard)
   
   iterate_vector <- 
-    tbl_name_vars_ready %>% select(iterate) %>% 
+    tbl_name_vars_ready %>% 
+    select(iterate) %>% 
     distinct() %>% pull()
   
   final <- list()

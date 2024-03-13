@@ -111,8 +111,8 @@ scv_process <- function(cohort,
       
     }
     
-    scv_tbl <- reduce(.x=site_output,
-                      .f=dplyr::union)
+    scv_tbl_final <- reduce(.x=site_output,
+                            .f=dplyr::union)
     
   } else if(time){
     if(!is.vector(concept_set)){stop('For an over time output, please select 1-5 codes from your
@@ -140,13 +140,41 @@ scv_process <- function(cohort,
                                              time = TRUE)
                            })
     
+    if(multi_or_single_site == 'multi' && anomaly_or_exploratory == 'anomaly'){
+      
+      tbl_list <- list()
+      
+      for(i in 1:length(concept_set)){
+        
+        if(code_type == 'cdm'){col <- 'concept_id'}else{col <- 'source_concept_id'}
+      
+      scv_tbl_tmp <- compute_scv_auc(process_output = scv_tbl %>% ungroup() %>%
+                                       filter(!!sym(col) == concept_set[[i]]),
+                                       grp_vars = c('time_start',
+                                                    'time_increment',
+                                                    'concept_id',
+                                                    'source_concept_id'),
+                                       code_type = code_type)
+      tbl_list[[i]] <- scv_tbl_tmp
+      
+      }
+      
+      scv_tbl_final <- reduce(.x = tbl_list,
+                              .f = dplyr::union)
+      
+    }else(scv_tbl_final <- scv_tbl)
+    
   }
+  
+  scv_tbl_final %>%
+    replace_site_col() %>%
+    output_tbl('scv_process_results', file = TRUE)
   
   message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
                        output function in scv_output: ', output_type, '. This is also included
                        in the parameter_summary.csv file output to the results directory.')))
   
-  return(scv_tbl %>% replace_site_col())
+  return(scv_tbl_final %>% replace_site_col())
 }
 
 
@@ -160,6 +188,11 @@ scv_process <- function(cohort,
 #'                  should ideally match the code_type that was defined when running `scv_process`
 #' @param facet the variables by which you would like to facet the graph. available and/or recommended options for
 #'              faceting variables are provided in the `parameter_summary` csv file
+#' @param filter_concept for `scv_ms_anom_at` only -- choose ONE concept_id from the concept_set provided in 
+#'                       `scv_process` to filter the output
+#' @param filter_mapped for `scv_ms_anom_at` only -- choose ONE mapped concept from those associated with the
+#'                      concept_id provided in @filter_concept; options can be found in the `mapped_id` column
+#'                      of `scv_process`                   
 #' @param num_codes the number of top codes of code_type that should be displayed in the analysis
 #' 
 #'                  used for `ss_exp_nt` and `ms_exp_nt`
@@ -186,6 +219,8 @@ scv_output <- function(process_output,
                        output_function,
                        code_type,
                        facet,
+                       filter_concept = NULL,
+                       filter_mapped = NULL,
                        num_codes = 10,
                        num_mappings = 25,
                        rel_to_median = 'greater',
@@ -229,8 +264,8 @@ scv_output <- function(process_output,
   }else if(output_function == 'scv_ms_anom_at'){
     scv_output <- scv_ms_anom_at(process_output = process_output,
                                  code_type = code_type,
-                                 facet = facet,
-                                 mad_dev = mad_dev)
+                                 filter_concept = filter_concept,
+                                 filter_mapped = filter_mapped)
   }else if(output_function == 'scv_ss_anom_at'){
     scv_output <- scv_ss_anom_at(process_output = process_output,
                                  code_type = code_type,

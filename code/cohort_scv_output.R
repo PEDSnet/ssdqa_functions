@@ -492,73 +492,169 @@ produce_multisite_mad_scv <- function(multisite_tbl,
   
 }
 
+#' **Multi-Site Across Time Anomaly**
+#' Produces graphs showing AUCs
+#' 
+#' @param process_output_graph output from `evp_process`
+#' @param filter_variable the variable that should be used to generate output
+#' @return two graphs:
+#'    1) line graph that shows the proportion of a 
+#'    code across time computation with the AUC associated with each line
+#'    2) bar graph with each site on the x-axis, and the y-axis the AUC value, 
+#'    with a dotted line showing the all-site average
+#' 
+#' THIS GRAPH SHOWS ONLY ONE MAPPED CONCEPT AT A TIME!
+#' 
 
-#' *Multi Site, Anomaly, Across Time*
-#' 
-#' codes where a mapping represents a proportion of all mappings for that code which
-#' is +/- 2 MAD away from median. 
-#' 
-#' graph displays the proportion of mappings per code 
-#' that are outliers.
-#' 
-#' @param process_output dataframe output by `scv_process`
-#' @param code_type type of code to be used in analysis -- either `source` or `cdm`
-#' 
-#'                  should match the code_type provided when running `scv_process`
-#' @param facet the variables by which you would like to facet the graph
-#' @param mad_dev an integer to define the deviation that should be used to compute the upper and lower MAD limits
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
-#' 
-#' @return a heatmap that shows the proportion of mappings for each code that are unstable across
-#'         time, meaning they frequently deviate from the all site centroid
-#' 
-scv_ms_anom_at <- function(process_output,
+scv_ms_anom_at <- function(process_output_graph,
                            code_type,
-                           facet,
-                           mad_dev = 2){
+                           filter_concept,
+                           filter_mapped) {
   
-  if(code_type == 'source'){
-    col <- 'source_concept_id'
-    denom <- 'denom_source_ct'
-  }else if(code_type == 'cdm'){
-    col <- 'concept_id'
-    denom <- 'denom_concept_ct'
-  }else{stop('Please select a valid code_type - `source` or `cdm`')}
+  if(code_type == 'cdm'){
+    var_col <- 'concept_prop'
+    alt_col <- 'concept_id'
+    title <- 'Source Concept'
+  }else if(code_type == 'source'){
+    var_col <- 'source_prop'
+    alt_col <- 'source_concept_id'
+    title <- 'Concept'
+  }else(stop('Please select a valid code_type: `cdm` or `source`'))
   
-  fot <- check_fot_multisite(tblx = process_output %>% ungroup() %>%
-                     mutate(start_date = time_start, domain = concept_id),
-                     domain_list = process_output %>% distinct(concept_id) %>% pull(),
-                   target_col = 'ct',
-                   facet_var = facet %>% append(c('source_concept_id')))
+  allsites <- 
+    process_output_graph %>% 
+    filter(mapped_id == filter_mapped,
+           !!sym(alt_col) == filter_concept) %>% 
+    select(time_start,mapped_id,mean_allsiteprop,auc_gold_standard) %>% distinct() %>% 
+    rename_with(~var_col, mean_allsiteprop) %>% 
+    mutate(site='all site average',
+           auc_value=auc_gold_standard) %>% 
+    mutate(text=paste0("Site: ", site,
+                       #"\n","Proportion: ",prop_concept,
+                       "\n","AUC Value: ",auc_value,
+                       "\n","All-Site AUC: ",auc_gold_standard)) 
   
-  fot2 <- check_fot_all_dist(fot_check_output = fot$fot_heuristic)
+  #%>% 
+  dat_to_plot <- 
+    process_output_graph %>% 
+    filter(mapped_id == filter_mapped,
+           !!sym(alt_col) == filter_concept)  %>% 
+    mutate(text=paste0("Site: ", site,
+                       #"\n","Proportion: ",prop_concept,
+                       "\n","AUC Value: ",auc_value,
+                       "\n","All-Site AUC: ",auc_gold_standard)) 
   
-  mad <- produce_multisite_mad_scv(multisite_tbl = fot2,
-                                   code_type = code_type,
-                                   facet_var = facet,
-                                   mad_dev = mad_dev)
+  mapped_var <- 
+    dat_to_plot %>% select(mapped_id) %>% distinct() %>% pull
   
-  mad2 <- mad %>% left_join(process_output %>% distinct(site, !!sym(col), !!sym(denom), concept_name))
-    
-    final <- mad2 %>%
-      mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
-             tooltip = paste0('Concept Name: ', concept_name, '\nTotal Concept Rows: ', denom_fmt))
-    
-    r <- ggplot(final, aes(x=site, y=as.character(!!sym(col)), fill=grp_outlier_prop)) +
-      geom_tile_interactive(aes(tooltip = tooltip)) +
-      facet_wrap((facet)) +
-      scale_fill_viridis_c(option = 'turbo') +
-      theme_classic() +
-      coord_flip() +
-      labs(title = 'Stability of Mappings Over Time',
-           y = 'Code',
-           fill = 'Proportion Unstable \nMappings')
-    
-    p <- girafe(ggobj = r)
- 
-   return(p)
+  concept_var <-
+    dat_to_plot %>% select(!!sym(alt_col)) %>% distinct() %>% pull
+  
+  if(length(concept_var) > 1) {stop('Please input only one concept_id')}
+  
+  p <- dat_to_plot %>%
+    ggplot(aes(y = !!sym(var_col), x = time_start, color = site,group=site, text=text)) +
+    geom_line(data= filter(allsites, mapped_id==mapped_var), linewidth = 1.1) +
+    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    ggtitle(paste0('Proportion of ', concept_var, ' - ', mapped_var, ' Concept Pair Across Time',
+                   '\n','All-Site in Red; AUC value in Tooltip'))
+  
+  
+  gold_standard <- allsites %>%
+    select(auc_gold_standard) %>%
+    distinct() %>% pull()
+  
+  p2 <- dat_to_plot %>% 
+    select(site,auc_value,auc_gold_standard) %>% 
+    distinct() %>% 
+    ggplot(aes(y = auc_value, x = site, fill=site)) +
+    geom_bar(stat='identity') + 
+    geom_hline(yintercept=gold_standard,
+               linetype='dashed', color='red') +
+    coord_flip() +
+    guides(fill='none') + theme_minimal() +
+    ggtitle(paste0('Site AUC Value for ', concept_var, ' - ', mapped_var, ' Concept Pair',
+                   '\n','All-Site in Dashed Red'))
+  
+  
+  plotly_p <- ggplotly(p,tooltip="text")
+  plotly_p2 <- ggplotly(p2,tooltip='auc_value')
+  
+  output <- list(plotly_p,
+                 plotly_p2)
+  
 }
+
+
+
+#' #' *Multi Site, Anomaly, Across Time*
+#' #' 
+#' #' codes where a mapping represents a proportion of all mappings for that code which
+#' #' is +/- 2 MAD away from median. 
+#' #' 
+#' #' graph displays the proportion of mappings per code 
+#' #' that are outliers.
+#' #' 
+#' #' @param process_output dataframe output by `scv_process`
+#' #' @param code_type type of code to be used in analysis -- either `source` or `cdm`
+#' #' 
+#' #'                  should match the code_type provided when running `scv_process`
+#' #' @param facet the variables by which you would like to facet the graph
+#' #' @param mad_dev an integer to define the deviation that should be used to compute the upper and lower MAD limits
+#' #' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
+#' #'                  concept names
+#' #' 
+#' #' @return a heatmap that shows the proportion of mappings for each code that are unstable across
+#' #'         time, meaning they frequently deviate from the all site centroid
+#' #' 
+#' scv_ms_anom_at <- function(process_output,
+#'                            code_type,
+#'                            facet,
+#'                            mad_dev = 2){
+#'   
+#'   if(code_type == 'source'){
+#'     col <- 'source_concept_id'
+#'     denom <- 'denom_source_ct'
+#'   }else if(code_type == 'cdm'){
+#'     col <- 'concept_id'
+#'     denom <- 'denom_concept_ct'
+#'   }else{stop('Please select a valid code_type - `source` or `cdm`')}
+#'   
+#'   fot <- check_fot_multisite(tblx = process_output %>% ungroup() %>%
+#'                      mutate(start_date = time_start, domain = concept_id),
+#'                      domain_list = process_output %>% distinct(concept_id) %>% pull(),
+#'                    target_col = 'ct',
+#'                    facet_var = facet %>% append(c('source_concept_id')))
+#'   
+#'   fot2 <- check_fot_all_dist(fot_check_output = fot$fot_heuristic)
+#'   
+#'   mad <- produce_multisite_mad_scv(multisite_tbl = fot2,
+#'                                    code_type = code_type,
+#'                                    facet_var = facet,
+#'                                    mad_dev = mad_dev)
+#'   
+#'   mad2 <- mad %>% left_join(process_output %>% distinct(site, !!sym(col), !!sym(denom), concept_name))
+#'     
+#'     final <- mad2 %>%
+#'       mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
+#'              tooltip = paste0('Concept Name: ', concept_name, '\nTotal Concept Rows: ', denom_fmt))
+#'     
+#'     r <- ggplot(final, aes(x=site, y=as.character(!!sym(col)), fill=grp_outlier_prop)) +
+#'       geom_tile_interactive(aes(tooltip = tooltip)) +
+#'       facet_wrap((facet)) +
+#'       scale_fill_viridis_c(option = 'turbo') +
+#'       theme_classic() +
+#'       coord_flip() +
+#'       labs(title = 'Stability of Mappings Over Time',
+#'            y = 'Code',
+#'            fill = 'Proportion Unstable \nMappings')
+#'     
+#'     p <- girafe(ggobj = r)
+#'  
+#'    return(p)
+#' }
 
 
 #' *Single Site, Anomaly, Across Time*
@@ -582,7 +678,8 @@ scv_ss_anom_at <- function(process_output,
   if(code_type == 'source'){
     col <- 'source_concept_id'
   }else if(code_type == 'cdm'){
-    col <- 'concept_id'}
+    col <- 'concept_id'
+  }else{stop('Please choose a valid code_type: `cdm` or `source`')}
   
   facet <- facet %>% append(col)
   
