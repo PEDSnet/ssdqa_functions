@@ -187,7 +187,7 @@ compute_evp_auc <- function(process_output,
     var_col <- 'prop_pt_concept'
   }else(stop('Please select a valid output level for AUC computation: `patient` or `row`'))
   
-  x <- compute_dist_mean_conc(tbl=process_output,
+  x <- compute_dist_mean_median(tbl=process_output,
                               grp_vars=grp_vars,
                               var_col=var_col,
                               num_sd = 2,

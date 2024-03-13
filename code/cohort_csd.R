@@ -306,7 +306,7 @@ csd_ms_anom_at_auc <- function(process_output=ms_at %>% filter(variable=='ibd') 
                                var_col='prop_concepts') {
   
   
-  x <- compute_dist_mean_conc(tbl=process_output,
+  x <- compute_dist_mean_median(tbl=process_output,
                               grp_vars=grp_vars,
                               var_col=var_col,
                               num_sd = 2,num_mad = 2)  %>% 
