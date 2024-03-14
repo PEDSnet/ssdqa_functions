@@ -220,7 +220,7 @@ conc_output_gen <- function(conc_process_output,
   # compute means and sd for anomaly detection
   if(anomaly_or_exploratory=='anomaly'&multi_or_single_site=='multi'){
     gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site']
-    message('Computing mean and distance to mean')
+    message('Computing median and distance to median')
     conc_output_pp <- compute_dist_median_conc(tbl=conc_output_pp,
                                                grp_vars=gp_vars_no_site,
                                                var_col='prop',
@@ -264,7 +264,7 @@ conc_output_gen <- function(conc_process_output,
   if(multi_or_single_site=='single'&anomaly_or_exploratory=='exploratory'){
     # over time
     if(time_dimension){
-      conc_output_plot <- plot_ss_exp_ot_conc(data_tbl=conc_output_pp,
+      conc_output_plot <- plot_cnc_sp_ss_exp_at(data_tbl=conc_output_pp,
                                               facet=facet_vars,
                                               pal_map=conc_colors)
       
@@ -275,7 +275,7 @@ conc_output_gen <- function(conc_process_output,
                                                val_col="prop",
                                                n=top_n)%>%
         filter(top_n_indicator)
-      conc_output_plot <- conc_ss_exp_nt(data_tbl=conc_output_pp,
+      conc_output_plot <- plot_cnc_sp_ss_exp_nt(data_tbl=conc_output_pp,
                                          facet=facet_vars,
                                          x_var='specialty_name',
                                          y_var='prop',
@@ -289,8 +289,8 @@ conc_output_gen <- function(conc_process_output,
       # over time
       conc_output_plot<-plot_cnc_sp_ss_an_at(data_tbl=conc_output_pp)
     }else{
-      # testing alternate plot for single site, anomaly, not over time
-      conc_output_plot <- plot_ss_an_nt_conc_alt(data_tbl=conc_output_pp)
+      # not over time
+      conc_output_plot <- plot_cnc_sp_ss_an_nt(data_tbl=conc_output_pp)
     }
     
   }else if(multi_or_single_site=='multi'&anomaly_or_exploratory=='exploratory'){
@@ -304,23 +304,23 @@ conc_output_gen <- function(conc_process_output,
                                              sum_first=TRUE)%>%
         filter(top_n_indicator)
       facet_vars <- facet_vars %>% append(c('specialty_name'))
-      conc_output_plot <- plot_ms_exp_ot_conc(data_tbl=conc_output_pp,
+      conc_output_plot <- plot_cnc_sp_ms_exp_at(data_tbl=conc_output_pp,
                                               facet=facet_vars,
                                               pal_map=conc_colors)
     }else{
       # not over time
-      conc_output_plot <- plot_conc_ms_exp_dotplot(data_tbl=conc_output_pp,
+      conc_output_plot <- plot_cnc_sp_ms_exp_nt(data_tbl=conc_output_pp,
                                                     pal_map=conc_colors)
     }
     ## MULTI SITE, ANOMALY
   }else if(multi_or_single_site=='multi'&anomaly_or_exploratory=='anomaly'){
     if(time_dimension){
       # over time
-      conc_output_plot <- plot_ms_an_ot_conc(data_tbl=conc_output_pp)
+      conc_output_plot <- plot_cnc_sp_ms_an_at(data_tbl=conc_output_pp)
       
     }else{
       # not over time
-      conc_output_plot <- plot_ms_an_nt_conc_alt(data_tbl=conc_output_pp)
+      conc_output_plot <- plot_cnc_sp_ms_an_nt(data_tbl=conc_output_pp)
     }
     
   }

@@ -1,19 +1,14 @@
-
-plot_conc_ss_exp <- function(input,
-                             facet){
-  if(is.null(facet)){
-    plt <- ggplot(input, aes(x=specialty_name, y=num_visits))+
-      geom_bar(stat='identity')
-  }else{
-    plt <- ggplot(input, aes(x=specialty_name, y=num_visits))+
-      geom_bar(stat='identity')+
-      facet_wrap(facets = eval(facet), scales = 'free')
-  }
-  return(plt)
-  
-}
-
-conc_ss_exp_nt <- function(data_tbl,
+#' Function to produce output for clinical event concordance with specialty 
+#'      for single site, exploratory, not over time
+#'      
+#' @param data_tbl table with the data to plot
+#' @param facet list of one or more variables to facet the plot on
+#' @param x_var variable to plot on the x axis
+#' @param y_var variable to plot on the y axis
+#' @param fill_var variable to fill bars with
+#' @param pal_map list of colors to associate with each of the values in `fill_var`
+#' @return a plotly bar plot based on the values of `x_var`, `y_var`, `fill_var`, `facet`
+plot_cnc_sp_ss_exp_nt <- function(data_tbl,
                             facet,
                             x_var,
                             y_var,
@@ -28,9 +23,6 @@ conc_ss_exp_nt <- function(data_tbl,
          aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var), text=text)) +
     geom_bar(stat='identity') + 
     facet_wrap((facet))+
-    # facet_wrap((facet), scales="free_y") + 
-    # labs(y=y_title,
-    #      x='Domain') +
     scale_fill_manual(values=pal_map) +
     coord_flip() +
     theme_classic() +
@@ -42,67 +34,6 @@ conc_ss_exp_nt <- function(data_tbl,
   
   
 }
-
-#' Function to plot single site exploratory over time:
-#'    line plot with years on x axis and proportion on y axis
-#'    can facet as specified
-#'    each line can be colored as specified
-#' @param data_tbl table with the data to plot. Should contain the columns:
-#'                      year
-#'                      prop
-#'                      column names as specified by facet (if supplied) and color_var
-#' @param facet optional list of variables to facet by
-#' @param color_var name of the variable in `data_tbl` to assign colors to lines based off of
-#' @param pal_map palette color assignment to apply to `color_var`
-#' @return ggplot object with line plot showing proportion over time
-plot_ss_exp_ot <- function(data_tbl,
-                           facet,
-                           color_var,
-                           pal_map){
-  
-  
-  if(is.null(facet)){
-    plt <- ggplot(data_tbl, aes(x=year, y=prop, color=!!sym(color_var)))+
-      geom_line()+
-      theme_classic()+
-      scale_color_manual(values=pal_map)
-  }else{
-    plt <- ggplot(data_tbl, aes(x=year, y=prop, color=!!sym(color_var)))+
-      geom_line()+
-      theme_classic()+
-      facet_wrap(facets = eval(facet), scales = 'free')+
-      scale_color_manual(values=pal_map)
-  }
-  ggplotly(plot)
-}
-
-#' Function to plot multi-site exploratory with no time component
-#' @param data_tbl table with the columns specified as `x_var`, `y_var`, `fill_var` and anything in `facet`, if applicable
-#' @param x_var string containing name of variable to plot on x axis
-#' @param y_var string containing name of variable to plot on y axis
-#' @param fill_var string containing name of variable to fill the heatmap with, expected to be a numeric value
-#' @param facet either NULL if no facet required or a vector containing variable to facet by
-#' @return a heatmap with the specified x and y axes and fill
-plot_ms_exp_nt <- function(data_tbl,
-                           x_var,
-                           y_var,
-                           fill_var,
-                           facet=NULL){
-  if(is.null(facet)){
-    plt <- ggplot(data_tbl,aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var)))+
-    geom_tile(color='white',lwd=0.5,linetype=1)+
-      scale_fill_gradient2(low='pink', high='maroon')+
-      theme_classic()
-  }else{
-    plt <- ggplot(data_tbl,aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var)))+
-    geom_tile(color='white',lwd=0.5,linetype=1)+
-      scale_fill_gradient2(low='pink', high='maroon')+
-      theme_classic()+
-      facet_wrap(facets = eval(facet), scales = 'free')
-  }
-  return(plt)
-}
-
 
 #' Generate a color palette
 #'   based on the length of distinct values to be mapped to a color
@@ -182,49 +113,6 @@ compute_dist_median_conc <- function(tbl,
            n_mad=abs_diff_median/mad)
   
 }
-#' Function to generate a plot for anomaly detection with no time component
-#' @param data_tbl table with at least the variables specified in:
-#'          x_var, y_var, fill_var, facet (if applicable)
-#' @param x_var variable to plot on the x axis
-#'                should be a qualitative variable
-#' @param y_var variable to plot on the y axis 
-#'                should be a quantitative variable
-#' @param fill_var variable to fill bars with
-#' @param facet vector of strings of variable names to facet by
-#' @param pal_map map matching fill variables to colors to fill by
-#' @return bar plot filled and faceted as specified with error bars with lower and upper bounds and mean marked
-plot_ss_an_nt_conc <- function(data_tbl,
-                          x_var,
-                          y_var,
-                          fill_var,
-                          facet=NULL,
-                          pal_map){
-  data_tbl <- data_tbl %>%
-    mutate(text=paste("Specialty: ",specialty_name,
-                      "\nAnomaly: ",anomaly_yn,
-                      "\nProportion: ",round(prop,2),
-                      "\nMedian proportion: ",round(median,2)))
-  if(!is.null(facet)){
-  plt<-ggplot(data_tbl,
-         aes(x=!!sym(x_var), y=!! sym(y_var), text=text))+
-    geom_bar(stat='identity', position=position_dodge(width=1), aes(fill=!!sym(fill_var), color=anomaly_yn)) +
-    scale_fill_manual(values=pal_map)+
-    geom_point(aes(x=!!sym(x_var),fill=!!sym(fill_var),y=median), position=position_dodge(width=1),shape=4)+
-    coord_flip()+
-    facet_wrap((facet), scales="free_y")+
-    theme_classic()
-  }else{
-    plt<-ggplot(data_tbl,
-                aes(x=!!sym(x_var), y=!! sym(y_var), text=text)) +
-      geom_bar(stat='identity', position=position_dodge(width=1), aes(fill=!!sym(fill_var),color=anomaly_yn)) +
-      scale_fill_manual(values=pal_map)+
-      #geom_errorbar(aes(x=!!sym(x_var),ymin=sd_lower,ymax=sd_upper))+
-      geom_point(aes(x=!!sym(x_var),fill=!!sym(fill_var),y=median), position=position_dodge(width=1),shape=4)+
-      coord_flip()+
-      theme_classic()
-  }
-  ggplotly(plt, tooltip="text")
-}
 
 #' Function to limit output from `compute_dist_mean_conc`
 #'     to only the specialties where there is at least
@@ -264,26 +152,14 @@ flag_anomaly<- function(tbl,
   # return(anomaly_all)
 }
 
-
-plot_ss_an_nt_conc_hm <- function(data_tbl){
-  data_tbl <- data_tbl %>%
-    mutate(text=paste("Specialty: ", specialty_name,
-                      "\nCluster: ", cluster,
-                      "\nProportion: ", round(prop,2),
-                      "\nAnomaly: ", anomaly_yn))
-  plt<-ggplot(data_tbl,
-              aes(x=cluster,
-                  y=specialty_name,
-                  fill=prop,
-                  text=text))+
-    geom_tile(aes(color=as.factor(anomaly_yn)),lwd=0.5,linetype=1)+
-    theme_classic()+
-    scale_colour_manual(values=c("white", "red"))
-  ggplotly(plt, tooltip = "text")
-}
-
-
-plot_conc_ms_exp_dotplot <- function(data_tbl,
+#' Function to produce output for clinical event concordance with specialty 
+#'      for multi site, exploratory, not over time
+#'      
+#' @param data_tbl table with the data to plot
+#' @param pal_map list of colors to associate with each specialty name
+#' @return a plotly dot plot of specialty against proportion of visits with that specialty
+#'         at each site, with dot color representing site
+plot_cnc_sp_ms_exp_nt <- function(data_tbl,
                                      pal_map){
   dat_to_plot<-data_tbl%>%
     mutate(text=paste("Specialty: ",specialty_name,
@@ -301,7 +177,15 @@ plot_conc_ms_exp_dotplot <- function(data_tbl,
   
 }
 
-plot_ss_exp_ot_conc <- function(data_tbl,
+#' Function to produce output for clinical event concordance with specialty 
+#'      for single site, exploratory, across time
+#'      
+#' @param data_tbl table with the data to plot
+#' @param facet list of one or more variables to facet the plot on
+#' @param pal_map list of colors to associate with each specialty
+#' @return a plotly line plot of the proportion of visits with each specialty
+#'          against time, with line color representing specialty
+plot_cnc_sp_ss_exp_at <- function(data_tbl,
                                 facet=NULL,
                                 pal_map){
   dat_to_plot<-data_tbl %>%
@@ -368,13 +252,15 @@ insert_top_n_indicator<-function(dat,
                                      TRUE~TRUE))
 }
 
-#' Function to plot specialty concordance: multi-site, exploratory, over time
+#' Function to produce output for clinical event concordance with specialty
+#'      for multi site, exploratory, across time
+
 #' @param data_tbl table which must contain the cols: time_start | codeset_name | specialty_name | site
 #' @param facet if supplied, variable to facet the plot by
 #' @param pal_map color palette for the variable that will be used to color the line
 #' @return line plot, with time on x axis, proportion on y, line color determined by site
 #'              with a dotted line for the all-site mean
-plot_ms_exp_ot_conc <- function(data_tbl,
+plot_cnc_sp_ms_exp_at <- function(data_tbl,
                                 facet=NULL,
                                 pal_map){
   # compute all site mean
@@ -417,24 +303,14 @@ plot_ms_exp_ot_conc <- function(data_tbl,
   ggplotly(plt, tooltip="text")
 }
 
-compute_mad<-function(){
-  
-}
+#' Function to produce output for clinical event concordance with specialty
+#'      for multi site, anomaly, across time
 
-plot_ms_an_nt_conc<-function(data_tbl){
-  dat_to_plot <- data_tbl %>%
-    mutate(text=paste("Specialty: ",specialty_name,
-                      "\nProportion: ",round(prop,2),
-                      "\nNo. MAD from median: ", round(n_mad,2),
-                      "\nAnomaly: ",anomaly_yn))
-  plt<-ggplot(dat_to_plot, aes(x=site,y=specialty_name,fill=n_mad, text=text))+
-    geom_tile()+
-    scale_fill_gradient(colors=c('#8c510a','#d8b365','#f6e8c3', '#c7eae5', '#5ab4ac', '#01665e'))
-  
-  ggplotly(plt, tooltip="text")
-}
-
-plot_ms_an_ot_conc<- function(data_tbl){
+#' @param data_tbl table which must contain the cols: time_start | specialty_name | site
+#' @return ggplot heatmap with time on the x axis, site on the y,
+#'          and fill color representing the number of MAD from the across-site median
+#'          for that specialty for the given year
+plot_cnc_sp_ms_an_at<- function(data_tbl){
   plt<-ggplot(data_tbl, aes(x=time_start,y=site,fill=n_mad))+
     geom_tile()+
     facet_wrap(~specialty_name)+
@@ -444,7 +320,15 @@ plot_ms_an_ot_conc<- function(data_tbl){
   ggplotly(plt)
 }
 
-plot_ms_an_nt_conc_alt<-function(data_tbl){
+#' Function to produce output for clinical event concordance with specialty
+#'      for multi site, anomaly, not over time
+
+#' @param data_tbl table which must contain the cols: specialty_name | prop | median | n_mad
+#' @return plotly dot plot with site on x axis, specialty on y axis
+#'         with size of dot representing number of MAD from median
+#'              color of dot representing proportion of visits with specialty
+#'              shape of dot representing whether point is an anomaly
+plot_cnc_sp_ms_an_nt<-function(data_tbl){
   dat_to_plot <- data_tbl %>%
     mutate(text=paste("Specialty: ",specialty_name,
                       "\nSite: ",site,
@@ -468,7 +352,14 @@ plot_ms_an_nt_conc_alt<-function(data_tbl){
   ggplotly(plt, tooltip="text")
 }
 
-plot_ss_an_nt_conc_alt<- function(data_tbl){
+#' Function to produce output for clinical event concordance with specialty
+#'      for single site, anomaly, not over time
+#' @param data_tbl table which must contain the cols: specialty_name | prop | median | n_mad
+#' @return plotly dot plot with specialty on x axis, cluster on y axis
+#'         with size of dot representing number of MAD from median
+#'              color of dot representing proportion of visits with specialty
+#'              shape of dot representing whether point is an anomaly
+plot_cnc_sp_ss_an_nt<- function(data_tbl){
   dat_to_plot <- data_tbl %>%
     mutate(text=paste("Specialty: ",specialty_name,
                       "\nProportion: ",round(prop,2),
@@ -494,10 +385,10 @@ plot_ss_an_nt_conc_alt<- function(data_tbl){
   
 }
 
-#' Function for concordance: clinical events and specialties:
-#'        single site, anomaly detection, over time
-#' @param data_tbl table from cnc_sp output grouped accordingly within the `conc_output_gen` function, with at least the columns time_start | n | specialty_name
-#' @return a control chart with time on the x axis, number of visits on the y axis, faceted by specialty_name
+#' Function to produce output for clinical event concordance with specialty
+#'      for single site, anomaly, across time
+#' @param data_tbl table which must contain the cols: time_start | n | specialty_name
+#' @return control chart with time on x axis, number of visits on y axis, faceted by specialty
 plot_cnc_sp_ss_an_at<-function(data_tbl){
   qic(data=data_tbl, x=time_start, y = n, chart='c', facets=~specialty_name, #can also do cluster~specialty_name
       scales='free_y',
