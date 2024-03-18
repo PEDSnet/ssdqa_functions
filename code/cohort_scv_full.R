@@ -228,7 +228,7 @@ scv_output <- function(process_output,
                        vocab_tbl = vocabulary_tbl('concept')){
   
   
-  if(output_function %in% c('ss_exp_nt', 'ms_exp_nt', 'ss_exp_at', 'ms_exp_at')){
+  if(output_function %in% c('scv_ss_exp_nt', 'scv_ms_exp_nt', 'scv_ss_exp_at', 'scv_ms_exp_at')){
     if(code_type == 'source'){col <- 'concept_id'}else{col <- 'source_concept_id'}
   }else{
     if(code_type == 'source'){col <- 'source_concept_id'}else{col <- 'concept_id'}
