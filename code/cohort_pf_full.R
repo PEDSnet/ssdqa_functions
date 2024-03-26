@@ -132,7 +132,7 @@ pf_process <- function(cohort = cohort,
                             time_span = time_span,
                             site_list = site_list_adj,
                             check_func = function(dat){
-                              loop_through_visits_gen(cohort_tbl = dat,
+                              loop_through_visits(cohort_tbl = dat,
                                                   check_func = function(cht, t){
                                                     compute_pf_for_fot(cohort = cht,
                                                                        pf_input_tbl = t,
@@ -148,7 +148,7 @@ pf_process <- function(cohort = cohort,
                             })
     
   } else {
-    pf_tbl <- loop_through_visits_gen(
+    pf_tbl <- loop_through_visits(
       cohort_tbl=cohort_prep,
       check_func = function(cht, t){
         compute_pf(cohort = cht,
