@@ -28,9 +28,8 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
   
   cohort <- results_tbl('jspa_cohort') 
   concepts <-  read_codeset('csd_codesets','iccccc') %>% 
-                  filter(variable %in% c('ibd', 'spondyloarthritis', 'systemic_jia', 'uveitis', 
-                                          'general_jia', 'infliximab','polyarticular_jia'))
-  time_span_var <- c('2012-01-01', '2020-01-01')
+                  filter(variable %in% c('ibd', 'spondyloarthritis', 'infliximab'))
+  time_span_var <- c('2014-01-01', '2021-12-31')
   time_period_var <- 'month'
   
   ss_exp_nt <- csd_process(cohort = results_tbl('jspa_cohort'),
@@ -101,7 +100,7 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
                         domain_tbl=read_codeset('scv_domains', 'cccc'),
                         concept_set = concepts,
                         multi_or_single_site = 'multi',
-                        anomaly_or_exploratory='anomaly',
+                        anomaly_or_exploratory='exploratory',
                         num_concept_combined = FALSE,
                         num_concept_1 = 30,
                         num_concept_2 = 30,
@@ -111,7 +110,7 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
                         time_period = time_period_var)%>%
      collect()
      output_tbl(ms_at,
-                name='csd_ms_at')
+                name='csd_ms_at_month')
   
   # Write step summary log to CSV and/or database,
   # as determined by configuration

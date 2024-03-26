@@ -349,3 +349,158 @@ csd_ms_anom_at_auc <- function(process_output=ms_at %>% filter(variable=='ibd') 
 }
 
 
+
+compute_at_cross_join <- function(cj_tbl,
+                                  time_period,
+                                  cj_var_names = c('site','concept_id')) {
+  
+  
+  cj_tbl <- ungroup(cj_tbl)
+  blah <- list()
+  
+  date_first <- cj_tbl %>% distinct(time_start) %>% first() %>% pull()
+  date_last <- cj_tbl %>% distinct(time_start) %>% last() %>% pull()
+  
+  all_months <- seq.Date(from=date_first,
+                         to=date_last,
+                         by=time_period)
+  all_months_tbl <- as_tibble(all_months) %>% rename(time_start=value)
+  
+  for(i in 1:length(cj_var_names)) {
+    
+    cj_var_name_i <- (cj_var_names[[i]])
+    
+    cj_tbl_narrowed <- cj_tbl %>% distinct(!! sym(cj_var_name_i))
+    
+    blah[[i]] <- cj_tbl_narrowed
+    
+  }
+  
+  cj_tbl_cjd <- reduce(.x=blah,
+                       .f=cross_join)
+  
+  cj_tbl_cjd_time <- 
+    all_months_tbl %>% cross_join(cj_tbl_cjd)
+  
+  cj_tbl_full <- 
+    cj_tbl_cjd_time %>% 
+    left_join(cj_tbl) %>% 
+    mutate(across(where(is.numeric), ~ replace_na(.x,0)))
+  
+  
+}
+
+csd_compute_concept_avgs <- function(concept_avg_tbl= ms_at %>% 
+                                       select(site,
+                                              time_start,
+                                              time_increment,
+                                              variable,
+                                              concept_id,
+                                              prop_concept) %>% ungroup(),
+                                     grp_vars=c('time_start',
+                                                'time_increment',
+                                                'variable',
+                                                'concept_id'),
+                                     var_col='prop_concepts') {
+  
+  
+  x <- compute_dist_mean_median(tbl=process_output,
+                                grp_vars=grp_vars,
+                                var_col=var_col,
+                                num_sd = 2,num_mad = 2)  %>% 
+    rename(mean_allsiteprop=mean)
+  
+  x_filtered <- 
+    x %>% select(site,time_start,time_increment,
+                 variable,concept_id,prop_concept,mean_allsiteprop)
+  x_variableconcepts <- 
+    x_filtered %>% distinct(variable,concept_id)
+  
+  x_concepts <- 
+    x_filtered %>% distinct(concept_id) %>% pull()
+  
+  output <- list()
+  
+  for(i in 1:length(x_concepts)) {
+    
+    aucs <- compute_auc_at(tbl_name= x_filtered %>% filter(concept_id==x_concepts[[i]]),
+                           iterate_var = 'site',
+                           time_var = 'time_start',
+                           outcome_var = 'prop_concept',
+                           gold_standard_var = 'mean_allsiteprop') %>% 
+      mutate(concept_id=x_concepts[[i]],
+             auc_mean=round(mean(auc_value, na.rm = TRUE),4),
+             auc_sd=round(sd(auc_value, na.rm = TRUE),4))
+    
+    
+    
+    
+    output[[i]] <- aucs  
+    
+  }
+  
+  output_reduced <- reduce(.x=output,
+                           .f=dplyr::union) %>% 
+    inner_join(x_variableconcepts)
+  
+  
+}
+
+compute_euclidean <- function(ms_tbl,
+                              output_var) {
+  
+  site_list <- ms_tbl %>% distinct(site) %>% pull()
+  
+  overall <- list()
+  
+  for(i in 1:length(site_list)) {
+    
+    thissite <- site_list[[i]]
+    
+    site_datenumeric <- 
+      ms_tbl %>% filter(site==thissite) %>% 
+      mutate(date_numeric = as.numeric(time_start, as.Date('2013-01-01')))
+    site_loess <- loess(prop_concept ~ date_numeric, data=site_datenumeric)
+    site_loess_df <- as_tibble(predict(site_loess)) %>% rename(site_loess=1) 
+    euclidean_site_loess <- euclidean_dist(predict(site_loess), ms_tbl$mean_allsiteprop)
+    ms_witheuclidean <- 
+      cbind(site_datenumeric,site_loess_df) %>% 
+      mutate(dist_eucl_mean=euclidean_site_loess) #%>% 
+    # mutate(loess_predicted=predict(site_loess)) 
+    overall[[i]] <- ms_witheuclidean
+  }
+  
+  overall_reduce <- reduce(.x=overall,
+                           .f=dplyr::union) %>% as_tibble() %>% 
+    mutate(dist_eucl_mean=round(dist_eucl_mean,2),
+           site_loess=round(site_loess,2))
+  
+}
+
+testeuclidean <- compute_euclidean(ms_tbl=ms_at_cj_avg %>% filter(concept_id == 195575),
+                                   output_var='prop_concept')
+
+csd_ms_anom_euclidean <- function(input_tbl) {
+  
+  ms_at_cj <- compute_at_cross_join(cj_tbl=input_tbl,
+                                    time_period=time_period_var,
+                                    cj_var_names = c('site','concept_id'))
+  
+  ms_at_cj_avg <- compute_dist_mean_median(tbl=ms_at_cj,
+                                           grp_vars=c('time_start',
+                                                      'concept_id'),
+                                           var_col='prop_concept',
+                                           num_sd = 2,num_mad = 2)  %>% 
+    rename(mean_allsiteprop=mean)
+  
+  euclidiean_tbl <- compute_euclidean(ms_tbl=ms_at_cj_avg,
+                                      output_var='prop_concept')
+  
+  final <- 
+    euclidiean_tbl %>% 
+    select(site,time_start,concept_id,
+           ct_denom,ct_concept,prop_concept,
+           mean_allsiteprop,median, date_numeric,
+           site_loess,dist_eucl_mean,site_loess_df)
+  
+}
