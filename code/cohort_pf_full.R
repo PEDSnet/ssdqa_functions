@@ -132,7 +132,12 @@ pf_process <- function(cohort = cohort,
                             time_span = time_span,
                             site_list = site_list_adj,
                             check_func = function(dat){
-                              loop_through_visits(cohort_tbl = dat,
+                              loop_through_visits_gen(cohort_tbl = dat,
+                                                  check_func = function(cht, t){
+                                                    compute_pf_for_fot(cohort = cht,
+                                                                       pf_input_tbl = t,
+                                                                       grouped_list = grouped_list,
+                                                                       domain_tbl = domain_tbl)},
                                                   site_col = site_col,
                                                   time = TRUE,
                                                   visit_type_tbl=visit_type_table,
@@ -143,8 +148,13 @@ pf_process <- function(cohort = cohort,
                             })
     
   } else {
-    pf_tbl <- loop_through_visits(
+    pf_tbl <- loop_through_visits_gen(
       cohort_tbl=cohort_prep,
+      check_func = function(cht, t){
+        compute_pf(cohort = cht,
+                   pf_input_tbl = t,
+                   grouped_list = grouped_list,
+                   domain_tbl = domain_tbl)},
       site_col = site_col, 
       time = FALSE,
       site_list=site_list_adj,
@@ -176,9 +186,10 @@ pf_process <- function(cohort = cohort,
   if(!time) {
     if(anomaly_or_exploratory=='anomaly' && multi_or_single_site=='single') {
       pf_final <- compute_dist_mean_pf(pf_int,
-                                        site_col = site_col,
-                                        agegrp= age_groups,
-                                        codeset = codeset)
+                                       n_sd = 2,
+                                       site_col = site_col,
+                                       agegrp= age_groups,
+                                       codeset = codeset)
     } else {pf_final <- compute_pf_medians(data_input=pf_int,
                                             site_col = site_col,
                                             agegrp = age_groups,

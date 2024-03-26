@@ -80,8 +80,9 @@ compute_pf_medians <- function(data_input,
 #' 
 compute_dist_mean_pf <- function(data_input,
                                  site_col,
-                              agegrp = NULL,
-                              codeset = NULL) {
+                                 n_sd = 2,
+                                 agegrp = NULL,
+                                 codeset = NULL) {
   
   if(is.data.frame(agegrp)) {data_input <- data_input %>% group_by(age_grp,.add=TRUE) %>% 
     mutate(age_grp = ifelse(is.na(age_grp), 'None', age_grp))}
@@ -99,12 +100,12 @@ compute_dist_mean_pf <- function(data_input,
            sd_fact=sd(var_val),
            zscore_fact = ((var_val - mean_fact) / sd_fact),
            abs_z = abs(zscore_fact),
-           three_sd = case_when(abs_z > 2L ~ 1L,
-                                     TRUE ~ 0L),
-           outlier_fact = sum(three_sd),
+           outlier = case_when(abs_z > n_sd ~ 1L,
+                               TRUE ~ 0L),
+           outlier_fact = sum(outlier),
            prop_outlier_fact = round(outlier_fact / n_fact, 3)) %>% 
     ungroup() %>%
-    select(-c(three_sd, abs_z, mean_fact, sd_fact))
+    select(-c(outlier, abs_z, mean_fact, sd_fact))
   
   
   site_dist_means_final <- 
@@ -119,16 +120,16 @@ compute_dist_mean_pf <- function(data_input,
              prop_outlier_fact,
              .add=TRUE) %>% 
     summarise(n_site_fact=n(),
-           mean_site_fact=mean(var_val),
-           sd_site_fact=sd(var_val),
-           zscore_site_fact = ((var_val - mean_site_fact) / sd_site_fact),
-           abs_z = abs(zscore_site_fact),
-           three_sd = case_when(abs_z > 2L ~ 1L,
-                                     TRUE ~ 0L),
-           outlier_site_fact = sum(three_sd),
-           prop_outlier_site_fact = round(outlier_site_fact / n_site_fact, 3)) %>% 
+              mean_site_fact=mean(var_val),
+              sd_site_fact=sd(var_val),
+              zscore_site_fact = ((var_val - mean_site_fact) / sd_site_fact),
+              abs_z = abs(zscore_site_fact),
+              outlier = case_when(abs_z > n_sd ~ 1L,
+                                  TRUE ~ 0L),
+              outlier_site_fact = sum(outlier),
+              prop_outlier_site_fact = round(outlier_site_fact / n_site_fact, 3)) %>% 
     ungroup() %>%
-    select(-c(three_sd, abs_z, mean_site_fact, sd_site_fact, zscore_site_fact)) %>% distinct()
+    select(-c(outlier, abs_z, mean_site_fact, sd_site_fact, zscore_site_fact)) %>% distinct()
   
   site_dist_means_final <- 
     site_dist_means_final %>% replace(is.na(.), 0) 

@@ -204,7 +204,7 @@ compute_pf <- function(cohort,
 #' @return a returned list stratified by visit type
 #' 
 
-loop_through_visits <- function(cohort_tbl,
+loop_through_visits_old <- function(cohort_tbl,
                                 site_col,
                                 time=FALSE,
                                 #collapse_sites=FALSE,
