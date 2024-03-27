@@ -1,0 +1,73 @@
+---
+title: "Concept Set Distribution - Euclidean Distance"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(qicharts2)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+```
+
+## Multi Site, Anomaly, Across Time
+
+This check displays the Euclidean distance between two time series: the smoothed (Loess) proportion of a user-selected concept for a given site and the all-site average proportion. 
+
+Two graphs are output:
+
+  * a line graph displaying the smoothed proportion of the concept_id at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+  * a line graph displaying the raw (not smoothed) proportion of the concept_id at each site over time
+  * a circular bar graph displaying the Euclidean distance from the all-site mean where the fill represents the average Loess proportion over time
+
+```{r ms_anom_at}
+
+# ms_anom_at <- csd_output(process_output = get_results('csd_ms_anom_at'),
+#                          output_function = 'csd_ms_anom_at',
+#                          filter_concept = 81893)
+
+ms_anom_at <- csd_ms_anom_at(process_output = get_results('csd_ms_at_eucl'))
+
+ms_anom_at[[1]]
+
+ms_anom_at[[2]]
+
+ms_anom_at[[3]]
+
+```

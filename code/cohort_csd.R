@@ -349,9 +349,22 @@ csd_ms_anom_at_auc <- function(process_output=ms_at %>% filter(variable=='ibd') 
 }
 
 
+##############################################################################
 
+#' Create a cross-joined master table for variable reference
+#'
+#' @param cj_tbl multi-site, over time output from check_code_dist_csd function
+#' @param time_period a string indicating the distance between time points in the time series
+#'                    (i.e. `month`, `year`, etc)
+#' @param cj_var_names a vector with the names of variables that should be used as the "anchor"
+#'                     of the cross join where all combinations of the variables should be
+#'                     present in the final table
+#'
+#' @return one data frame with all combinations of the variables from cj_var_names with their
+#'         associated facts from the original cj_tbl input
+#' 
 compute_at_cross_join <- function(cj_tbl,
-                                  time_period,
+                                  time_period = 'month',
                                   cj_var_names = c('site','concept_id')) {
   
   
@@ -390,62 +403,72 @@ compute_at_cross_join <- function(cj_tbl,
   
 }
 
-csd_compute_concept_avgs <- function(concept_avg_tbl= ms_at %>% 
-                                       select(site,
-                                              time_start,
-                                              time_increment,
-                                              variable,
-                                              concept_id,
-                                              prop_concept) %>% ungroup(),
-                                     grp_vars=c('time_start',
-                                                'time_increment',
-                                                'variable',
-                                                'concept_id'),
-                                     var_col='prop_concepts') {
-  
-  
-  x <- compute_dist_mean_median(tbl=process_output,
-                                grp_vars=grp_vars,
-                                var_col=var_col,
-                                num_sd = 2,num_mad = 2)  %>% 
-    rename(mean_allsiteprop=mean)
-  
-  x_filtered <- 
-    x %>% select(site,time_start,time_increment,
-                 variable,concept_id,prop_concept,mean_allsiteprop)
-  x_variableconcepts <- 
-    x_filtered %>% distinct(variable,concept_id)
-  
-  x_concepts <- 
-    x_filtered %>% distinct(concept_id) %>% pull()
-  
-  output <- list()
-  
-  for(i in 1:length(x_concepts)) {
-    
-    aucs <- compute_auc_at(tbl_name= x_filtered %>% filter(concept_id==x_concepts[[i]]),
-                           iterate_var = 'site',
-                           time_var = 'time_start',
-                           outcome_var = 'prop_concept',
-                           gold_standard_var = 'mean_allsiteprop') %>% 
-      mutate(concept_id=x_concepts[[i]],
-             auc_mean=round(mean(auc_value, na.rm = TRUE),4),
-             auc_sd=round(sd(auc_value, na.rm = TRUE),4))
-    
-    
-    
-    
-    output[[i]] <- aucs  
-    
-  }
-  
-  output_reduced <- reduce(.x=output,
-                           .f=dplyr::union) %>% 
-    inner_join(x_variableconcepts)
-  
-  
-}
+# csd_compute_concept_avgs <- function(concept_avg_tbl= ms_at %>% 
+#                                        select(site,
+#                                               time_start,
+#                                               time_increment,
+#                                               variable,
+#                                               concept_id,
+#                                               prop_concept) %>% ungroup(),
+#                                      grp_vars=c('time_start',
+#                                                 'time_increment',
+#                                                 'variable',
+#                                                 'concept_id'),
+#                                      var_col='prop_concepts') {
+#   
+#   
+#   x <- compute_dist_mean_median(tbl=process_output,
+#                                 grp_vars=grp_vars,
+#                                 var_col=var_col,
+#                                 num_sd = 2,num_mad = 2)  %>% 
+#     rename(mean_allsiteprop=mean)
+#   
+#   x_filtered <- 
+#     x %>% select(site,time_start,time_increment,
+#                  variable,concept_id,prop_concept,mean_allsiteprop)
+#   x_variableconcepts <- 
+#     x_filtered %>% distinct(variable,concept_id)
+#   
+#   x_concepts <- 
+#     x_filtered %>% distinct(concept_id) %>% pull()
+#   
+#   output <- list()
+#   
+#   for(i in 1:length(x_concepts)) {
+#     
+#     aucs <- compute_auc_at(tbl_name= x_filtered %>% filter(concept_id==x_concepts[[i]]),
+#                            iterate_var = 'site',
+#                            time_var = 'time_start',
+#                            outcome_var = 'prop_concept',
+#                            gold_standard_var = 'mean_allsiteprop') %>% 
+#       mutate(concept_id=x_concepts[[i]],
+#              auc_mean=round(mean(auc_value, na.rm = TRUE),4),
+#              auc_sd=round(sd(auc_value, na.rm = TRUE),4))
+#     
+#     
+#     
+#     
+#     output[[i]] <- aucs  
+#     
+#   }
+#   
+#   output_reduced <- reduce(.x=output,
+#                            .f=dplyr::union) %>% 
+#     inner_join(x_variableconcepts)
+#   
+#   
+# }
 
+#' Compute Euclidean Distance
+#'
+#' @param ms_tbl output from compute_dist_mean_median where the cross-joined table from
+#'               compute_at_cross_join is used as input
+#' @param output_var the output variable that should be used to compute the Euclidean distance
+#'                   i.e. a count or proportion
+#'
+#' @return one dataframe with all variables from ms_tbl with the addition of columns with a site Loess
+#'         value and a site Euclidean distance value
+#' 
 compute_euclidean <- function(ms_tbl,
                               output_var) {
   
@@ -459,10 +482,11 @@ compute_euclidean <- function(ms_tbl,
     
     site_datenumeric <- 
       ms_tbl %>% filter(site==thissite) %>% 
-      mutate(date_numeric = as.numeric(time_start, as.Date('2013-01-01')))
-    site_loess <- loess(prop_concept ~ date_numeric, data=site_datenumeric)
+      mutate(date_numeric = as.numeric(time_start),
+             output_var = !!sym(output_var))
+    site_loess <- loess(output_var ~ date_numeric, data=site_datenumeric)
     site_loess_df <- as_tibble(predict(site_loess)) %>% rename(site_loess=1) 
-    euclidean_site_loess <- euclidean_dist(predict(site_loess), ms_tbl$mean_allsiteprop)
+    euclidean_site_loess <- euclidean_dist(predict(site_loess), site_datenumeric$mean_allsiteprop)
     ms_witheuclidean <- 
       cbind(site_datenumeric,site_loess_df) %>% 
       mutate(dist_eucl_mean=euclidean_site_loess) #%>% 
@@ -477,13 +501,20 @@ compute_euclidean <- function(ms_tbl,
   
 }
 
-testeuclidean <- compute_euclidean(ms_tbl=ms_at_cj_avg %>% filter(concept_id == 195575),
-                                   output_var='prop_concept')
-
-csd_ms_anom_euclidean <- function(input_tbl) {
+#' Compute multi-site Euclidean distance for CSD
+#'
+#' @param input_tbl multi-site, over time output from the check_code_dist_csd function
+#' @param time_period a string indicating the distance between time points in the time series
+#'                    (i.e. `month`, `year`, etc)
+#'
+#' @return one data frame with descriptive statistics about each concept, as well as the site Loess and
+#'         Euclidean values
+#' 
+csd_ms_anom_euclidean <- function(input_tbl,
+                                  time_period = 'month') {
   
   ms_at_cj <- compute_at_cross_join(cj_tbl=input_tbl,
-                                    time_period=time_period_var,
+                                    time_period=time_period,
                                     cj_var_names = c('site','concept_id'))
   
   ms_at_cj_avg <- compute_dist_mean_median(tbl=ms_at_cj,
@@ -491,7 +522,7 @@ csd_ms_anom_euclidean <- function(input_tbl) {
                                                       'concept_id'),
                                            var_col='prop_concept',
                                            num_sd = 2,num_mad = 2)  %>% 
-    rename(mean_allsiteprop=mean)
+    rename(mean_allsiteprop=mean) 
   
   euclidiean_tbl <- compute_euclidean(ms_tbl=ms_at_cj_avg,
                                       output_var='prop_concept')
@@ -501,6 +532,9 @@ csd_ms_anom_euclidean <- function(input_tbl) {
     select(site,time_start,concept_id,
            ct_denom,ct_concept,prop_concept,
            mean_allsiteprop,median, date_numeric,
-           site_loess,dist_eucl_mean,site_loess_df)
+           site_loess,dist_eucl_mean #,site_loess_df
+           )
+  
+  return(final)
   
 }

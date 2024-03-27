@@ -473,70 +473,159 @@ csd_ms_anom_nt<-function(process_output,
 #' THIS GRAPH SHOWS ONLY ONE CONCEPT AT A TIME!
 #' 
 
-csd_ms_anom_at <- function(process_output_graph,
-                           filter_concept) {
+# csd_ms_anom_at <- function(process_output_graph,
+#                            filter_concept) {
+#   
+#   allsites <- 
+#     process_output_graph %>% 
+#     filter(concept_id == filter_concept) %>% 
+#     select(time_start,concept_id,mean_allsiteprop,auc_gold_standard) %>% distinct() %>% 
+#     rename(prop_concept=mean_allsiteprop) %>% 
+#     mutate(site='all site average',
+#            auc_value=auc_gold_standard) %>% 
+#     mutate(text=paste0("Site: ", site,
+#                        #"\n","Proportion: ",prop_concept,
+#                        "\n","AUC Value: ",auc_value,
+#                        "\n","All-Site AUC: ",auc_gold_standard)) 
+#   
+#   dat_to_plot <- 
+#     process_output_graph %>% 
+#     filter(concept_id == filter_concept) %>% 
+#     mutate(text=paste0("Site: ", site,
+#                        #"\n","Proportion: ",prop_concept,
+#                        "\n","AUC Value: ",auc_value,
+#                        "\n","All-Site AUC: ",auc_gold_standard)) 
+#   
+#   concept_id_var <- 
+#     dat_to_plot %>% select(concept_id) %>% distinct() %>% pull
+#   
+#   if(length(concept_id_var) > 1) {stop('Please input only one concept_id')}
+#   
+#   p <- dat_to_plot %>%
+#     #filter(concept_id == 81893) %>% 
+#     ggplot(aes(y = prop_concept, x = time_start, color = site,group=site,text=text)) +
+#     geom_line(data=filter(allsites,concept_id==concept_id_var),linewidth=1.1) +
+#     #stat_smooth(geom='line',alpha=0.7,se=TRUE) +
+#     geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5) +
+#     theme_minimal() +
+#     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+#   ggtitle(paste0('Proportion of Concept ',concept_id_var,' Across Time',
+#                  '\n','All-Site in Red',
+#                  '\n','AUC value in Tooltip'))
+#   
+#   
+#   gold_standard <- allsites %>%
+#     filter(concept_id == filter_concept) %>% 
+#     select(auc_gold_standard) %>%
+#     distinct() %>% pull()
+#   
+#   p2 <- dat_to_plot %>% 
+#     #filter(concept_id == 81893) %>% 
+#     select(site,auc_value,auc_gold_standard) %>% 
+#     distinct() %>% 
+#     ggplot(aes(y = auc_value, x = site, fill=site)) +
+#     geom_bar(stat='identity') + 
+#     geom_hline(yintercept=gold_standard,
+#                linetype='dashed', color='red') +
+#     coord_flip() +
+#     guides(fill='none') + theme_minimal() +
+#     ggtitle(paste0('Site AUC Value for Concept ',concept_id_var,
+#                    '\n','All-Site in Dashed Red'))
+#   
+#   
+#   plotly_p <- ggplotly(p,tooltip="text")
+#   plotly_p2 <- ggplotly(p2,tooltip='auc_value')
+#   
+#   output <- list(plotly_p,
+#                  plotly_p2)
+#   
+# }
+
+
+
+csd_ms_anom_at <- function(process_output){
+  
+  cid <- process_output %>% distinct(concept_id) %>% pull()
   
   allsites <- 
-    process_output_graph %>% 
-    filter(concept_id == filter_concept) %>% 
-    select(time_start,concept_id,mean_allsiteprop,auc_gold_standard) %>% distinct() %>% 
+    process_output %>% 
+    select(time_start,concept_id,mean_allsiteprop) %>% distinct() %>% 
     rename(prop_concept=mean_allsiteprop) %>% 
-    mutate(site='all site average',
-           auc_value=auc_gold_standard) %>% 
-    mutate(text=paste0("Site: ", site,
+    mutate(site='all site average') %>% 
+    mutate(text_smooth=paste0("Site: ", site,
                        #"\n","Proportion: ",prop_concept,
-                       "\n","AUC Value: ",auc_value,
-                       "\n","All-Site AUC: ",auc_gold_standard)) 
+                       "\n","Proportion: ",prop_concept),
+           text_raw=paste0("Site: ", site,
+                           #"\n","Proportion: ",prop_concept,
+                           "\n","Proportion: ",prop_concept)) 
   
   dat_to_plot <- 
-    process_output_graph %>% 
-    filter(concept_id == filter_concept) %>% 
-    mutate(text=paste0("Site: ", site,
+    process_output %>% 
+    mutate(text_smooth=paste0("Site: ", site,
+                       #"\n","Site Proportion: ",prop_concept,
                        #"\n","Proportion: ",prop_concept,
-                       "\n","AUC Value: ",auc_value,
-                       "\n","All-Site AUC: ",auc_gold_standard)) 
-  
-  concept_id_var <- 
-    dat_to_plot %>% select(concept_id) %>% distinct() %>% pull
-  
-  if(length(concept_id_var) > 1) {stop('Please input only one concept_id')}
+                       #"\n","Site Smoothed Proportion: ",site_loess,
+                       #"\n","All-Site Mean: ",mean_allsiteprop,
+                       "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean),
+           text_raw=paste0("Site: ", site,
+                           "\n","Site Proportion: ",prop_concept,
+                              #"\n","Proportion: ",prop_concept,
+                           "\n","Site Smoothed Proportion: ",site_loess,
+                              #"\n","All-Site Mean: ",mean_allsiteprop,
+                           "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean)) 
   
   p <- dat_to_plot %>%
-    #filter(concept_id == 81893) %>% 
-    ggplot(aes(y = prop_concept, x = time_start, color = site,group=site,text=text)) +
-    geom_line(data=filter(allsites,concept_id==concept_id_var),linewidth=1.1) +
-    #stat_smooth(geom='line',alpha=0.7,se=TRUE) +
-    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5) +
+    ggplot(aes(y = prop_concept, x = time_start, color = site, group = site, text = text_smooth)) +
+    geom_line(data=allsites, linewidth=1.1) +
+    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5, formula = y ~ x) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
-  ggtitle(paste0('Proportion of Concept ',concept_id_var,' Across Time',
-                 '\n','All-Site in Red',
-                 '\n','AUC value in Tooltip'))
+    labs(y = 'Proportion (Loess)',
+         x = 'Time',
+         title = paste0('Smoothed Proportion of ', cid, ' Across Time'))
   
+  q <- dat_to_plot %>%
+    ggplot(aes(y = prop_concept, x = time_start, color = site,
+               group=site, text=text_raw)) +
+    geom_line(data=allsites,linewidth=1.1) +
+    geom_line(linewidth=0.2) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    labs(x = 'Time',
+         y = 'Proportion',
+         title = paste0('Proportion of ', cid, ' Across Time'))
   
-  gold_standard <- allsites %>%
-    filter(concept_id == filter_concept) %>% 
-    select(auc_gold_standard) %>%
-    distinct() %>% pull()
+  ylim_max <- (dat_to_plot %>% filter(dist_eucl_mean == max(dist_eucl_mean)) %>% 
+                 distinct(dist_eucl_mean) %>% pull()) + 0.5
   
-  p2 <- dat_to_plot %>% 
-    #filter(concept_id == 81893) %>% 
-    select(site,auc_value,auc_gold_standard) %>% 
-    distinct() %>% 
-    ggplot(aes(y = auc_value, x = site, fill=site)) +
-    geom_bar(stat='identity') + 
-    geom_hline(yintercept=gold_standard,
-               linetype='dashed', color='red') +
-    coord_flip() +
-    guides(fill='none') + theme_minimal() +
-    ggtitle(paste0('Site AUC Value for Concept ',concept_id_var,
-                   '\n','All-Site in Dashed Red'))
-  
+  t <- dat_to_plot %>% 
+    distinct(site, dist_eucl_mean, site_loess) %>% 
+    group_by(site, dist_eucl_mean) %>% 
+    summarise(mean_site_loess = mean(site_loess)) %>%
+    mutate(tcol = ifelse(mean_site_loess > 0.85 | mean_site_loess < 0.2, 'group1', 'group2')) %>%
+    ggplot(aes(x = site, y = dist_eucl_mean, fill = mean_site_loess)) + 
+    geom_col() + 
+    geom_text(aes(label = dist_eucl_mean, color = tcol), vjust = 2, size = 3,
+              show.legend = FALSE) +
+    scale_color_manual(values = c('white', 'black')) +
+    coord_radial(r_axis_inside = FALSE, rotate_angle = TRUE) + 
+    guides(theta = guide_axis_theta(angle = 0)) +
+    #scale_y_continuous(limits = c(-1,ylim_max)) + 
+    theme_minimal() + 
+    scale_fill_viridis_c(option = 'turbo') +
+    theme(legend.position = 'bottom',
+          axis.text.x = element_text(face = 'bold')) + 
+    labs(fill = 'Avg. Proportion \n(Loess)', 
+         y ='Euclidean Distance', 
+         x = '', 
+         title = paste0('Euclidean Distance for ', cid))
   
   plotly_p <- ggplotly(p,tooltip="text")
-  plotly_p2 <- ggplotly(p2,tooltip='auc_value')
+  plotly_q <- ggplotly(q,tooltip="text")
   
   output <- list(plotly_p,
-                 plotly_p2)
+                 plotly_q,
+                 t)
   
+  return(output)
 }

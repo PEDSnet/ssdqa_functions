@@ -175,14 +175,16 @@ This check displays the area under the curve (AUC) for ONE concept_id across tim
 
 Two graphs are output:
 
-  * a line graph displaying the proportion of that concept_id at each site over time, with the AUC values available in the tooltip when hovering over a given line
-  * a bar graph comparing the AUC values for each site against the all site overall AUC value
+  * a line graph displaying the proportion of that concept_id at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+  * a circular bar graph displaying the Euclidean distance from the all-site mean where the fill represents the average Loess proportion over time
 
 ```{r ms_anom_at}
 
-ms_anom_at <- csd_output(process_output = get_results('csd_ms_anom_at'),
-                         output_function = 'csd_ms_anom_at',
-                         filter_concept = 81893)
+# ms_anom_at <- csd_output(process_output = get_results('csd_ms_anom_at'),
+#                          output_function = 'csd_ms_anom_at',
+#                          filter_concept = 81893)
+
+ms_anom_at <- csd_ms_anom_at(process_output = get_results('csd_ms_at_eucl'))
 
 ms_anom_at[[1]]
 

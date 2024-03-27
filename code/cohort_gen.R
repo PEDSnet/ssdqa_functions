@@ -459,7 +459,7 @@ compute_dist_mean_median <- function(tbl,
            mad_lower=median-num_mad*mad,
            mad_upper=median+num_mad*mad)
   
-  tbl_new %>%
+  final <- tbl_new %>%
     inner_join(stats)%>%
     mutate(anomaly_yn=case_when(!!sym(var_col)<sd_lower|!!sym(var_col)>sd_upper|!!sym(var_col)>`90th_percentile`~TRUE,
                                 TRUE~FALSE),
@@ -467,6 +467,7 @@ compute_dist_mean_median <- function(tbl,
            abs_diff_median=abs(!!sym(var_col)-median),
            n_mad=abs_diff_median/mad)
   
+  return(final)
 }
 
 
