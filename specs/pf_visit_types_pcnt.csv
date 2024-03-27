@@ -1,0 +1,17 @@
+enc_type,visit_type
+IP,inpatient
+AV,outpatient
+ED,emergency_dept
+TH,outpatient
+OA,other_visit
+IS,non_acute_institutional
+EI,inpatient
+EI,emergency_dept
+OS,inpatient
+IP,all
+AV,all
+ED,all
+OA,all
+OS,all
+TH,all
+EI,all
