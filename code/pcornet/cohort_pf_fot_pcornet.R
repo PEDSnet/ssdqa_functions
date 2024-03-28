@@ -41,7 +41,7 @@ compute_pf_for_fot_pcnt <- function(cohort,
       domain_tbl_use <- cdm_tbl(paste0(domain_list[[i]][[2]])) %>% 
         filter(!! sym(filter_var) %in% c(filter_vec))
       
-    } else if(!is.na(domain_list[[i]][[3]] && is.na(domain_list[[i]][[4]]))){
+    } else if(!is.na(domain_list[[i]][[3]]) && is.na(domain_list[[i]][[4]])){
       
       filter_var <- domain_list[[i]][[3]] 
       samp <- cdm_tbl(paste0(domain_list[[i]][[2]])) %>% select(!!sym(filter_var)) %>%
