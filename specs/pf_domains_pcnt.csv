@@ -1,6 +1,6 @@
 domain,default_tbl,field_name,field_filter
 visits,encounter,,
-height,vitals,ht,
+height,vital,ht,
 diagnoses,diagnosis,,
 diagnoses_ip,diagnosis,enc_type,"IP, EI"
 meds_rx,prescribing,,

@@ -91,8 +91,8 @@ pf_process_pcnt <- function(cohort = cohort,
                            age_groups = NULL,
                            codeset = NULL,
                            anomaly_or_exploratory='anomaly',
-                           domain_tbl=read_codeset('pf_domains_short','cccc'),
-                           visit_type_table=read_codeset('pf_visit_types','ic')){
+                           domain_tbl=read_codeset('pf_domains_pcnt','cccc'),
+                           visit_type_table=read_codeset('pf_visit_types_pcnt','cc')){
   
   ## Step 0: Set cohort name for table output
   config('cohort', study_name)
@@ -138,7 +138,7 @@ pf_process_pcnt <- function(cohort = cohort,
                                                                               grouped_list = grouped_list,
                                                                               domain_tbl = domain_tbl)},
                                                     site_col = site_col,
-                                                    time = TRUE,
+                                                    #time = TRUE,
                                                     visit_type_tbl=visit_type_table,
                                                     site_list=site_list_adj,
                                                     visit_list=visit_types,
@@ -155,7 +155,7 @@ pf_process_pcnt <- function(cohort = cohort,
                         grouped_list = grouped_list,
                         domain_tbl = domain_tbl)},
       site_col = site_col, 
-      time = FALSE,
+      #time = FALSE,
       site_list=site_list_adj,
       visit_list=visit_types,
       visit_type_tbl=visit_type_table,

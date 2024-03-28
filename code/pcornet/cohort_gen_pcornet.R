@@ -188,7 +188,7 @@ loop_through_visits_pcnt <- function(cohort_tbl,
         cohort_site %>% 
         inner_join(
           select(visit_tbl,
-                 person_id,
+                 patid,
                  encounterid,
                  enc_type,
                  admit_date)
@@ -197,7 +197,7 @@ loop_through_visits_pcnt <- function(cohort_tbl,
         filter(admit_date >= start_date,
                admit_date <= end_date) %>% 
         compute_new(temporary=TRUE,
-                    indexes=list('person_id'))
+                    indexes=list('patid'))
       
       # execute function
       domain_compute <- check_func(cht = cohort_site,
