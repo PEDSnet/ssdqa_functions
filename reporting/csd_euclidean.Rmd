@@ -50,7 +50,7 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 This check displays the Euclidean distance between two time series: the smoothed (Loess) proportion of a user-selected concept for a given site and the all-site average proportion. 
 
-Two graphs are output:
+Three graphs are output:
 
   * a line graph displaying the smoothed proportion of the concept_id at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
   * a line graph displaying the raw (not smoothed) proportion of the concept_id at each site over time
@@ -58,11 +58,9 @@ Two graphs are output:
 
 ```{r ms_anom_at}
 
-# ms_anom_at <- csd_output(process_output = get_results('csd_ms_anom_at'),
-#                          output_function = 'csd_ms_anom_at',
-#                          filter_concept = 81893)
-
-ms_anom_at <- csd_ms_anom_at(process_output = get_results('csd_ms_at_eucl'))
+ms_anom_at <- csd_ms_anom_at(process_output = get_results('csd_ms_at_eucl'),
+                             filter_concept = '81893' #'4074815'
+                             )
 
 ms_anom_at[[1]]
 

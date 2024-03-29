@@ -171,23 +171,23 @@ ss_anom_at[[2]]
 
 ## Multi Site, Anomaly, Across Time
 
-This check displays the area under the curve (AUC) for ONE concept_id across time, for every site in the cohort. The AUC computation itself takes place in the initial processing function to reduce load on the summarization end. During this computation, the all site mean is used as the "gold standard" against which the site-specific proportion associated with a given concept_id is compared. 
+This check displays the Euclidean distance between two time series: the smoothed (Loess) proportion of a user-selected concept for a given site and the all-site average proportion for each time point. 
 
-Two graphs are output:
+Three graphs are output:
 
-  * a line graph displaying the proportion of that concept_id at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+  * a line graph displaying the smoothed proportion of the concept_id at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+  * a line graph displaying the raw (not smoothed) proportion of the concept_id at each site over time
   * a circular bar graph displaying the Euclidean distance from the all-site mean where the fill represents the average Loess proportion over time
 
 ```{r ms_anom_at}
 
-# ms_anom_at <- csd_output(process_output = get_results('csd_ms_anom_at'),
-#                          output_function = 'csd_ms_anom_at',
-#                          filter_concept = 81893)
-
-ms_anom_at <- csd_ms_anom_at(process_output = get_results('csd_ms_at_eucl'))
+ms_anom_at <- csd_ms_anom_at(process_output = get_results('csd_ms_at_eucl'),
+                             filter_concept = '81893')
 
 ms_anom_at[[1]]
 
 ms_anom_at[[2]]
+
+ms_anom_at[[3]]
 
 ```

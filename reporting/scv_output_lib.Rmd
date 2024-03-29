@@ -166,17 +166,17 @@ op[[2]]
 
 ## Multi Site, Anomaly Detection, Across Time
 
-This check displays the area under the curve (AUC) for ONE concept pair (primary concept provided by the user in the processing function and its mapped pair) across time, for every site in the cohort. The AUC computation itself takes place in the initial processing function to reduce load on the summarization end. During this computation, the all site mean is used as the "gold standard" against which the site-specific proportion associated with a given concept pair is compared. 
+This check displays the Euclidean distance between two time series: the smoothed (Loess) proportion of a user-selected concept pair for a given site and the all-site average proportion. 
 
-Two graphs are output:
+Three graphs are output:
 
-  * a line graph displaying the proportion of the primary concept at each site over time, with the AUC values available in the tooltip when hovering over a given line
-    + the proportion shown is that of the representation of the mapped concept of interest within the primary concept of interest. for example, if the user provides a SNOMED condition code (code_type = 'cdm'), the y-axis will display the proportion of rows with that SNOMED code that are associated with the source ICD code selected by the user.
-  * a bar graph comparing the AUC values for that concept pair at each site against the all site overall AUC value
+  * a line graph displaying the smoothed proportion of the concept_id + source_concept_id pair at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+  * a line graph displaying the raw (not smoothed) proportion of the concept_id + source_concept_id pair at each site over time
+  * a circular bar graph displaying the Euclidean distance from the all-site mean where the fill represents the average Loess proportion over time
 
 ```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-op <- scv_output(process_output = get_results('scv_ms_anom_at'),
+op <- scv_output(process_output = get_results('scv_ms_at_eucl'),
            output_function = 'scv_ms_anom_at',
            code_type = 'cdm',
            facet = NULL,
@@ -185,5 +185,6 @@ op <- scv_output(process_output = get_results('scv_ms_anom_at'),
 
 op[[1]]
 op[[2]]
+op[[3]]
 
 ```
