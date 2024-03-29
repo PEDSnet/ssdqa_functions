@@ -191,3 +191,49 @@ compute_scv_auc <- function(process_output,
   
   
 }
+
+
+
+#' Compute multi-site Euclidean distance for CSD
+#'
+#' @param input_tbl multi-site, over time output from the check_code_dist_csd function
+#' @param time_period a string indicating the distance between time points in the time series
+#'                    (i.e. `month`, `year`, etc)
+#'
+#' @return one data frame with descriptive statistics about each concept, as well as the site Loess and
+#'         Euclidean values
+#' 
+scv_ms_anom_euclidean <- function(input_tbl,
+                                  code_type,
+                                  time_period = 'month') {
+  
+  var_col <- ifelse(code_type == 'cdm', 'concept_prop', 'source_prop')
+  denom_col <- ifelse(code_type == 'cdm', 'denom_concept_ct', 'denom_source_ct')
+  
+  ms_at_cj <- compute_at_cross_join(cj_tbl=input_tbl,
+                                    time_period=time_period,
+                                    cj_var_names = c('site','concept_id', 'source_concept_id'))
+  
+  ms_at_cj_avg <- compute_dist_mean_median(tbl=ms_at_cj,
+                                           grp_vars=c('time_start',
+                                                      'concept_id',
+                                                      'source_concept_id'),
+                                           var_col=var_col,
+                                           num_sd = 2,num_mad = 2)  %>% 
+    rename(mean_allsiteprop=mean) 
+  
+  euclidiean_tbl <- compute_euclidean(ms_tbl=ms_at_cj_avg,
+                                      output_var=var_col,
+                                      grp_vars = c('site', 'concept_id', 'source_concept_id'))
+  
+  final <- 
+    euclidiean_tbl %>% 
+    select(site,time_start,concept_id,
+           source_concept_id, var_col, denom_col,
+           mean_allsiteprop,median, date_numeric,
+           site_loess,dist_eucl_mean #,site_loess_df
+    )
+  
+  return(final)
+  
+}

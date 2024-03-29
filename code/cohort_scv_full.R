@@ -142,25 +142,9 @@ scv_process <- function(cohort,
     
     if(multi_or_single_site == 'multi' && anomaly_or_exploratory == 'anomaly'){
       
-      tbl_list <- list()
-      
-      for(i in 1:length(concept_set)){
-        
-        if(code_type == 'cdm'){col <- 'concept_id'}else{col <- 'source_concept_id'}
-      
-      scv_tbl_tmp <- compute_scv_auc(process_output = scv_tbl %>% ungroup() %>%
-                                       filter(!!sym(col) == concept_set[[i]]),
-                                       grp_vars = c('time_start',
-                                                    'time_increment',
-                                                    'concept_id',
-                                                    'source_concept_id'),
-                                       code_type = code_type)
-      tbl_list[[i]] <- scv_tbl_tmp
-      
-      }
-      
-      scv_tbl_final <- reduce(.x = tbl_list,
-                              .f = dplyr::union)
+      scv_tbl_final <- scv_ms_anom_euclidean(input_tbl = scv_tbl,
+                                             code_type = code_type,
+                                             time_period = time_period)
       
     }else(scv_tbl_final <- scv_tbl)
     

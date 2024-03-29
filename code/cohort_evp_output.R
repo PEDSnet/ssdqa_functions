@@ -259,92 +259,112 @@ evp_ss_anom_at <- function(process_output,
 
 
 #' **Multi-Site Across Time Anomaly**
-#' Produces graphs showing AUCs
+#' Produces graphs showing Euclidean Distanctes
 #' 
-#' @param process_output_graph output from `evp_process`
+#' @param process_output output from `evp_process`
 #' @param filter_variable the variable that should be used to generate output
 #' @return two graphs:
-#'    1) line graph that shows the proportion of a 
-#'    code across time computation with the AUC associated with each line
-#'    2) bar graph with each site on the x-axis, and the y-axis the AUC value, 
-#'    with a dotted line showing the all-site average
+#'    1) line graph that shows the smoothed proportion of a 
+#'    code across time computation with the Euclidean distance associated with each line
+#'    2) line graph that shows the raw proportion of a 
+#'    code across time computation with the Euclidean distance associated with each line
+#'    3) a bar graph with the Euclidean distance value for each site, with the average
+#'    proportion as the fill
 #' 
 #' THIS GRAPH SHOWS ONLY ONE VARIABLE AT A TIME!
 #' 
 
-evp_ms_anom_at <- function(process_output_graph,
+evp_ms_anom_at <- function(process_output,
                            output_level,
                            filter_variable) {
   
   if(output_level == 'row'){
-    var_col <- 'prop_row_concept'
+    prop <- 'prop_row_concept'
   }else if(output_level == 'patient'){
-    var_col <- 'prop_pt_concept'
-  }else(stop('Please select a valid output_level: `patient` or `row`'))
+    prop <- 'prop_pt_concept'
+  }else(stop('Please choose an acceptable output level: `patient` or `row`'))
+  
+  filt_op <- process_output %>% filter(concept_group == filter_variable) %>%
+    mutate(prop_col = !!sym(prop))
   
   allsites <- 
-    process_output_graph %>% 
-    filter(concept_group == filter_variable) %>% 
-    select(time_start,concept_group,mean_allsiteprop,auc_gold_standard) %>% distinct() %>% 
-    rename_with(~var_col, mean_allsiteprop) %>% 
-    mutate(site='all site average',
-           auc_value=auc_gold_standard) %>% 
-    mutate(text=paste0("Site: ", site,
-                       #"\n","Proportion: ",prop_concept,
-                       "\n","AUC Value: ",auc_value,
-                       "\n","All-Site AUC: ",auc_gold_standard)) 
+    filt_op %>% 
+    select(time_start,concept_group,mean_allsiteprop) %>% distinct() %>% 
+    rename(prop_col=mean_allsiteprop) %>% 
+    mutate(site='all site average') %>% 
+    mutate(text_smooth=paste0("Site: ", site,
+                              #"\n","Proportion: ",prop_concept,
+                              "\n","Proportion: ",prop_col),
+           text_raw=paste0("Site: ", site,
+                           #"\n","Proportion: ",prop_concept,
+                           "\n","Proportion: ",prop_col)) 
   
-  #%>% 
   dat_to_plot <- 
-    process_output_graph %>% 
-    filter(concept_group == filter_variable) %>% 
-    mutate(text=paste0("Site: ", site,
-                       #"\n","Proportion: ",prop_concept,
-                       "\n","AUC Value: ",auc_value,
-                       "\n","All-Site AUC: ",auc_gold_standard)) 
-  
-  concept_var <- 
-    dat_to_plot %>% select(concept_group) %>% distinct() %>% pull
-  
-  if(length(concept_var) > 1) {stop('Please input only one concept_id')}
+    filt_op %>% 
+    mutate(text_smooth=paste0("Site: ", site,
+                              #"\n","Site Proportion: ",prop_concept,
+                              #"\n","Proportion: ",prop_concept,
+                              #"\n","Site Smoothed Proportion: ",site_loess,
+                              #"\n","All-Site Mean: ",mean_allsiteprop,
+                              "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean),
+           text_raw=paste0("Site: ", site,
+                           "\n","Site Proportion: ",prop_col,
+                           #"\n","Proportion: ",prop_concept,
+                           "\n","Site Smoothed Proportion: ",site_loess,
+                           #"\n","All-Site Mean: ",mean_allsiteprop,
+                           "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean)) 
   
   p <- dat_to_plot %>%
-    #filter(concept_id == 81893) %>% 
-    ggplot(aes(y = !!sym(var_col), x = time_start, color = site,group=site, text=text)) +
-    geom_line(data= filter(allsites, concept_group==concept_var), linewidth = 1.1) +
-    #stat_smooth(geom='line',alpha=0.7,se=TRUE) +
-    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5) +
+    ggplot(aes(y = prop_col, x = time_start, color = site, group = site, text = text_smooth)) +
+    geom_line(data=allsites, linewidth=1.1) +
+    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5, formula = y ~ x) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
-    ggtitle(paste0('Proportion of ',concept_var,' Across Time',
-                   '\n','All-Site in Red',
-                   '\n','AUC value in Tooltip'))
+    labs(y = 'Proportion (Loess)',
+         x = 'Time',
+         title = paste0('Smoothed Proportion of ', filter_variable, ' Across Time'))
   
+  q <- dat_to_plot %>%
+    ggplot(aes(y = prop_col, x = time_start, color = site,
+               group=site, text=text_raw)) +
+    geom_line(data=allsites,linewidth=1.1) +
+    geom_line(linewidth=0.2) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    labs(x = 'Time',
+         y = 'Proportion',
+         title = paste0('Proportion of ', filter_variable, ' Across Time'))
   
-  gold_standard <- allsites %>%
-    filter(concept_group == filter_variable) %>% 
-    select(auc_gold_standard) %>%
-    distinct() %>% pull()
-  
-  p2 <- dat_to_plot %>% 
-    #filter(concept_id == 81893) %>% 
-    select(site,auc_value,auc_gold_standard) %>% 
-    distinct() %>% 
-    ggplot(aes(y = auc_value, x = site, fill=site)) +
-    geom_bar(stat='identity') + 
-    geom_hline(yintercept=gold_standard,
-               linetype='dashed', color='red') +
-    coord_flip() +
-    guides(fill='none') + theme_minimal() +
-    ggtitle(paste0('Site AUC Value for ',concept_var,
-                   '\n','All-Site in Dashed Red'))
-  
+  t <- dat_to_plot %>% 
+    distinct(site, dist_eucl_mean, site_loess) %>% 
+    group_by(site, dist_eucl_mean) %>% 
+    summarise(mean_site_loess = mean(site_loess)) %>%
+    mutate(tcol = ifelse(mean_site_loess >= 0.8 | mean_site_loess <= 0.2, 'group1', 'group2')) %>%
+    ggplot(aes(x = site, y = dist_eucl_mean, fill = mean_site_loess)) + 
+    geom_col() + 
+    geom_text(aes(label = dist_eucl_mean, color = tcol), vjust = 2, size = 3,
+              show.legend = FALSE) +
+    scale_color_manual(values = c('white', 'black')) +
+    coord_radial(r_axis_inside = FALSE, rotate_angle = TRUE) + 
+    guides(theta = guide_axis_theta(angle = 0)) +
+    #scale_y_continuous(limits = c(-1,ylim_max)) + 
+    theme_minimal() + 
+    scale_fill_viridis_c(option = 'turbo', limits = c(0, 1), oob = scales::squish) +
+    theme(legend.position = 'bottom',
+          axis.text.x = element_text(face = 'bold')) + 
+    labs(fill = 'Avg. Proportion \n(Loess)', 
+         y ='Euclidean Distance', 
+         x = '', 
+         title = paste0('Euclidean Distance for ', filter_variable))
   
   plotly_p <- ggplotly(p,tooltip="text")
-  plotly_p2 <- ggplotly(p2,tooltip='auc_value')
+  plotly_q <- ggplotly(q,tooltip="text")
   
   output <- list(plotly_p,
-                 plotly_p2)
+                 plotly_q,
+                 t)
+  
+  return(output)
   
 }
 

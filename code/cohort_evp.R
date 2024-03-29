@@ -72,6 +72,18 @@ compute_evp <- function(cohort,
 
 
 
+#' Single site anomaly no time processing for EVP
+#'
+#' @param cohort table of cohort members with at least `site`, `person_id`, `start_date`, and `end_date`
+#' @param grouped_list list of columns that should be used to group the table
+#' @param evp_concept_file CSV file with information about each of the concept sets that should be
+#'                         examined in the function. contains the following columns:
+#'                         
+#'                         `concept_group`, `default_tbl`, `field_name`, `date_field`, `codeset_name`
+#'
+#' @return one dataframe with the jaccard similarity index for each concept group provided
+#'         in the concept file
+#'
 compute_evp_ssanom <- function(cohort,
                                grouped_list,
                                evp_concept_file = read_codeset('evp_concepts', 'cccc')){
@@ -130,6 +142,14 @@ compute_evp_ssanom <- function(cohort,
 
 
 
+#' Compute Jaccard index for EVP
+#'
+#' @param jaccard_input_tbl table with all groups where the similarity between
+#'                          each group should be found
+#'
+#' @return one dataframe with each concept pair and the Jaccard index value
+#'         for the pair
+#'
 compute_jaccard_evp <- function(jaccard_input_tbl) {
   
   persons_concepts <- 
@@ -165,71 +185,117 @@ compute_jaccard_evp <- function(jaccard_input_tbl) {
 }
 
 
-#' *MS Anomaly Across Time Output*
+#' #' *MS Anomaly Across Time Output*
+#' #' 
+#' #' @param process_output the input tbl to compute an AUC for the multi-site across time analysis  
+#' #' @param grp_vars variables to group by to compute the aggregated proportion for all sites
+#' #' @param var_col column for which to compute the AUC
+#' #' 
+#' #' @return a dataframe with the AUC values for each variable included in the function input table
+#' #' 
 #' 
-#' @param process_output the input tbl to compute an AUC for the multi-site across time analysis  
-#' @param grp_vars variables to group by to compute the aggregated proportion for all sites
-#' @param var_col column for which to compute the AUC
-#' 
-#' @return a dataframe with the AUC values for each variable included in the function input table
-#' 
+#' compute_evp_auc <- function(process_output,
+#'                             grp_vars=c('time_start',
+#'                                        'time_increment',
+#'                                        'concept_group'),
+#'                             output_level = 'row') {
+#'   
+#'   
+#'   if(output_level == 'row'){
+#'     var_col <- 'prop_row_concept'
+#'   }else if(output_level == 'patient'){
+#'     var_col <- 'prop_pt_concept'
+#'   }else(stop('Please select a valid output level for AUC computation: `patient` or `row`'))
+#'   
+#'   x <- compute_dist_mean_median(tbl=process_output,
+#'                               grp_vars=grp_vars,
+#'                               var_col=var_col,
+#'                               num_sd = 2,
+#'                               num_mad = 2)  %>% 
+#'     rename(mean_allsiteprop=mean)
+#'   
+#'   x_filtered <- 
+#'     x %>% select(site,
+#'                  !!!syms(grp_vars),
+#'                  !!sym(var_col),
+#'                  mean_allsiteprop)
+#'   
+#'   # x_variableconcepts <- 
+#'   #   x_filtered %>% distinct(variable,concept_id)
+#'   
+#'   x_concepts <- 
+#'     x_filtered %>% ungroup() %>% distinct(concept_group) %>% pull()
+#'   
+#'   output <- list()
+#'   
+#'   for(i in 1:length(x_concepts)) {
+#'     
+#'     aucs <- compute_auc_at(tbl_name= x_filtered %>% filter(concept_group==x_concepts[[i]]) %>%
+#'                              ungroup(),
+#'                            iterate_var = 'site',
+#'                            time_var = 'time_start',
+#'                            outcome_var = var_col,
+#'                            gold_standard_var = 'mean_allsiteprop') %>% 
+#'       mutate(concept_group=x_concepts[[i]],
+#'              auc_mean=round(mean(auc_value, na.rm = TRUE),4),
+#'              auc_sd=round(sd(auc_value, na.rm = TRUE),4))
+#'     
+#'     
+#'     
+#'     
+#'     output[[i]] <- aucs  
+#'     
+#'   }
+#'   
+#'   output_reduced <- reduce(.x=output,
+#'                            .f=dplyr::union) #%>% 
+#'     #inner_join(x_variableconcepts)
+#'   
+#'   
+#' }
 
-compute_evp_auc <- function(process_output,
-                            grp_vars=c('time_start',
-                                       'time_increment',
-                                       'concept_group'),
-                            output_level = 'row') {
+
+
+#' Compute multi-site Euclidean distance for CSD
+#'
+#' @param input_tbl multi-site, over time output from the check_code_dist_csd function
+#' @param time_period a string indicating the distance between time points in the time series
+#'                    (i.e. `month`, `year`, etc)
+#' @param output_level the level of output that should be used to compute the euclidean distance 
+#'                     either `row` or `patient`
+#'
+#' @return one data frame with descriptive statistics about each concept, as well as the site Loess and
+#'         Euclidean values
+#' 
+evp_ms_anom_euclidean <- function(input_tbl,
+                                  time_period = 'month',
+                                  output_level) {
   
+  var_col <- ifelse(output_level == 'row', 'prop_row_concept', 'prop_pt_concept')
   
-  if(output_level == 'row'){
-    var_col <- 'prop_row_concept'
-  }else if(output_level == 'patient'){
-    var_col <- 'prop_pt_concept'
-  }else(stop('Please select a valid output level for AUC computation: `patient` or `row`'))
+  ms_at_cj <- compute_at_cross_join(cj_tbl=input_tbl,
+                                    time_period=time_period,
+                                    cj_var_names = c('site','concept_group'))
   
-  x <- compute_dist_mean_median(tbl=process_output,
-                              grp_vars=grp_vars,
-                              var_col=var_col,
-                              num_sd = 2,
-                              num_mad = 2)  %>% 
-    rename(mean_allsiteprop=mean)
+  ms_at_cj_avg <- compute_dist_mean_median(tbl=ms_at_cj,
+                                           grp_vars=c('time_start',
+                                                      'concept_group'),
+                                           var_col=var_col,
+                                           num_sd = 2,num_mad = 2)  %>% 
+    rename(mean_allsiteprop=mean) 
   
-  x_filtered <- 
-    x %>% select(site,
-                 !!!syms(grp_vars),
-                 !!sym(var_col),
-                 mean_allsiteprop)
+  euclidiean_tbl <- compute_euclidean(ms_tbl=ms_at_cj_avg,
+                                      output_var=var_col,
+                                      grp_vars = c('site', 'concept_group'))
   
-  # x_variableconcepts <- 
-  #   x_filtered %>% distinct(variable,concept_id)
+  final <- 
+    euclidiean_tbl %>% 
+    select(site,time_start,concept_group,
+           var_col,
+           mean_allsiteprop,median, date_numeric,
+           site_loess,dist_eucl_mean #,site_loess_df
+    )
   
-  x_concepts <- 
-    x_filtered %>% ungroup() %>% distinct(concept_group) %>% pull()
-  
-  output <- list()
-  
-  for(i in 1:length(x_concepts)) {
-    
-    aucs <- compute_auc_at(tbl_name= x_filtered %>% filter(concept_group==x_concepts[[i]]) %>%
-                             ungroup(),
-                           iterate_var = 'site',
-                           time_var = 'time_start',
-                           outcome_var = var_col,
-                           gold_standard_var = 'mean_allsiteprop') %>% 
-      mutate(concept_group=x_concepts[[i]],
-             auc_mean=round(mean(auc_value, na.rm = TRUE),4),
-             auc_sd=round(sd(auc_value, na.rm = TRUE),4))
-    
-    
-    
-    
-    output[[i]] <- aucs  
-    
-  }
-  
-  output_reduced <- reduce(.x=output,
-                           .f=dplyr::union) #%>% 
-    #inner_join(x_variableconcepts)
-  
+  return(final)
   
 }

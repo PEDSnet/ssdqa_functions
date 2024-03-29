@@ -144,19 +144,11 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
     
     if(multi_or_single_site == 'multi' & anomaly_or_exploratory=='anomaly') {
       
-      csd_tbl_ms <- csd_ms_anom_at_auc(csd_tbl %>%select(site,
-                                                           time_start,
-                                                           time_increment,
-                                                           variable,
-                                                           concept_id,
-                                                           prop_concept) %>% ungroup(),
-                                       grp_vars=c('time_start',
-                                                           'time_increment',
-                                                           'variable',
-                                                           'concept_id'),
-                                       var_col='prop_concept')
+      csd_tbl_ms <- csd_ms_anom_euclidean(input_tbl = csd_tbl,
+                                          time_period = time_period)
       
       csd_tbl <- csd_tbl_ms
+      
     }
     
   }
@@ -245,7 +237,7 @@ csd_output <- function(process_output=process_output,
                                    facet = facet,
                                    vocab_tbl = vocab_tbl)
   }else if(output_function == 'csd_ms_anom_at'){
-    csd_output <- csd_ms_anom_at(process_output_graph=process_output,
+    csd_output <- csd_ms_anom_at(process_output=process_output,
                                  filter_concept=filter_concept)
   }else(stop('Please enter a valid output_function for this check'))
   

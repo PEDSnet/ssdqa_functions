@@ -135,11 +135,9 @@ evp_process <- function(cohort,
   
   if(time == TRUE && multi_or_single_site == 'multi' && anomaly_or_exploratory == 'anomaly'){
     
-    evp_tbl_final <- compute_evp_auc(process_output = evp_tbl,
-                                     grp_vars = c('time_start',
-                                                  'time_increment',
-                                                  'concept_group'),
-                                     output_level = output_level)
+    evp_tbl_final <- evp_ms_anom_euclidean(input_tbl = evp_tbl,
+                                           output_level = output_level,
+                                           time_period = time_period)
     
   }else(evp_tbl_final <- evp_tbl)
   
@@ -177,7 +175,7 @@ evp_output <- function(process_output,
                        output_function,
                        output_level,
                        filter_variable,
-                       facet,
+                       facet = NULL,
                        kmeans_centers = 2,
                        mad_dev = 2){
   
@@ -226,9 +224,8 @@ evp_output <- function(process_output,
   }else if(output_function == 'evp_ms_anom_at'){
     
     evp_output <- evp_ms_anom_at(process_output = process_output,
-                                output_level = output_level,
-                                facet = facet,
-                                mad_dev = 2)
+                                 output_level = output_level,
+                                 filter_variable = filter_variable)
     
   }else(stop('Please enter a valid output function for this check type.'))
   

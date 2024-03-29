@@ -543,12 +543,13 @@ csd_ms_anom_nt<-function(process_output,
 
 
 
-csd_ms_anom_at <- function(process_output){
+csd_ms_anom_at <- function(process_output,
+                           filter_concept){
   
-  cid <- process_output %>% distinct(concept_id) %>% pull()
+  filt_op <- process_output %>% filter(concept_id == filter_concept)
   
   allsites <- 
-    process_output %>% 
+    filt_op %>% 
     select(time_start,concept_id,mean_allsiteprop) %>% distinct() %>% 
     rename(prop_concept=mean_allsiteprop) %>% 
     mutate(site='all site average') %>% 
@@ -560,7 +561,7 @@ csd_ms_anom_at <- function(process_output){
                            "\n","Proportion: ",prop_concept)) 
   
   dat_to_plot <- 
-    process_output %>% 
+    filt_op %>% 
     mutate(text_smooth=paste0("Site: ", site,
                        #"\n","Site Proportion: ",prop_concept,
                        #"\n","Proportion: ",prop_concept,
@@ -582,7 +583,7 @@ csd_ms_anom_at <- function(process_output){
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
     labs(y = 'Proportion (Loess)',
          x = 'Time',
-         title = paste0('Smoothed Proportion of ', cid, ' Across Time'))
+         title = paste0('Smoothed Proportion of ', filter_concept, ' Across Time'))
   
   q <- dat_to_plot %>%
     ggplot(aes(y = prop_concept, x = time_start, color = site,
@@ -593,16 +594,13 @@ csd_ms_anom_at <- function(process_output){
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
     labs(x = 'Time',
          y = 'Proportion',
-         title = paste0('Proportion of ', cid, ' Across Time'))
-  
-  ylim_max <- (dat_to_plot %>% filter(dist_eucl_mean == max(dist_eucl_mean)) %>% 
-                 distinct(dist_eucl_mean) %>% pull()) + 0.5
+         title = paste0('Proportion of ', filter_concept, ' Across Time'))
   
   t <- dat_to_plot %>% 
     distinct(site, dist_eucl_mean, site_loess) %>% 
     group_by(site, dist_eucl_mean) %>% 
     summarise(mean_site_loess = mean(site_loess)) %>%
-    mutate(tcol = ifelse(mean_site_loess > 0.85 | mean_site_loess < 0.2, 'group1', 'group2')) %>%
+    mutate(tcol = ifelse(mean_site_loess >= 0.8 | mean_site_loess <= 0.2, 'group1', 'group2')) %>%
     ggplot(aes(x = site, y = dist_eucl_mean, fill = mean_site_loess)) + 
     geom_col() + 
     geom_text(aes(label = dist_eucl_mean, color = tcol), vjust = 2, size = 3,
@@ -612,13 +610,13 @@ csd_ms_anom_at <- function(process_output){
     guides(theta = guide_axis_theta(angle = 0)) +
     #scale_y_continuous(limits = c(-1,ylim_max)) + 
     theme_minimal() + 
-    scale_fill_viridis_c(option = 'turbo') +
+    scale_fill_viridis_c(option = 'turbo', limits = c(0, 1), oob = scales::squish) +
     theme(legend.position = 'bottom',
           axis.text.x = element_text(face = 'bold')) + 
     labs(fill = 'Avg. Proportion \n(Loess)', 
          y ='Euclidean Distance', 
          x = '', 
-         title = paste0('Euclidean Distance for ', cid))
+         title = paste0('Euclidean Distance for ', filter_concept))
   
   plotly_p <- ggplotly(p,tooltip="text")
   plotly_q <- ggplotly(q,tooltip="text")

@@ -470,18 +470,20 @@ compute_at_cross_join <- function(cj_tbl,
 #'         value and a site Euclidean distance value
 #' 
 compute_euclidean <- function(ms_tbl,
-                              output_var) {
+                              output_var,
+                              grp_vars = c('site', 'concept_id')) {
   
-  site_list <- ms_tbl %>% distinct(site) %>% pull()
+  grp_tbls <- group_split(ms_tbl %>% unite(facet_col, !!!syms(grp_vars), sep = '_', remove = FALSE) %>%
+                            group_by(facet_col))
+  
+  euclidean_dist <- function(x, y) sqrt(sum((x - y)^2)) 
   
   overall <- list()
   
-  for(i in 1:length(site_list)) {
-    
-    thissite <- site_list[[i]]
+  for(i in 1:length(grp_tbls)) {
     
     site_datenumeric <- 
-      ms_tbl %>% filter(site==thissite) %>% 
+      grp_tbls[[i]] %>%  
       mutate(date_numeric = as.numeric(time_start),
              output_var = !!sym(output_var))
     site_loess <- loess(output_var ~ date_numeric, data=site_datenumeric)
@@ -491,13 +493,16 @@ compute_euclidean <- function(ms_tbl,
       cbind(site_datenumeric,site_loess_df) %>% 
       mutate(dist_eucl_mean=euclidean_site_loess) #%>% 
     # mutate(loess_predicted=predict(site_loess)) 
+    
     overall[[i]] <- ms_witheuclidean
+    
   }
   
   overall_reduce <- reduce(.x=overall,
                            .f=dplyr::union) %>% as_tibble() %>% 
     mutate(dist_eucl_mean=round(dist_eucl_mean,2),
-           site_loess=round(site_loess,2))
+           site_loess=round(site_loess,2)) %>%
+    select(-facet_col)
   
 }
 
@@ -525,7 +530,8 @@ csd_ms_anom_euclidean <- function(input_tbl,
     rename(mean_allsiteprop=mean) 
   
   euclidiean_tbl <- compute_euclidean(ms_tbl=ms_at_cj_avg,
-                                      output_var='prop_concept')
+                                      output_var='prop_concept',
+                                      grp_vars = c('site', 'concept_id'))
   
   final <- 
     euclidiean_tbl %>% 
