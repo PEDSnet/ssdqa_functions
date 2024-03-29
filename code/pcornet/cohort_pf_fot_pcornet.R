@@ -37,7 +37,7 @@ compute_pf_for_fot_pcnt <- function(cohort,
     if(!is.na(domain_list[[i]][[3]]) && !is.na(domain_list[[i]][[4]])) {
       
       filter_var <- domain_list[[i]][[3]] 
-      filter_vec <- as.integer(strsplit(domain_list[[i]][[4]],split=',',fixed = TRUE)[[1]])
+      filter_vec <- strsplit(domain_list[[i]][[4]],split=',',fixed = TRUE)[[1]]
       domain_tbl_use <- cdm_tbl(paste0(domain_list[[i]][[2]])) %>% 
         filter(!! sym(filter_var) %in% c(filter_vec))
       
@@ -70,7 +70,7 @@ compute_pf_for_fot_pcnt <- function(cohort,
       ) %>% summarise(total_strat_ct=n()) %>% 
       mutate(domain=domain_name) %>% ungroup()
     
-    new_group <- grouped_list[! grouped_list %in% c('person_id')]
+    new_group <- grouped_list[! grouped_list %in% c('patid')]
     
     pf_cohort_final <- 
       pf %>% right_join(select(cohort,
