@@ -199,21 +199,8 @@ pf_process <- function(cohort = cohort,
     
     if(anomaly_or_exploratory == 'anomaly' && multi_or_single_site == 'multi'){
       
-      tbl_list <- list()
-      
-      for(i in 1:length(visit_types)){
-        
-        pf_tbl_tmp <- compute_pf_auc(process_output = pf_int %>% filter(visit_type == visit_types[[i]]),
-                                     grp_vars = c('start_date',
-                                                  'visit_type',
-                                                  'domain')) %>%
-          mutate(visit_type = visit_types[[i]])
-        
-        tbl_list[[i]] <- pf_tbl_tmp
-      }
-      
-      pf_final <- reduce(.x = tbl_list,
-                         .f = dplyr::union)
+      pf_final <- pf_ms_anom_euclidean(input_tbl = pf_int,
+                                       time_period = time_period)
       
     }else{pf_final <- pf_int}
     
@@ -307,7 +294,7 @@ pf_output <- function(process_output,
                               output = output,
                               facet = facet)
   }else if(output_function == 'pf_ms_anom_at'){
-    pf_output <- pf_ms_anom_at(process_output_graph = process_output,
+    pf_output <- pf_ms_anom_at(process_output = process_output,
                                domain_filter = domain_filter,
                                visit_filter = visit_filter)
   }else if(output_function == 'pf_ss_anom_at'){

@@ -92,7 +92,7 @@ pf_ss_exp_at <- function(data_tbl,
     inner_join(read_codeset('domain_color_config','cc')) %>% 
     deframe()
   
-  ggplot(data_tbl, aes(x=start_date, y=!! sym(output), group=domain, fill=domain)) +
+  p <- ggplot(data_tbl, aes(x=start_date, y=!! sym(output), group=domain, fill=domain)) +
     geom_point(aes(color=domain)) +
     geom_smooth(method='loess',formula=y~x, size=0.5) +
     facet_wrap((facet), scales = 'free_y') +
@@ -103,119 +103,109 @@ pf_ss_exp_at <- function(data_tbl,
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     labs(x='Time Period', 
          y=y_title)
+  
+  ggplotly(p)
 }
 
 #' **Multi-Site, Anomaly, Over Time**
 #' 
-#' This chart will produce output for each site & domain. The data frame 
-#' that is listed as a parameter of the function should minimally contain a single 
-#' output for each site & domain combination. User can facet by visit type, age category, 
-#' or other stratifications. Multiple graphs can also be produced with varying facets.
+#' Proportion of patients with fact & Euclidean distance summary
 #' 
-#' @param data_tbl output from previous function; 
+#' @param process_output output from previous function; 
 #' requires input for multiple sites; can create multiple graphs
 #' for different grouped variables
 #' 
-#' @param output desired output - have 2 options:
-#' 1) `grp_outlier_num`: the count of patients in a group (site + domain + facets) that 
-#'                       are 2 MAD away from the median
-#' 2) `grp_outlier_prop`: the proportion of patients in a group (site + domain + facets) that 
-#'                        are 2 MAD away from the median
+#' @param domain_filter one of the user provided domains in the process_output table to be used
+#'                      to filter down the output
+#' @param visit_filter one of the user provided visit types in the process_output table to be used
+#'                     to filter down the output                    
 #' 
-#' @param facet variables to facet (e.g., `domain`); vector of strings
-
-pf_ms_anom_at <- function(process_output_graph,
-                          facet = NULL,
-                          visit_filter,
-                          domain_filter){
+pf_ms_anom_at <- function(process_output,
+                          domain_filter,
+                          visit_filter) {
   
-  # if(output == 'grp_outlier_num'){
-  #   fill_title = 'Count of \nAnomalous Measures'
-  # }else if(output == 'grp_outlier_prop'){
-  #     fill_title = 'Proportion of \nAnomalous Measures'
-  # }else(stop('Please select a valid output - `grp_outlier_num` or `grp_outlier_prop`'))
+  
+  filt_op <- process_output %>% filter(visit_type == visit_filter,
+                                       domain == domain_filter)
   
   allsites <- 
-    process_output_graph %>% 
-    filter(domain == domain_filter,
-           visit_type == visit_filter) %>% 
-    select(start_date,domain,mean_allsiteprop,auc_gold_standard) %>% distinct() %>% 
-    rename(prop_pt_fact = mean_allsiteprop) %>% 
-    mutate(site='all site average',
-           auc_value=auc_gold_standard) %>% 
-    mutate(text=paste0("Site: ", site,
-                       #"\n","Proportion: ",prop_concept,
-                       "\n","AUC Value: ",auc_value,
-                       "\n","All-Site AUC: ",auc_gold_standard)) 
+    filt_op %>% 
+    select(time_start,visit_type,domain,mean_allsiteprop) %>% distinct() %>% 
+    rename(prop=mean_allsiteprop) %>% 
+    mutate(site='all site average') %>% 
+    mutate(text_smooth=paste0("Site: ", site,
+                              #"\n","Proportion: ",prop_concept,
+                              "\n","Proportion Patients with Fact: ",prop),
+           text_raw=paste0("Site: ", site,
+                           #"\n","Proportion: ",prop_concept,
+                           "\n","Proportion Patients with Fact: ",prop)) 
   
-  #%>% 
   dat_to_plot <- 
-    process_output_graph %>% 
-    filter(domain == domain_filter,
-           visit_type == visit_filter) %>% 
-    mutate(text=paste0("Site: ", site,
-                       #"\n","Proportion: ",prop_concept,
-                       "\n","AUC Value: ",auc_value,
-                       "\n","All-Site AUC: ",auc_gold_standard)) 
-  
-  concept_var <- 
-    dat_to_plot %>% select(domain) %>% distinct() %>% pull
-  
-  if(length(concept_var) > 1) {stop('Please input only one concept_id')}
+    filt_op %>% 
+    mutate(text_smooth=paste0("Site: ", site,
+                              #"\n","Site Proportion: ",prop_concept,
+                              #"\n","Proportion: ",prop_concept,
+                              #"\n","Site Smoothed Proportion: ",site_loess,
+                              #"\n","All-Site Mean: ",mean_allsiteprop,
+                              "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean),
+           text_raw=paste0("Site: ", site,
+                           "\n","Site Proportion: ",prop,
+                           #"\n","Proportion: ",prop_concept,
+                           "\n","Site Smoothed Proportion: ",site_loess,
+                           #"\n","All-Site Mean: ",mean_allsiteprop,
+                           "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean)) 
   
   p <- dat_to_plot %>%
-    #filter(concept_id == 81893) %>% 
-    ggplot(aes(y = prop_pt_fact, x = start_date, color = site,group=site, text=text)) +
-    geom_line(data= filter(allsites, domain==concept_var), linewidth = 1.1) +
-    #stat_smooth(geom='line',alpha=0.7,se=TRUE) +
-    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5) +
+    ggplot(aes(y = prop, x = time_start, color = site, group = site, text = text_smooth)) +
+    geom_line(data=allsites, linewidth=1.1) +
+    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5, formula = y ~ x) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
-    ggtitle(paste0('Proportion of ',concept_var, ' for ', visit_filter, ' Visits Across Time',
-                   '\n','All-Site in Red; AUC value in Tooltip'))
+    labs(y = 'Proportion \n(Loess)',
+         x = 'Time',
+         title = paste0('Smoothed Proportion Patients with ', visit_filter, ' ', domain_filter, ' Across Time'))
   
+  q <- dat_to_plot %>%
+    ggplot(aes(y = prop, x = time_start, color = site,
+               group=site, text=text_raw)) +
+    geom_line(data=allsites,linewidth=1.1) +
+    geom_line(linewidth=0.2) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    labs(x = 'Time',
+         y = 'Proportion',
+         title = paste0('Proportion Patients with ', visit_filter, ' ', domain_filter, ' Across Time'))
   
-  gold_standard <- allsites %>%
-    select(auc_gold_standard) %>%
-    distinct() %>% pull()
-  
-  p2 <- dat_to_plot %>% 
-    select(site,auc_value,auc_gold_standard) %>% 
-    distinct() %>% 
-    ggplot(aes(y = auc_value, x = site, fill=site)) +
-    geom_bar(stat='identity') + 
-    geom_hline(yintercept=gold_standard,
-               linetype='dashed', color='red') +
-    coord_flip() +
-    guides(fill='none') + theme_minimal() +
-    ggtitle(paste0('Site AUC Value for ',concept_var, ' at ', visit_filter, ' Visits',
-                   '\n','All-Site in Dashed Red'))
-  
+  t <- dat_to_plot %>% 
+    distinct(site, dist_eucl_mean, site_loess) %>% 
+    group_by(site, dist_eucl_mean) %>% 
+    summarise(mean_site_loess = mean(site_loess)) %>%
+    mutate(tcol = ifelse(mean_site_loess >= 0.8 | mean_site_loess <= 0.2, 'group1', 'group2')) %>%
+    ggplot(aes(x = site, y = dist_eucl_mean, fill = mean_site_loess)) + 
+    geom_col() + 
+    geom_text(aes(label = dist_eucl_mean), vjust = 2, size = 3,
+              show.legend = FALSE, color = 'white') +
+    coord_radial(r_axis_inside = FALSE, rotate_angle = TRUE) + 
+    guides(theta = guide_axis_theta(angle = 0)) +
+    #scale_y_continuous(limits = c(-1,ylim_max)) + 
+    theme_minimal() + 
+    scale_fill_viridis_c(option = 'turbo', limits = c(0, 1), oob = scales::squish) +
+    theme(legend.position = 'bottom',
+          axis.text.x = element_text(face = 'bold')) + 
+    labs(fill = 'Avg. Proportion \n(Loess)', 
+         y ='Euclidean Distance', 
+         x = '', 
+         title = paste0('Euclidean Distance for ', visit_filter, ' ', domain_filter))
   
   plotly_p <- ggplotly(p,tooltip="text")
-  plotly_p2 <- ggplotly(p2,tooltip='auc_value')
+  plotly_q <- ggplotly(q,tooltip="text")
   
   output <- list(plotly_p,
-                 plotly_p2)
+                 plotly_q,
+                 t)
   
-  # domain_list <- data_tbl %>% select(domain) %>% distinct() %>% pull()
-  # 
-  # prep_fot <- check_fot_multisite(tblx = data_tbl,
-  #                                 target_col = 'median_fact_ct',
-  #                                 site_col = 'site',
-  #                                 time_col = 'start_date',
-  #                                 domain_list = domain_list,
-  #                                 facet_var = facet)
-  # prep_mad <- produce_multisite_mad(multisite_tbl = prep_fot,
-  #                                   facet_var = facet,
-  #                                   mad_dev=2)
-  # r <- ggplot(prep_mad, aes(x=site, y=grp, fill=!!sym(output))) +
-  #   geom_tile() +
-  #   facet_wrap((facet)) +
-  #   theme_classic() +
-  #   coord_flip() +
-  #   labs(fill = fill_title,
-  #        y = 'Domain')
+  return(output)
+  
 }
 
 #' **Multi-Site, Exploratory, Across Time**
@@ -468,7 +458,5 @@ pf_ms_exp_nt <- function(data_tbl,
          x = 'Domain') +
     coord_flip()
   
-  girafe(ggobj = r,
-         width = 10,
-         height = 10)
+  girafe(ggobj = r)
 }

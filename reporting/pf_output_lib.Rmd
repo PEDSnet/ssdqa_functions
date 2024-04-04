@@ -145,23 +145,25 @@ pf_output(process_output = get_results('pf_ms_at'),
 
 ```
 
-## Multi Site, Anomaly Detection, Across Time
+## Multi Site, Anomaly, Across Time
 
-This check displays the area under the curve (AUC) for ONE domain & visit type pair across time, for every site in the cohort. The AUC computation itself takes place in the initial processing function to reduce load on the summarization end. During this computation, the all site mean is used as the "gold standard" against which the site-specific proportion associated with a given domain is compared. 
+This check displays the Euclidean distance between two time series: the smoothed (Loess) proportion of patients with a user selected fact and visit type combination for a given site and the all-site average proportion. 
 
-Two graphs are output:
+Three graphs are output:
 
-  * a line graph displaying the proportion of facts per patient/domain/visit type at each site over time, with the AUC values available in the tooltip when hovering over a given line
-  * a bar graph comparing the AUC values for each site against the all site overall AUC value
+  * a line graph displaying the smoothed proportion of patients at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+  * a line graph displaying the raw (not smoothed) proportion of patients at each site over time
+  * a circular bar graph displaying the Euclidean distance from the all-site mean where the fill represents the average Loess proportion over time
 
 ```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-op <- pf_output(process_output = get_results('pf_ms_anom_at'),
+op <- pf_output(process_output = get_results('pf_ms_at_eucl'),
           output_function = 'pf_ms_anom_at',
           domain_filter = 'conditions_all',
           visit_filter = 'outpatient')
 
 op[[1]]
 op[[2]]
+op[[3]]
 
 ```

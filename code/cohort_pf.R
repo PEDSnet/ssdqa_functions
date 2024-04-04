@@ -447,67 +447,46 @@ output_tbl_append <- function(data, name = NA, local = FALSE,
 }
 
 
-#' *MS Anomaly Across Time Output*
+#' Euclidean Distance for pf_ms_anom_at output
+#'
+#' @param input_tbl table output by loop_through_visits when compute_pf_for_fot is used
+#'                  as the check_func
+#' @param time_period a string denoting the period of time that separates each date value
+#'                    (i.e. month, year, etc)
+#'
+#' @return data frame with mean and median values for the proportion of patients with a fact
+#'         and the euclidean distance value from the all site mean
 #' 
-#' @param process_output the input tbl to compute an AUC for the multi-site across time analysis  
-#' @param grp_vars variables to group by to compute the aggregated proportion for all sites
-#' 
-#' @return a dataframe with the AUC values for each variable included in the function input table
-#' 
-
-compute_pf_auc <- function(process_output,
-                            grp_vars=c('time_start',
-                                       'time_increment',
-                                       'visit_type',
-                                       'domain')) {
+pf_ms_anom_euclidean <- function(input_tbl,
+                                 time_period = 'month') {
   
   
-  process_output <- process_output %>%
-    mutate(prop_pt_fact = fact_ct_denom / pt_ct_denom)
+  ms_at_cj <- compute_at_cross_join(cj_tbl=input_tbl %>% rename('time_start' = start_date,
+                                                                'time_end' = end_date) %>%
+                                      mutate(prop = fact_ct_denom / pt_ct_denom),
+                                    time_period=time_period,
+                                    cj_var_names = c('site','visit_type', 'domain'))
   
-  x <- compute_dist_mean_median(tbl=process_output,
-                                grp_vars=grp_vars,
-                                var_col='prop_pt_fact',
-                                num_sd = 2,
-                                num_mad = 2)  %>% 
-    rename(mean_allsiteprop=mean)
+  ms_at_cj_avg <- compute_dist_mean_median(tbl=ms_at_cj,
+                                           grp_vars=c('time_start',
+                                                      'visit_type',
+                                                      'domain'),
+                                           var_col='prop',
+                                           num_sd = 2,num_mad = 2)  %>% 
+    rename(mean_allsiteprop=mean) 
   
-  x_filtered <- 
-    x %>% select(site,
-                 !!!syms(grp_vars),
-                 prop_pt_fact,
-                 mean_allsiteprop)
+  euclidiean_tbl <- compute_euclidean(ms_tbl=ms_at_cj_avg,
+                                      output_var='prop',
+                                      grp_vars = c('site', 'visit_type', 'domain'))
   
-  # x_variableconcepts <- 
-  #   x_filtered %>% distinct(variable,concept_id)
+  final <- 
+    euclidiean_tbl %>% 
+    select(site,time_start,visit_type,
+           domain, prop,
+           mean_allsiteprop,median, date_numeric,
+           site_loess,dist_eucl_mean #,site_loess_df
+    )
   
-  x_concepts <- 
-    x_filtered %>% ungroup() %>% distinct(domain) %>% pull()
-  
-  output <- list()
-  
-  for(i in 1:length(x_concepts)) {
-    
-    aucs <- compute_auc_at(tbl_name= x_filtered %>% filter(domain==x_concepts[[i]]) %>%
-                             ungroup(),
-                           iterate_var = 'site',
-                           time_var = 'start_date',
-                           outcome_var = 'prop_pt_fact',
-                           gold_standard_var = 'mean_allsiteprop') %>% 
-      mutate(domain=x_concepts[[i]],
-             auc_mean=round(mean(auc_value, na.rm = TRUE),4),
-             auc_sd=round(sd(auc_value, na.rm = TRUE),4))
-    
-    
-    
-    
-    output[[i]] <- aucs  
-    
-  }
-  
-  output_reduced <- reduce(.x=output,
-                           .f=dplyr::union) #%>% 
-  #inner_join(x_variableconcepts)
-  
+  return(final)
   
 }
