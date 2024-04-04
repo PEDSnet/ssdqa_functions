@@ -16,17 +16,17 @@
 compute_evp <- function(cohort,
                         grouped_list,
                         time = FALSE,
-                        evp_concept_file = read_codeset('evp_concepts', 'cccc')){
+                        evp_variable_file = read_codeset('evp_variables', 'cccc')){
   
-  evp_list <- split(evp_concept_file, seq(nrow(evp_concept_file)))
+  evp_list <- split(evp_variable_file, seq(nrow(evp_variable_file)))
   
   result <- list()
   
   for(i in 1:length(evp_list)){
     
-    concept_group <- evp_list[[i]][[1]]
+    variable <- evp_list[[i]][[1]]
     
-    message(paste0('Starting ', concept_group))
+    message(paste0('Starting ', variable))
     
     domain_tbl <- cdm_tbl(evp_list[[i]][[2]]) %>%
       inner_join(cohort) %>%
@@ -55,7 +55,7 @@ compute_evp <- function(cohort,
       left_join(fact_pts) %>%
       mutate(prop_pt_concept = round(as.numeric(concept_pt_ct/total_pt_ct), 3),
              prop_row_concept = round(as.numeric(concept_row_ct/total_row_ct), 3),
-             concept_group = concept_group)
+             variable = variable)
     
     final_tbl[is.na(final_tbl)] <- 0
     
@@ -86,15 +86,15 @@ compute_evp <- function(cohort,
 #'
 compute_evp_ssanom <- function(cohort,
                                grouped_list,
-                               evp_concept_file = read_codeset('evp_concepts', 'cccc')){
+                               evp_variable_file = read_codeset('evp_variables', 'cccc')){
   
-  evp_list <- split(evp_concept_file, seq(nrow(evp_concept_file)))
+  evp_list <- split(evp_variable_file, seq(nrow(evp_variable_file)))
   
   result <- list()
   
   for(i in 1:length(evp_list)){
     
-    concept_group <- evp_list[[i]][[1]]
+    variable <- evp_list[[i]][[1]]
     
     join_cols <- set_names('concept_id', evp_list[[i]][[3]])
     
@@ -102,7 +102,7 @@ compute_evp_ssanom <- function(cohort,
       inner_join(cohort) %>%
       inner_join(load_codeset(evp_list[[i]][[5]]), by = join_cols) %>%
       group_by(!!!syms(grouped_list)) %>%
-      mutate(variable = concept_group) %>%
+      mutate(variable = variable) %>%
       select(person_id,
              all_of(group_vars(cohort)),
              variable) %>%
@@ -275,23 +275,22 @@ evp_ms_anom_euclidean <- function(input_tbl,
   
   ms_at_cj <- compute_at_cross_join(cj_tbl=input_tbl,
                                     time_period=time_period,
-                                    cj_var_names = c('site','concept_group'))
+                                    cj_var_names = c('site','variable'))
   
   ms_at_cj_avg <- compute_dist_mean_median(tbl=ms_at_cj,
                                            grp_vars=c('time_start',
-                                                      'concept_group'),
+                                                      'variable'),
                                            var_col=var_col,
                                            num_sd = 2,num_mad = 2)  %>% 
     rename(mean_allsiteprop=mean) 
   
   euclidiean_tbl <- compute_euclidean(ms_tbl=ms_at_cj_avg,
                                       output_var=var_col,
-                                      grp_vars = c('site', 'concept_group'))
+                                      grp_vars = c('site', 'variable'))
   
   final <- 
     euclidiean_tbl %>% 
-    select(site,time_start,concept_group,
-           var_col,
+    select(site,time_start,variable,var_col,
            mean_allsiteprop,median, date_numeric,
            site_loess,dist_eucl_mean #,site_loess_df
     )

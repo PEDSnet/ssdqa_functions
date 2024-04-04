@@ -9,9 +9,9 @@
 #'                       - @site
 #' @param site_list A list of sites for which you would like to examine clinical facts. Can be one site 
 #'                  (single-site) or multiple (multi-site) 
-#' @param evp_concept_file CSV file with information about each of the concept sets that should be
+#' @param evp_variable_file CSV file with information about each of the variables that should be
 #'                         examined in the function. contains the following columns:
-#'                         - @concept_group a label for the group captured by the associated codeset
+#'                         - @variable a label for the variable captured by the associated codeset
 #'                         - @default_tbl CDM table where data related to the codeset is found
 #'                         - @field_name concept_id field with codes from the associated codeset
 #'                         - @date_field a date field in the `default_tbl` that should be used for
@@ -47,7 +47,7 @@
 #' 
 evp_process <- function(cohort,
                         #site_list,
-                        evp_concept_file = read_codeset('evp_concepts', 'cccc'),
+                        evp_variable_file = read_codeset('evp_variables', 'cccc'),
                         multi_or_single_site = 'single',
                         anomaly_or_exploratory='exploratory',
                         output_level = 'row',
@@ -97,13 +97,13 @@ evp_process <- function(cohort,
         
         concept_check <- compute_evp_ssanom(cohort = cohort_site,
                                             grouped_list = grouped_list,
-                                            evp_concept_file = evp_concept_file)
+                                            evp_variable_file = evp_variable_file)
         
       }else{
         
         concept_check <- compute_evp(cohort = cohort_site,
                                      grouped_list = grouped_list,
-                                     evp_concept_file = evp_concept_file,
+                                     evp_variable_file = evp_variable_file,
                                      time = time)
       }
       
@@ -121,7 +121,7 @@ evp_process <- function(cohort,
                                        compute_evp(cohort = dat,
                                                    grouped_list = grouped_list,
                                                    time = TRUE,
-                                                   evp_concept_file = evp_concept_file)
+                                                   evp_variable_file = evp_variable_file)
                                      })
     
     site_output[[k]] <- concept_check
