@@ -219,9 +219,17 @@ scv_output <- function(process_output,
   }
   
   
-  process_output <- join_to_vocabulary(tbl = process_output,
-                                       vocab_tbl = vocab_tbl,
-                                       col = col)
+  rslt_cid <- join_to_vocabulary(tbl = process_output,
+                                 vocab_tbl = vocab_tbl,
+                                 col = 'concept_id')
+  
+  rslt_scid <- join_to_vocabulary(tbl = process_output,
+                                  vocab_tbl = vocab_tbl,
+                                  col = 'source_concept_id') %>%
+    rename('source_concept_name' = 'concept_name')
+  
+  process_output <- rslt_cid %>%
+    full_join(rslt_scid)
   
   ## Run output functions
   if(output_function == 'scv_ms_anom_nt'){

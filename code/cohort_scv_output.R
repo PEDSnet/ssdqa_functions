@@ -69,12 +69,16 @@ scv_ss_exp_nt <- function(process_output,
     denom <-  'denom_concept_ct'
     col <- 'concept_id'
     map_col <- 'source_concept_id'
+    name_col <- 'concept_name'
+    map_name <- 'source_concept_name'
     prop <- 'concept_prop'
     title <- paste0('Top ', num_mappings, ' Mappings for Top ', num_codes, ' CDM Codes')
   }else if(code_type == 'source'){
     denom <- 'denom_source_ct'
     col <- 'source_concept_id'
     map_col <- 'concept_id'
+    name_col <- 'source_concept_name'
+    map_name <- 'concept_name'
     prop <- 'source_prop'
     title <- paste0('Top ', num_mappings, ' Mappings for Top ', num_codes, ' Source Codes')
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
@@ -107,8 +111,9 @@ scv_ss_exp_nt <- function(process_output,
     final <- ref %>%
       inner_join(nmap_top) %>%
       left_join(nmap_total) %>% 
+      rename(cname = !!map_name) %>%
       mutate(xaxis = paste0(!!sym(col), '\n Total Mappings: ', nmap),
-             tooltip = paste0('Concept Name: ', concept_name)) 
+             tooltip = paste0('Mapped Concept Name: ', cname)) 
     
     facet <- facet %>% append('xaxis')
     
@@ -120,7 +125,7 @@ scv_ss_exp_nt <- function(process_output,
       scale_fill_viridis_c(option = 'turbo') +
       facet_wrap((facet), scales = 'free') +
       theme(axis.text.x = element_blank(),
-            text = element_text(size = 7)) +
+            text = element_text(size = 9)) +
       labs(title = title,
            x = col,
            y = map_col)
@@ -131,7 +136,8 @@ scv_ss_exp_nt <- function(process_output,
     
     # Summary Reference Table
     ref_tbl <- generate_ref_table(tbl = final,
-                                  col = col,
+                                  id_col = col,
+                                  name_col = name_col,
                                   denom = denom)
   
   output <- list(p, ref_tbl)
@@ -166,11 +172,13 @@ scv_ms_exp_nt <- function(process_output,
     denom <-  'denom_concept_ct'
     col <- 'concept_id'
     map_col <- 'source_concept_id'
+    name_col <- 'concept_name'
     prop <- 'concept_prop'
   }else if(code_type == 'source'){
     denom <- 'denom_source_ct'
     col <- 'source_concept_id'
     map_col <- 'concept_id'
+    name_col <- 'source_concept_name'
     prop <- 'source_prop'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
@@ -192,7 +200,7 @@ scv_ms_exp_nt <- function(process_output,
     
     table <- final %>%
       ungroup() %>%
-      select(all_of(facet), col, map_col, concept_name, ct, prop) %>%
+      select(all_of(facet), col, map_col, concept_name, source_concept_name, ct, prop) %>%
       mutate(pct = !!sym(prop)) %>%
       arrange(!!!syms(facet), desc(ct)) %>%
       gt::gt() %>%
@@ -237,9 +245,11 @@ scv_ss_anom_nt <- function(process_output,
   if(code_type == 'source'){
     col <- 'source_concept_id'
     denom <- 'denom_source_ct'
+    name_col <- 'source_concept_name'
   }else if(code_type == 'cdm'){
     col <- 'concept_id'
     denom <- 'denom_concept_ct'
+    name_col <- 'concept_name'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
   
   mappings_per_code <- compute_mappings_per_code(tbl = process_output,
@@ -259,8 +269,9 @@ scv_ss_anom_nt <- function(process_output,
    
   tb <- tbl_filt %>%
       left_join(info) %>%
+      rename(cname = !!name_col) %>%
       mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
-             tooltip = paste0('Concept Name: ', concept_name, '\nTotal Concept Mappings: ', n_mappings, 
+             tooltip = paste0('Concept Name: ', cname, '\nTotal Concept Mappings: ', n_mappings, 
                               '\nTotal Concept Rows: ', denom_fmt))
     
     plot <- tb %>%
@@ -336,7 +347,9 @@ scv_ms_anom_nt <- function(process_output,
     tb <- tbl_filt %>%
       left_join(info) %>%
       mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
-             tooltip = paste0('Concept Name: ', concept_name, '\nMAD from Median: ', n_mad, 
+             n_mad = round(n_mad, 4),
+             tooltip = paste0('Concept Name: ', concept_name, '\nAll-Site Median: ', median, 
+                              '\nMAD from Median: ', n_mad, 
                               '\nTotal Concept Mappings: ', n_mappings, 
                               '\nTotal Concept Rows: ', denom_fmt))
     
@@ -347,8 +360,8 @@ scv_ms_anom_nt <- function(process_output,
       #scale_fill_gradientn(colors = viridis::turbo(10))
       scale_fill_viridis_c(option = 'turbo') +
       labs(title = 'MAD from Median Number of Mappings per Code',
-           y = col,
-           x = '')
+           y = col) +
+      theme(axis.text.x = element_blank())
     
     girafe(ggobj = plot,
            width = 10,
@@ -383,11 +396,15 @@ scv_ss_ms_exp_at <- function(process_output,
   if(code_type == 'source'){
     col <- 'source_concept_id'
     map_col <- 'concept_id'
+    name_col <- 'source_concept_name'
+    map_name <- 'concept_name'
     prop <- 'source_prop'
     denom <- 'denom_source_ct'
   }else if(code_type == 'cdm'){
     col <- 'concept_id'
     map_col <- 'source_concept_id'
+    name_col <- 'concept_name'
+    map_name <- 'source_concept_name'
     prop <- 'concept_prop'
     denom <- 'denom_concept_ct'
   }else{stop('Please select a valid code_type - `source` or `cdm`')}
@@ -398,7 +415,7 @@ scv_ss_ms_exp_at <- function(process_output,
       mutate(concept_id = as.character(concept_id),
              source_concept_id = as.character(source_concept_id)) %>%
       ggplot(aes(y = !!sym(prop), x = time_start, color = !!sym(map_col),
-                 label = concept_name,
+                 label = !!sym(map_name),
                  label2 = ct
                  )) +
       geom_line() +
@@ -409,7 +426,8 @@ scv_ss_ms_exp_at <- function(process_output,
     plot <- ggplotly(p)
     
     ref_tbl <- generate_ref_table(tbl = process_output,
-                                  col = col,
+                                  id_col = col,
+                                  name_col = name_col,
                                   denom = denom,
                                   time = TRUE)
   
@@ -580,7 +598,7 @@ scv_ms_anom_at <- function(process_output,
     mutate(tcol = ifelse(mean_site_loess >= 0.8 | mean_site_loess <= 0.2, 'group1', 'group2')) %>%
     ggplot(aes(x = site, y = dist_eucl_mean, fill = mean_site_loess)) + 
     geom_col() + 
-    geom_text(aes(label = dist_eucl_mean, color = tcol), vjust = 2, size = 3,
+    geom_text(aes(label = dist_eucl_mean, color = tcol), vjust = 2, size = 2,
               show.legend = FALSE) +
     scale_color_manual(values = c('white', 'black')) +
     coord_radial(r_axis_inside = FALSE, rotate_angle = TRUE) + 

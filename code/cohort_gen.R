@@ -380,14 +380,15 @@ param_csv_summ2 <- function(check_string, ...){
 #'         could not be displayed in the associated graph
 
 generate_ref_table <- function(tbl,
-                               col,
+                               id_col,
+                               name_col,
                                denom,
                                time = FALSE){
   if(!time){
       
       t <- tbl %>%
         rename('denom_col' = denom) %>%
-        distinct(site, !!sym(col), concept_name, denom_col) %>%
+        distinct(site, !!sym(id_col), !!sym(name_col), denom_col) %>%
         gt::gt() %>%
         fmt_number(denom_col, decimals = 0) %>%
         data_color(palette = "Dark2", columns = c(site)) %>%
@@ -400,8 +401,8 @@ generate_ref_table <- function(tbl,
       
       t <- tbl %>%
         rename('denom_col' = denom) %>%
-        distinct(site, !!sym(col), concept_name, denom_col) %>%
-        group_by(site, !!sym(col)) %>%
+        distinct(site, !!sym(id_col), !!sym(name_col), denom_col) %>%
+        group_by(site, !!sym(id_col)) %>%
         mutate(denom_col = sum(denom_col)) %>%
         ungroup() %>%
         distinct() %>%
