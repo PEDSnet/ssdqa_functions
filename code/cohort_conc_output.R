@@ -13,21 +13,25 @@ plot_cnc_sp_ss_exp_nt <- function(data_tbl,
                             x_var,
                             y_var,
                             fill_var,
-                            pal_map) {
+                            pal_map,
+                            top_n) {
   
   data_tbl <- data_tbl %>%
     mutate(text=paste("Specialty: ", specialty_name,
                       "\nNumber of Visits: ",format(n,big.mark=","),
                       "\nProportion: ",round(prop,2)))
+  facet_name<-str_remove_all(as.character(deparse(facet)),"\\(|\\\"|\\)")
   plt <- ggplot(data_tbl,
          aes(x=!!sym(x_var), y=!! sym(y_var), fill=!!sym(fill_var), text=text)) +
     geom_bar(stat='identity') + 
     facet_wrap((facet))+
-    scale_fill_manual(values=pal_map) +
+    #scale_fill_manual(values=pal_map) +
+    scale_fill_ssdqa()+
     coord_flip() +
     theme_classic() +
     theme(panel.grid.major = element_line(size=0.4, linetype = 'solid'),
-          panel.grid.minor = element_line(size=0.2, linetype = 'dashed'))
+          panel.grid.minor = element_line(size=0.2, linetype = 'dashed'))+
+    labs(title=paste0("Proportion of visits with each of the top ",top_n," Specialties\nby ",facet_name))
   
   ggplotly(plt,
            tooltip="text")
@@ -170,7 +174,8 @@ plot_cnc_sp_ms_exp_nt <- function(data_tbl,
                   colour=site,
                   text=text))+
     geom_point()+
-    scale_color_manual(values=pal_map)+
+    #scale_color_manual(values=pal_map)+
+    scale_color_ssdqa()+
     coord_flip()+
     theme_bw()
   ggplotly(plt, tooltip = "text")
@@ -196,17 +201,18 @@ plot_cnc_sp_ss_exp_at <- function(data_tbl,
   if(is.null(facet)){
   plt<-ggplot(dat_to_plot, aes(x=time_start,y=prop,color=specialty_name,text=text))+
     geom_line(group=1)+
-    scale_color_manual(values=pal_map)+
+    #scale_color_manual(values=pal_map)+
+    scale_color_ssdqa()+
     theme_classic()+
     theme(axis.text.x = element_text(angle=90))
   }else{  
     plt<-ggplot(dat_to_plot, aes(x=time_start,y=prop,color=specialty_name,text=text))+
       geom_line(group=1)+
-      scale_color_manual(values=pal_map)+
+      #scale_color_manual(values=pal_map)+
+      scale_color_ssdqa()+
       facet_wrap(facets = eval(facet), scales = 'free')+
       theme_classic()+
       theme(axis.text.x = element_text(angle=90))
-    
     }
   
   ggplotly(plt, tooltip="text")
@@ -286,14 +292,16 @@ plot_cnc_sp_ms_exp_at <- function(data_tbl,
   if(is.null(facet)){
     plt<-ggplot(dat_to_plot, aes(x=time_start,y=prop,color=site,text=text))+
       geom_line(group=1,aes(linetype=site))+
-      scale_color_manual(values=pal_map)+
+      #scale_color_manual(values=pal_map)+
+      scale_color_ssdqa()+
       scale_linetype_manual(values=line_vals,breaks=line_breaks)+
       theme_classic()+
       theme(axis.text.x = element_text(angle=90))
   }else{  
     plt<-ggplot(dat_to_plot, aes(x=time_start,y=prop,color=site,text=text))+
       geom_line(group=1,aes(linetype=site))+
-      scale_color_manual(values=pal_map)+
+      #scale_color_manual(values=pal_map)+
+      scale_color_ssdqa()+
       facet_wrap(facets = eval(facet), scales = 'free')+
       scale_linetype_manual(values=line_vals,breaks=line_breaks)+
       theme_classic()+
@@ -314,7 +322,8 @@ plot_cnc_sp_ms_an_at<- function(data_tbl){
   plt<-ggplot(data_tbl, aes(x=time_start,y=site,fill=n_mad))+
     geom_tile()+
     facet_wrap(~specialty_name)+
-    scale_fill_gradient2(low='pink',high='maroon')+
+    #scale_fill_gradient2(low='pink',high='maroon')+
+    scale_fill_ssdqa(palette = "sequential", discrete=FALSE)+
     theme_classic()+
     theme(axis.text.x = element_text(angle=90))
   ggplotly(plt)
@@ -340,14 +349,16 @@ plot_cnc_sp_ms_an_nt<-function(data_tbl){
   
   plt<-ggplot(dat_to_plot, aes(x=site, y=specialty_name, text=text))+
     geom_point(aes(size=n_mad,colour=prop,shape=anomaly_yn))+
+    scale_color_ssdqa(palette = "diverging", discrete=FALSE)+
     scale_shape_manual(values=c(20,8))+
     #scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
-    scale_color_gradient(low='#dfc27d',high='#01665e')+
+    #scale_color_gradient(low='#dfc27d',high='#01665e')+
     theme_bw()+
     labs(colour="Proportion",
          shape="Anomaly",
          size="")+
     theme(axis.text.x = element_text(angle=90))
+  
   
   ggplotly(plt, tooltip="text")
 }
@@ -374,7 +385,8 @@ plot_cnc_sp_ss_an_nt<- function(data_tbl){
     geom_point(aes(size=n_mad,colour=prop,shape=anomaly_yn))+
     scale_shape_manual(values=c(20,8))+
     #scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
-    scale_color_gradient(low='#dfc27d',high='#01665e')+
+    #scale_color_gradient(low='#dfc27d',high='#01665e')+
+    scale_color_ssdqa(palette="diverging", discrete=FALSE)+
     theme_bw()+
     labs(colour="Proportion",
          shape="Anomaly",
@@ -390,10 +402,10 @@ plot_cnc_sp_ss_an_nt<- function(data_tbl){
 #' @param data_tbl table which must contain the cols: time_start | n | specialty_name
 #' @return control chart with time on x axis, number of visits on y axis, faceted by specialty
 plot_cnc_sp_ss_an_at<-function(data_tbl){
-  qic(data=data_tbl, x=time_start, y = n, chart='c', facets=~specialty_name, #can also do cluster~specialty_name
+  qic(data=data_tbl, x=time_start, y = n, chart='pp', facets=~specialty_name, #can also do cluster~specialty_name
       scales='free_y',
       x.angle=45,
       title="Control Chart: Specialty Concordance for Clusters Over Time",
       show.grid = TRUE,
-      xlab='Time')
+      xlab='Time', n=total)
 }

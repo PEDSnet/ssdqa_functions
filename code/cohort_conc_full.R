@@ -280,7 +280,8 @@ conc_output_gen <- function(conc_process_output,
                                          x_var='specialty_name',
                                          y_var='prop',
                                          fill_var=color_var,
-                                         pal_map=conc_colors)
+                                         pal_map=conc_colors,
+                                         top_n=top_n)
     }
     
   }else if(multi_or_single_site=='single'&anomaly_or_exploratory=='anomaly'){
@@ -325,4 +326,5 @@ conc_output_gen <- function(conc_process_output,
     
   }
   return(conc_output_plot)
+  #return(conc_output_pp)
 }
