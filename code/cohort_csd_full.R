@@ -194,10 +194,18 @@ csd_output <- function(process_output=process_output,
                        save_as_png = FALSE,
                        file_path = NULL){
   
+  ## Get concept names from vocabulary table
+  if(output_function != 'csd_ss_anom_nt'){
+    process_output <- join_to_vocabulary(tbl = process_output %>% 
+                                           mutate(concept_id = as.integer(concept_id)),
+                                         vocab_tbl = vocab_tbl,
+                                         col = 'concept_id')
+  }
+  
   ## Run output functions
   if(output_function == 'csd_ss_exp_nt'){
     csd_output <- csd_ss_exp_nt(process_output=process_output,
-                                 vocab_tbl = vocab_tbl,
+                                 #vocab_tbl = vocab_tbl,
                                  num_codes = num_codes,
                                  num_mappings = num_mappings)
   }else if(output_function == 'csd_ss_anom_nt'){
@@ -205,15 +213,14 @@ csd_output <- function(process_output=process_output,
                                  vocab_tbl = vocab_tbl,
                                  filtered_var = filtered_var)
   }else if(output_function == 'csd_ss_exp_at'){
-    csd_output <- csd_ss_ms_exp_at(process_output,
-                                  facet=facet,
-                                  #variable_names = variable_names,
-                                  filtered_var = filtered_var,
-                                  vocab_tbl = vocab_tbl,
-                                  output_value=output_value)
+    csd_output <- csd_ss_exp_at(process_output,
+                                facet=facet,
+                                filtered_var = filtered_var,
+                                #vocab_tbl = vocab_tbl,
+                                output_value=output_value)
   }else if(output_function == 'csd_ss_anom_at'){
     csd_output <- csd_ss_anom_at(process_output=process_output,
-                                vocab_tbl=vocab_tbl,
+                                #vocab_tbl=vocab_tbl,
                                 filtered_var=filtered_var,
                                 facet=facet,
                                 top_mapping_n = num_mappings
@@ -221,21 +228,23 @@ csd_output <- function(process_output=process_output,
   }else if(output_function == 'csd_ms_exp_nt'){
     csd_output <- csd_ms_exp_nt(process_output=process_output,
                                  facet=facet,
-                                 vocab_tbl = vocab_tbl,
+                                 #vocab_tbl = vocab_tbl,
                                  num_codes = num_codes)
   }else if(output_function == 'csd_ms_anom_nt'){
     csd_output <- csd_ms_anom_nt(process_output=process_output,
-                                   vocab_tbl=vocab_tbl,
+                                   #vocab_tbl=vocab_tbl,
                                    text_wrapping_char=text_wrapping_char,
                                    filtered_var=filtered_var,
                                    comparison_col=comparison_col,
                                    grouped_vars=grouped_vars)
   }else if(output_function == 'csd_ms_exp_at'){
-    csd_output <- csd_ss_ms_exp_at(process_output = process_output,
-                                   filtered_var = filtered_var,
-                                   output_value = output_value,
-                                   facet = facet,
-                                   vocab_tbl = vocab_tbl)
+    csd_output <- csd_ms_exp_at(process_output = process_output,
+                                filtered_var = filtered_var,
+                                filtered_concept = filter_concept,
+                                output_value = output_value,
+                                facet = facet
+                                #vocab_tbl = vocab_tbl
+                                )
   }else if(output_function == 'csd_ms_anom_at'){
     csd_output <- csd_ms_anom_at(process_output=process_output,
                                  filter_concept=filter_concept)

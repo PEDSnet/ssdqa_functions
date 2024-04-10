@@ -19,7 +19,7 @@
 #' 
 csd_ss_exp_nt <- function(process_output,
                           facet = NULL,
-                          vocab_tbl = vocabulary_tbl('concept'),
+                          #vocab_tbl = vocabulary_tbl('concept'),
                           num_codes = 10,
                           num_mappings = 10){
   
@@ -64,10 +64,7 @@ csd_ss_exp_nt <- function(process_output,
   
   facet <- facet %>% append('xaxis')
   
-    final_filt <- join_to_vocabulary(tbl = final %>% mutate(concept_id = as.integer(concept_id)),
-                                    vocab_tbl = vocab_tbl,
-                                    col = map_col) 
-    plot <- final_filt %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
+    plot <- final %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
                                  fill = !!sym(prop))) +
       geom_tile_interactive(aes(tooltip = concept_name)) +
       geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
@@ -82,8 +79,10 @@ csd_ss_exp_nt <- function(process_output,
                 width = 10,
                 height = 10)
 
-  ref_tbl <- generate_ref_table(tbl = final_filt %>% mutate(concept_id = as.integer(concept_id)),
-                                col = col,
+  ref_tbl <- generate_ref_table(tbl = final %>% mutate(concept_id = as.integer(concept_id)) %>%
+                                  select(-concept_name),
+                                id_col = col,
+                                name_col = col,
                                 denom = denom)
   
   output <- list(p, ref_tbl)
@@ -170,7 +169,7 @@ csd_ss_anom_nt <- function(process_output,
 #'         a particular code are anomalous; outlying points are highlighted red
 #' 
 csd_ss_anom_at <- function(process_output,
-                           vocab_tbl=vocabulary_tbl('concept'),
+                           #vocab_tbl=vocabulary_tbl('concept'),
                            filtered_var='ibd',
                            facet=NULL,
                            top_mapping_n = 6,
@@ -195,11 +194,8 @@ csd_ss_anom_at <- function(process_output,
     ungroup() %>% arrange(desc(total_ct)) %>% 
     top_n(n=top_mapping_n) %>% select(concept_id) %>% pull()
   
-  c_added <- join_to_vocabulary(tbl = process_output %>% filter(variable == filtered_var) %>% 
-                                  filter(concept_id %in% top_n) %>% 
-                                  mutate(concept_id=as.integer(concept_id)),
-                              vocab_tbl = vocab_tbl,
-                              col = 'concept_id') 
+  c_added <- process_output %>% filter(variable == filtered_var) %>% 
+    filter(concept_id %in% top_n)
 
   
   c_final <- c_added %>% group_by(!!!syms(facet), time_start, ct_concept) %>%
@@ -232,8 +228,9 @@ csd_ss_anom_at <- function(process_output,
   ref_tbl <- generate_ref_table(tbl = c_added %>% filter(variable == filtered_var) %>% 
                                   filter(concept_id %in% top_n) %>% 
                                   mutate(concept_id=as.integer(concept_id)),
-                                col = 'concept_id',
+                                id_col = 'concept_id',
                                 denom = 'ct_concept',
+                                name_col = 'concept_name',
                                 #vocab_tbl = vocab_tbl,
                                 time = TRUE)
   
@@ -260,11 +257,11 @@ csd_ss_anom_at <- function(process_output,
 #' @return a reference table with total counts of each code across the entire user selected
 #'         time period
 #' 
-csd_ss_ms_exp_at <- function(process_output,
+csd_ss_exp_at <- function(process_output,
                              facet=NULL,
                              filtered_var = c('ibd','spondyloarthritis'),
                              #multi_or_single_site = 'multi',
-                             vocab_tbl = vocabulary_tbl('concept'),
+                             #vocab_tbl = vocabulary_tbl('concept'),
                              output_value='prop_concept'){
   
   output_value <- output_value
@@ -277,14 +274,9 @@ csd_ss_ms_exp_at <- function(process_output,
   } else {
     facet <- facet %>% append('variable')
   }
+
   
- 
-  process_output_plot <- join_to_vocabulary(tbl = process_output %>% 
-                                              mutate(concept_id=as.integer(concept_id)),
-                                            vocab_tbl=vocab_tbl,
-                                            col = 'concept_id')
-  
-  dat_to_plot <- process_output_plot %>% filter(variable %in% filtered_var) %>% 
+  dat_to_plot <- process_output %>% filter(variable %in% filtered_var) %>% 
     mutate(text=paste("Concept: ",concept_id,
                       "\nConcept Name: ",concept_name,
                       "\nSite: ",site,
@@ -295,8 +287,9 @@ csd_ss_ms_exp_at <- function(process_output,
   ref_tbl <- generate_ref_table(tbl = dat_to_plot %>% 
                                   mutate(concept_id=as.integer(concept_id)) %>% 
                                   group_by(site),
-                                col = 'concept_id',
+                                id_col = 'concept_id',
                                 denom = 'ct_concept',
+                                name_col = 'concept_name',
                                 time = TRUE)
   
   p <-dat_to_plot %>% filter(variable %in% filtered_var)  %>%
@@ -305,7 +298,7 @@ csd_ss_ms_exp_at <- function(process_output,
                group=concept_id, text=text)) +
     geom_line() +
     facet_wrap((facet)) +
-    labs(title = 'Code Mapping Pairs Over Time',
+    labs(title = 'Concepts per Variable Over Time',
          color = 'concept_id') +
     theme_bw()
   
@@ -316,6 +309,80 @@ csd_ss_ms_exp_at <- function(process_output,
   
   
  
+}
+
+#' *Multi Site, Exploratory, Across Time*
+#' 
+#' Facets by main code (cdm or source) by default, with each line representing
+#' a mapping code. using plotly so the legend is interactive and codes can be isolated
+#' 
+#' 
+#' @param process_output dataframe output by `csd_process`
+#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
+#'                  the provided codes. if not NULL, concept names will be available in either a reference
+#'                  table or in a hover tooltip
+#' @param filtered_var the variable to perform the anomaly detection for
+#' @param facet the variables by which you would like to facet the graph; defaults to NULL
+#' 
+#' @return a line graph with one facet per code displaying the proportion of mapped codes
+#'         across the user selected time period
+#' @return a reference table with total counts of each code across the entire user selected
+#'         time period
+#' 
+csd_ms_exp_at <- function(process_output,
+                             facet=NULL,
+                             filtered_var = c('ibd','spondyloarthritis'),
+                             filtered_concept = c(81893),
+                             #multi_or_single_site = 'multi',
+                             #vocab_tbl = vocabulary_tbl('concept'),
+                             output_value='prop_concept'){
+  
+  output_value <- output_value
+  
+  site_num <- 
+    process_output %>% ungroup() %>%select(site) %>% distinct() %>% pull()
+  
+  if(length(site_num)>1){
+    facet <- facet %>% append('concept_id')
+  } else {
+    facet <- facet %>% append('variable')
+  }
+  
+  
+  dat_to_plot <- process_output %>% filter(variable %in% filtered_var,
+                                           concept_id %in% filtered_concept) %>% 
+    mutate(text=paste("Concept: ",concept_id,
+                      "\nConcept Name: ",concept_name,
+                      "\nSite: ",site,
+                      "\nValue: ",!!sym(output_value),
+                      "\nTime Point: ", time_start))
+  
+  
+  ref_tbl <- generate_ref_table(tbl = dat_to_plot %>% 
+                                  mutate(concept_id=as.integer(concept_id)) %>% 
+                                  group_by(site),
+                                id_col = 'concept_id',
+                                denom = 'ct_concept',
+                                name_col = 'concept_name',
+                                time = TRUE)
+  
+  p <-dat_to_plot %>% 
+    mutate(concept_id=as.character(concept_id)) %>% 
+    ggplot(aes(y = !!sym(output_value), x = time_start, color = site,
+               group=site, text=text)) +
+    geom_line() +
+    facet_wrap((facet)) +
+    labs(title = 'Concepts per Site Over Time',
+         color = 'Site') +
+    theme_bw()
+  
+  plot <- ggplotly(p, tooltip = "text")
+  
+  
+  output <- list(plot, ref_tbl)
+  
+  
+  
 }
 
 
@@ -335,7 +402,7 @@ csd_ss_ms_exp_at <- function(process_output,
 #' 
 csd_ms_exp_nt <- function(process_output,
                           facet,
-                          vocab_tbl = vocabulary_tbl('concept'),
+                          #vocab_tbl = vocabulary_tbl('concept'),
                           num_codes = 10){
   
   # picking columns / titles 
@@ -362,16 +429,8 @@ csd_ms_exp_nt <- function(process_output,
   final_filt <- process_output %>% 
     inner_join(topcodes)
   
-  if(is.null(vocab_tbl)) {
-    final <- final_filt
-  } else {
-    final <- join_to_vocabulary(tbl = final_filt %>% mutate(concept_id=as.integer(concept_id)),
-                                vocab_tbl = vocab_tbl,
-                                col = map_col)
-  }
-  
   table <- 
-    final %>%
+    final_filt %>%
     ungroup() %>%
     select(-denom) %>%
     mutate(pct = !!sym(prop)) %>%
@@ -411,7 +470,7 @@ csd_ms_exp_nt <- function(process_output,
 #'                  
 
 csd_ms_anom_nt<-function(process_output,
-                        vocab_tbl,
+                        #vocab_tbl,
                         text_wrapping_char=80,
                         filtered_var='ibd',
                         comparison_col='prop_concept',
@@ -424,16 +483,15 @@ csd_ms_anom_nt<-function(process_output,
                              num_sd=2,
                              num_mad=2)
   
-  if(is.null(vocab_tbl)) {concept_label='concept_id'
-                          data_tbl=mean_tbl} else {
-                            data_tbl = join_to_vocabulary(tbl = mean_tbl %>% mutate(concept_id=as.integer(concept_id)),
-                                                          vocab_tbl = vocab_tbl,
-                                                          col = 'concept_id')
-                              concept_label='concept_name'}
+  cname_samp <- mean_tbl %>% head(1) %>% select(concept_name) %>% pull()
+  
+  if(cname_samp == 'No vocabulary table input'){
+    concept_label <- 'concept_id'
+    }else{concept_label <- 'concept_name'}
   
   comparison_col = comparison_col
   
-  dat_to_plot <- data_tbl %>% filter(variable == filtered_var) %>% 
+  dat_to_plot <- mean_tbl %>% filter(variable == filtered_var) %>% 
     mutate(text=paste("Concept: ",!!sym(concept_label),
                       "\nSite: ",site,
                       "\nProportion: ",round(!!sym(comparison_col),2),
@@ -442,17 +500,18 @@ csd_ms_anom_nt<-function(process_output,
                       "\nSD: ", round(sd,4)))
   
   
-  mid<-(max(dat_to_plot$abs_diff_mean,na.rm=TRUE)+min(dat_to_plot$abs_diff_mean,na.rm=TRUE))/2
+  mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
   
-  plt<-ggplot(dat_to_plot %>% filter(variable == filtered_var), aes(x=site, y=!!sym(concept_label), text=text))+
-    geom_point(aes(size=!!sym(comparison_col),colour=abs_diff_mean,shape=anomaly_yn))+
+  plt<-ggplot(dat_to_plot %>% filter(variable == filtered_var), aes(x=site, y=as.character(concept_id), text=text))+
+    geom_point(aes(size=abs_diff_mean,colour=!!sym(comparison_col),shape=anomaly_yn))+
     #aes(stringr::str_wrap(!!sym(concept_label), 20)) +
     scale_shape_manual(values=c(20,8))+
     scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
     scale_y_discrete(labels = function(x) str_wrap(x, width = text_wrapping_char)) +
     theme_bw()+
-    labs(colour="Difference\nfrom mean",
+    labs(colour="Proportion",
          shape="Anomaly",
+         y = "Concept",
          size="")+
     theme(axis.text.x = element_text(angle=60)) 
   

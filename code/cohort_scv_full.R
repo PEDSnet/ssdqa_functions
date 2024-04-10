@@ -211,14 +211,6 @@ scv_output <- function(process_output,
                        mad_dev = 2,
                        vocab_tbl = vocabulary_tbl('concept')){
   
-  
-  if(output_function %in% c('scv_ss_exp_nt', 'scv_ms_exp_nt', 'scv_ss_exp_at', 'scv_ms_exp_at')){
-    if(code_type == 'source'){col <- 'concept_id'}else{col <- 'source_concept_id'}
-  }else{
-    if(code_type == 'source'){col <- 'source_concept_id'}else{col <- 'concept_id'}
-  }
-  
-  
   rslt_cid <- join_to_vocabulary(tbl = process_output,
                                  vocab_tbl = vocab_tbl,
                                  col = 'concept_id')
