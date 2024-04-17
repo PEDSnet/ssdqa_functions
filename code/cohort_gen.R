@@ -391,7 +391,7 @@ generate_ref_table <- function(tbl,
         distinct(site, !!sym(id_col), !!sym(name_col), denom_col) %>%
         gt::gt() %>%
         fmt_number(denom_col, decimals = 0) %>%
-        data_color(palette = "Dark2", columns = c(site)) %>%
+        data_color(palette = ssdqa_colors_standard, columns = c(site)) %>%
         cols_label(denom_col = 'Total Count') %>%
         tab_header('Concept Reference Table') %>%
         opt_interactive(use_search = TRUE)
@@ -408,7 +408,7 @@ generate_ref_table <- function(tbl,
         distinct() %>%
         gt::gt() %>%
         fmt_number(denom_col, decimals = 0) %>%
-        data_color(palette = "Dark2", columns = c(site)) %>%
+        data_color(palette = ssdqa_colors_standard, columns = c(site)) %>%
         cols_label(denom_col = 'Total Count (All Time Points)') %>%
         tab_header('Concept Reference Table') %>%
         opt_interactive(use_search = TRUE)
@@ -641,5 +641,157 @@ loop_through_visits <- function(cohort_tbl,
   }
   
   visit_output
+  
+}
+
+#' Create a cross-joined master table for variable reference
+#'
+#' @param cj_tbl multi-site, over time output from check_code_dist_csd function
+#' @param cj_var_names a vector with the names of variables that should be used as the "anchor"
+#'                     of the cross join where all combinations of the variables should be
+#'                     present in the final table
+#' @param join_type the type of join that should be performed at the end of the function
+#'                  left is used for multi-site anomaly (euclidean distance) while full
+#'                  is used for single site anomaly (timetk package)
+#'
+#' @return one data frame with all combinations of the variables from cj_var_names with their
+#'         associated facts from the original cj_tbl input
+#' 
+compute_at_cross_join <- function(cj_tbl,
+                                  cj_var_names = c('site','concept_id'),
+                                  join_type = 'left') {
+  
+  
+  cj_tbl <- ungroup(cj_tbl)
+  blah <- list()
+  
+  date_first <- cj_tbl %>% distinct(time_start) %>% first() %>% pull()
+  date_last <- cj_tbl %>% distinct(time_start) %>% last() %>% pull()
+  time_increment_var <- cj_tbl %>% distinct(time_increment) %>% pull()
+  
+  all_months <- seq.Date(from=date_first,
+                         to=date_last,
+                         by=time_increment_var)
+  all_months_tbl <- as_tibble(all_months) %>% rename(time_start=value)
+  
+  for(i in 1:length(cj_var_names)) {
+    
+    cj_var_name_i <- (cj_var_names[[i]])
+    
+    cj_tbl_narrowed <- cj_tbl %>% distinct(!! sym(cj_var_name_i))
+    
+    blah[[i]] <- cj_tbl_narrowed
+    
+  }
+  
+  cj_tbl_cjd <- reduce(.x=blah,
+                       .f=cross_join)
+  
+  cj_tbl_cjd_time <- 
+    all_months_tbl %>% cross_join(cj_tbl_cjd)
+  
+  if(join_type == 'left'){
+    cj_tbl_full <- 
+      cj_tbl_cjd_time %>% 
+      left_join(cj_tbl) %>% 
+      mutate(across(where(is.numeric), ~ replace_na(.x,0)))
+  }else{
+    cj_tbl_full <- 
+      cj_tbl_cjd_time %>% 
+      full_join(cj_tbl) %>% 
+      mutate(across(where(is.numeric), ~ replace_na(.x,0)))
+  }
+  
+  
+}
+
+#' Euclidean Distance for *_ms_anom_at output
+#'
+#' @param fot_input_tbl table output by compute_fot where the check of interest
+#'                      is used as the check_func
+#' @param grp_vars the variables that should be preserved in the cross join
+#' @param var_col the column with the numerical statistic of interest for the euclidean
+#'                distance computation
+#' @param time_period a string denoting the period of time that separates each date value
+#'                    (i.e. month, year, etc)
+#'
+#' @return data frame with mean and median values for the user provided variable column
+#'         and the euclidean distance value from the all site mean
+#' 
+ms_anom_euclidean <- function(fot_input_tbl,
+                              grp_vars,
+                              var_col) {
+  
+  
+  ms_at_cj <- compute_at_cross_join(cj_tbl=fot_input_tbl,
+                                    cj_var_names = grp_vars)
+  
+  allsite_grps <- grp_vars %>% append('time_start')
+  allsite_grps <- allsite_grps[! allsite_grps %in% c('site')]
+  
+  ms_at_cj_avg <- compute_dist_mean_median(tbl=ms_at_cj,
+                                           grp_vars=allsite_grps,
+                                           var_col=var_col,
+                                           num_sd = 2,
+                                           num_mad = 2)  %>% 
+    rename(mean_allsiteprop=mean) 
+  
+  euclidiean_tbl <- compute_euclidean(ms_tbl=ms_at_cj_avg,
+                                      output_var=var_col,
+                                      grp_vars = grp_vars)
+  
+  final <- 
+    euclidiean_tbl %>% 
+    select(site,time_start, grp_vars, var_col,
+           mean_allsiteprop, median, date_numeric,
+           site_loess,dist_eucl_mean
+    )
+  
+  return(final)
+  
+}
+
+
+#' Run Anomilization for *_ss_anom_at
+#'
+#' @param fot_input_tbl table output by compute_fot where the check of interest
+#'                      is used as the check_func
+#' @param grp_vars the variables that should be preserved in the cross join
+#' @param var_col the column with the numerical statistic of interest for the euclidean
+#'                distance computation
+#' @param time_var the column with time information 
+#'
+#' @return one dataframe with all columns from the original input table
+#'         plus the columns needed for timetk output generated by the
+#'         `anomalize` function
+#'
+anomalize_ss_anom_at <- function(fot_input_tbl,
+                                 grp_vars,
+                                 time_var,
+                                 var_col){
+  
+  time_inc <- fot_input_tbl %>% ungroup() %>% filter(!is.na(time_increment)) %>%
+    distinct(time_increment) %>% pull()
+  
+  if(time_inc == 'year'){
+    
+    final_tbl <- fot_input_tbl
+    
+  }else{
+    
+  plt_tbl <- compute_at_cross_join(cj_tbl = fot_input_tbl,
+                                   cj_var_names = grp_vars,
+                                   join_type = 'full')
+  
+  anomalize_tbl <- anomalize(plt_tbl %>% group_by(!!!syms(grp_vars)),
+                             .date_var=!!sym(time_var), 
+                             .value=!!sym(var_col))
+  
+  final_tbl <- plt_tbl %>%
+    left_join(anomalize_tbl)
+  
+  }
+  
+  return(final_tbl)
   
 }
