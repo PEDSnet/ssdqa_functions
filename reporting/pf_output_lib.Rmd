@@ -121,14 +121,37 @@ pf_output(process_output = get_results('pf_ss_at') %>% mutate(site = site_summ),
 
 ## Single Site, Anomaly Detection, Across Time
 
-This plot identifies outliers in the median fact count over time. The output will facet by domain as a default, but the user can add additional facets if so desired. If an outlier is present for a particular time point, there will be a red dot at that point on the line.
+### By Year
+
+This check outputs a control chart that highlights anomalies in the proportion of patients with a given fact type in the provided variable. A `P Prime` chart is used to account for the high sample size, which means that the standard deviation is multiplied by a numerical constant. Blue dots along the line indicate non-anomalous values, while orange dots are anomalies.
 
 ```{r ss_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output(process_output = get_results('pf_ss_at') %>% mutate(site = site_summ),
+pf_output(process_output = get_results('pf_ss_at') %>% mutate(site = site_summ,
+                                                              time_increment = 'year',
+                                                              time_start = start_date),
               output_function = 'pf_ss_anom_at',
-              facet = c('visit_type'),
-              output = 'median_fact_ct')
+              facet = c('visit_type'))
+
+```
+
+### By Month or Smaller
+
+With smaller time increments, seasonality can make it difficult to detect true anomalies in a time series. This output computes anomalies while ignoring seasonality and outputs 2 graphs:
+
+- a time series line graph with anomalies highlighted with a red dot
+- a 4-facet time series line graph that demonstrates the decomposition of the anomalies to make it more clear how the anomalies were identified
+
+```{r ss_anom_at_month}
+
+ss_anom_at2 <- pf_output(process_output = get_results('pf_ss_anom_at_month'),
+                          output_function = 'pf_ss_anom_at',
+                          visit_filter = 'outpatient',
+                          domain_filter = 'procedures')
+
+ss_anom_at2[[1]]
+
+ss_anom_at2[[2]]
 
 ```
 

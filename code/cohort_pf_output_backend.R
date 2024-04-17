@@ -262,7 +262,8 @@ produce_kmeans_output <- function(kmeans_list,
     k <- kmeans(kmeans_list[[i]][[1]], centers=centers)
     output_list[[i]] <- fviz_cluster(k, data=kmeans_list[[i]][[1]],
                  main = paste0(paste0('K-Means Cluster Analysis: ', kmeans_list[[i]][[2]])),
-                 palette = 'Dark2')
+                 palette = 'Dark2',
+                 ggtheme = theme_minimal())
     }
   output_list
 }

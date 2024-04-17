@@ -70,6 +70,7 @@ csd_ss_exp_nt <- function(process_output,
       geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
       scale_fill_gradient2(low = 'pink', high = 'maroon') + 
       facet_wrap((facet), scales = 'free') +
+      theme_minimal() +
       theme(axis.text.x = element_blank()) +
       labs(title = title,
            x = col,
@@ -138,7 +139,7 @@ csd_ss_anom_nt <- function(process_output,
        labs(title = filtered_var,
             x = 'concept1',
             y = 'concept2') +
-      theme_bw() +
+      theme_minimal() +
       theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) 
     
     p <- girafe(ggobj=plot,
@@ -149,6 +150,38 @@ csd_ss_anom_nt <- function(process_output,
 }
 
 ### ACROSS TIME
+
+#' Find anomalies for smaller time frames
+#'
+#' @param ss_input_tbl output of compute_at_cross_join where the input table uses
+#'                     a time increment smaller than a year
+#' @param filter_concept the concept id of interest for which the plot should be generated
+#'
+#' @return two plots - one with a time series with outliers highlighted in red dots, and
+#'         another with 4 time series visualizing anomaly decomposition
+#' 
+csd_small_time_anom <- function(ss_input_tbl,
+                               filter_concept) {
+  
+  plt_tbl <- ss_input_tbl %>% filter(concept_id == filter_concept)
+  
+  concept_nm <- plt_tbl %>% filter(!is.na(concept_name)) %>% distinct(concept_name) %>% pull()
+  
+  anomalize_tbl <- 
+    anomalize(plt_tbl,.date_var=time_start, .value=prop_concept)
+  
+  anomalies <- 
+    plot_anomalies(.data=anomalize_tbl,
+                   .date_var=time_start) %>% 
+    layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
+  
+  decomp <- 
+    plot_anomalies_decomp(.data=anomalize_tbl,
+                          .date_var=time_start) %>% 
+    layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
+  
+  final <- list(anomalies, decomp)
+} 
 
 #' *Single Site, Anomaly, Across Time*
 #' 
@@ -169,22 +202,16 @@ csd_ss_anom_nt <- function(process_output,
 #'         a particular code are anomalous; outlying points are highlighted red
 #' 
 csd_ss_anom_at <- function(process_output,
-                           #vocab_tbl=vocabulary_tbl('concept'),
                            filtered_var='ibd',
+                           filter_concept=81893,
                            facet=NULL,
-                           top_mapping_n = 6,
-                           chart_type = 'c'){
+                           top_mapping_n = 6){
   
-  # if(code_type == 'source'){
-  #   col <- 'source_concept_id'
-  # }else if(code_type == 'cdm'){
-  #   col <- 'concept_id'}
+  time_inc <- process_output %>% distinct(time_increment) %>% pull()
+  
+  if(time_inc == 'year'){
   
   facet <- facet %>% append('concept_id') %>% unique()
-  
-  # n_mappings_yr <- process_output %>% filter(variable == variable_name) %>% 
-  #   group_by(!!!syms(facet), time_start) %>%
-  #   summarise(n_mappings = n_distinct(concept_id))
   
   top_n <- 
     process_output %>% filter(variable == filtered_var) %>% 
@@ -205,25 +232,22 @@ csd_ss_anom_at <- function(process_output,
                 title = 'Control Chart: Code Usage Over Time', show.grid = TRUE, n = ct_denom,
                 ylab = 'Proportion', xlab = 'Time')
   
+  op_dat <- c_plot$data
   
-  # c_plot <- 
-  #   c_added %>% 
-  #   #group_by(!!!syms(facet)) %>%
-  #   group_by(concept_id) %>% 
-  #   group_modify(
-  #     ~spc_calculate(
-  #       data = .x, 
-  #       x = time_start,
-  #       y = ct_concept,
-  #       chart = "c"
-  #     )
-  #   ) %>% 
-  #   ungroup() %>%
-  #   # plot
-  #   spc_plot(engine = "ggplot") + 
-  #   facet_wrap((facet)) + 
-  #   theme(panel.background = element_rect("white", "grey80")) +
-  #   labs(title = 'Control Chart: Proportion of Code Usage Over Time')
+  new_pp <- ggplot(op_dat,aes(x,y)) +
+    geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "gray",alpha = 0.4) +
+    geom_line(colour = "black", size = .5) + 
+    geom_line(aes(x,cl)) +
+    geom_point(colour = "black" , fill = "black", size = 1) +
+    geom_point(data = subset(op_dat, y >= ucl), color = "red", size = 2) +
+    geom_point(data = subset(op_dat, y <= lcl), color = "red", size = 2) +
+    facet_wrap(~facet1) +
+    ggtitle(label = 'Control Chart: Code Usage Over Time') +
+    labs(x = 'Time',
+         y = 'Proportion')+
+    theme_minimal()
+  
+  output_int <- ggplotly(new_pp)
   
   ref_tbl <- generate_ref_table(tbl = c_added %>% filter(variable == filtered_var) %>% 
                                   filter(concept_id %in% top_n) %>% 
@@ -234,7 +258,20 @@ csd_ss_anom_at <- function(process_output,
                                 #vocab_tbl = vocab_tbl,
                                 time = TRUE)
   
-  output <- list(c_plot, ref_tbl)
+  output <- list(output_int, ref_tbl)
+  
+  }else{
+    
+    plt_tbl <- compute_at_cross_join(cj_tbl = process_output,
+                                     cj_var_names = c('site', 'concept_id'),
+                                     join_type = 'full')
+    
+    output <- csd_small_time_anom(ss_input_tbl = plt_tbl,
+                                  filter_concept = filter_concept)
+    
+  }
+  
+  return(output)
   
 }
 
@@ -300,7 +337,7 @@ csd_ss_exp_at <- function(process_output,
     facet_wrap((facet)) +
     labs(title = 'Concepts per Variable Over Time',
          color = 'concept_id') +
-    theme_bw()
+    theme_minimal() 
   
   plot <- ggplotly(p, tooltip = "text")
 
@@ -374,7 +411,7 @@ csd_ms_exp_at <- function(process_output,
     facet_wrap((facet)) +
     labs(title = 'Concepts per Site Over Time',
          color = 'Site') +
-    theme_bw()
+    theme_minimal() 
   
   plot <- ggplotly(p, tooltip = "text")
   
@@ -443,7 +480,7 @@ csd_ms_exp_nt <- function(process_output,
     fmt_number(columns = ct, decimals = 0) %>%
     fmt_percent(columns = prop, decimals = 0) %>%
     data_color(palette = "Dark2", columns = c(all_of(facet))) %>%
-    tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) %>%
+    tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Variables')) %>%
     opt_interactive(use_search = TRUE,
                     use_filters = TRUE) 
     
@@ -508,7 +545,7 @@ csd_ms_anom_nt<-function(process_output,
     scale_shape_manual(values=c(20,8))+
     scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
     scale_y_discrete(labels = function(x) str_wrap(x, width = text_wrapping_char)) +
-    theme_bw()+
+    theme_minimal() +
     labs(colour="Proportion",
          shape="Anomaly",
          y = "Concept",

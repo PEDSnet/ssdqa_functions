@@ -48,13 +48,13 @@ compute_evp <- function(cohort,
     
     fact_pts <- domain_tbl %>%
       inner_join(load_codeset(evp_list[[i]][[5]]), by = join_cols) %>%
-      summarise(concept_pt_ct = n_distinct(person_id),
-                concept_row_ct = n()) %>% collect()
+      summarise(variable_pt_ct = n_distinct(person_id),
+                variable_row_ct = n()) %>% collect()
     
     final_tbl <- total_pts %>%
       left_join(fact_pts) %>%
-      mutate(prop_pt_concept = round(as.numeric(concept_pt_ct/total_pt_ct), 3),
-             prop_row_concept = round(as.numeric(concept_row_ct/total_row_ct), 3),
+      mutate(prop_pt_variable = round(as.numeric(variable_pt_ct/total_pt_ct), 3),
+             prop_row_variable = round(as.numeric(variable_row_ct/total_row_ct), 3),
              variable = variable)
     
     final_tbl[is.na(final_tbl)] <- 0
@@ -160,7 +160,7 @@ compute_jaccard_evp <- function(jaccard_input_tbl) {
   persons_concepts_cts <- 
     persons_concepts %>% 
     group_by(variable) %>% 
-    summarise(concept_person_ct=n_distinct(person_id))
+    summarise(variable_person_ct=n_distinct(person_id))
   
   concord <- 
     persons_concepts %>% table() %>% crossprod()
@@ -170,9 +170,9 @@ compute_jaccard_evp <- function(jaccard_input_tbl) {
     pivot_longer(!concept1, names_to = 'concept2', values_to='cocount') %>% 
     filter(cocount != -1L) %>% mutate(across(.cols = c(cocount), .fns=as.integer)) %>%
     left_join(persons_concepts_cts, by = c('concept1'='variable'))%>%
-    rename(concept1_ct=concept_person_ct)%>%
+    rename(concept1_ct=variable_person_ct)%>%
     left_join(persons_concepts_cts, by = c('concept2'='variable'))%>%
-    rename(concept2_ct=concept_person_ct) %>%
+    rename(concept2_ct=variable_person_ct) %>%
     mutate(concept_count_union=concept1_ct+concept2_ct-cocount,
            jaccard_index=cocount/concept_count_union) %>% 
     mutate(concept1_prop=round(cocount/concept1_ct,2),
@@ -271,10 +271,10 @@ evp_ms_anom_euclidean <- function(input_tbl,
                                   time_period = 'month',
                                   output_level) {
   
-  var_col <- ifelse(output_level == 'row', 'prop_row_concept', 'prop_pt_concept')
+  var_col <- ifelse(output_level == 'row', 'prop_row_variable', 'prop_pt_variable')
   
   ms_at_cj <- compute_at_cross_join(cj_tbl=input_tbl,
-                                    time_period=time_period,
+                                    #time_period=time_period,
                                     cj_var_names = c('site','variable'))
   
   ms_at_cj_avg <- compute_dist_mean_median(tbl=ms_at_cj,

@@ -14,10 +14,10 @@ evp_ss_exp_nt <- function(process_output,
                           facet){
   
   if(output_level == 'row'){
-    prop <- 'prop_row_concept'
+    prop <- 'prop_row_variable'
     title <- 'Rows'
   }else if(output_level == 'patient'){
-    prop <- 'prop_pt_concept'
+    prop <- 'prop_pt_variable'
     title <- 'Patients'
   }else(stop('Please choose an acceptable output level: `patient` or `row`'))
   
@@ -26,6 +26,7 @@ evp_ss_exp_nt <- function(process_output,
     geom_col(show.legend = FALSE) +
     facet_wrap((facet)) +
     scale_fill_brewer(palette = 'Set2') +
+    theme_minimal() +
     labs(x = paste0('Proportion ', title),
          y = 'Variable',
          title = paste0('Proportion of ', title, ' per Variable'))
@@ -47,13 +48,15 @@ evp_ms_exp_nt <- function(process_output,
                           output_level,
                           facet){
   
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+  
   if(output_level == 'row'){
-    prop <- 'prop_row_concept'
+    prop <- 'prop_row_variable'
     title <- 'Rows'
   }else if(output_level == 'patient'){
-    prop <- 'prop_pt_concept'
+    prop <- 'prop_pt_variable'
     title <- 'Patients'
-  }else(stop('Please choose an acceptable output level: `patient` or `row`'))
+  }else(cli::cli_abort('Please choose an acceptable output level: {.code patient} or {.code row}'))
   
   process_output %>%
     mutate(colors = ifelse(!!sym(prop) < 0.2 | !!sym(prop) > 0.8, 'group1', 'group2')) %>%
@@ -63,7 +66,8 @@ evp_ms_exp_nt <- function(process_output,
               show.legend = FALSE) +
     scale_color_manual(values = c('white', 'black')) +
     scale_fill_viridis_c(option = 'turbo') +
-    labs(title = paste0('Proportion ', title, ' per Concept Group & Site'),
+    theme_minimal() +
+    labs(title = paste0('Proportion ', title, ' per Variable & Site'),
          y = 'Site',
          x = 'Variable', 
          fill = paste0('Proportion ', title))
@@ -97,7 +101,7 @@ evp_ss_anom_nt <- function(process_output,
     labs(title = 'Co-Occurrence of Variables',
          x = 'variable1',
          y = 'variable2') +
-    theme_bw() +
+    theme_minimal() +
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) 
   
   p <- girafe(ggobj=plot,
@@ -122,10 +126,10 @@ evp_ms_anom_nt <- function(process_output,
                            facet){
   
   if(output_level == 'row'){
-    prop <- 'prop_row_concept'
+    prop <- 'prop_row_variable'
     title <- 'Rows'
   }else if(output_level == 'patient'){
-    prop <- 'prop_pt_concept'
+    prop <- 'prop_pt_variable'
     title <- 'Patients'
   }else(stop('Please choose an acceptable output level: `patient` or `row`'))
   
@@ -157,10 +161,10 @@ evp_ss_exp_at <- function(process_output,
                           facet){
   
   if(output_level == 'row'){
-    prop <- 'prop_row_concept'
+    prop <- 'prop_row_variable'
     title <- 'Rows'
   }else if(output_level == 'patient'){
-    prop <- 'prop_pt_concept'
+    prop <- 'prop_pt_variable'
     title <- 'Patients'
   }else(stop('Please choose an acceptable output level: `patient` or `row`'))
   
@@ -169,6 +173,7 @@ evp_ss_exp_at <- function(process_output,
     geom_line() +
     scale_color_brewer(palette = 'Set2') +
     facet_wrap((facet)) +
+    theme_minimal() +
     labs(title = paste0('Proportion ', title, ' Over Time'),
          color = 'Variable', 
          y = paste0('Proportion ', title),
@@ -195,10 +200,10 @@ evp_ms_exp_at <- function(process_output,
                           facet){
   
   if(output_level == 'row'){
-    prop <- 'prop_row_concept'
+    prop <- 'prop_row_variable'
     title <- 'Rows'
   }else if(output_level == 'patient'){
-    prop <- 'prop_pt_concept'
+    prop <- 'prop_pt_variable'
     title <- 'Patients'
   }else(stop('Please choose an acceptable output level: `patient` or `row`'))
   
@@ -209,6 +214,7 @@ evp_ms_exp_at <- function(process_output,
     geom_line() +
     scale_color_brewer(palette = 'Set2') +
     facet_wrap((facet)) +
+    theme_minimal() +
     labs(title = paste0('Proportion ', title, ' Over Time'),
          color = 'Site', 
          y = paste0('Proportion ', title),
@@ -218,6 +224,39 @@ evp_ms_exp_at <- function(process_output,
   
   
 }
+
+#' Find anomalies for smaller time frames
+#'
+#' @param ss_input_tbl output of compute_at_cross_join where the input table uses
+#'                     a time increment smaller than a year
+#' @param filter_concept the concept id of interest for which the plot should be generated
+#'
+#' @return two plots - one with a time series with outliers highlighted in red dots, and
+#'         another with 4 time series visualizing anomaly decomposition
+#' 
+evp_small_time_anom <- function(ss_input_tbl,
+                                filter_variable,
+                                val_col) {
+  
+  plt_tbl <- ss_input_tbl %>% filter(variable == filter_variable) %>%
+    rename('prop' = !!val_col)
+  
+  anomalize_tbl <- 
+    anomalize(plt_tbl,.date_var=time_start, 
+              .value=prop)
+  
+  anomalies <- 
+    plot_anomalies(.data=anomalize_tbl,
+                   .date_var=time_start) %>% 
+    layout(title = paste0('Anomalies for Variable ', filter_variable))
+  
+  decomp <- 
+    plot_anomalies_decomp(.data=anomalize_tbl,
+                          .date_var=time_start) %>% 
+    layout(title = paste0('Anomalies for Variable ', filter_variable))
+  
+  final <- list(anomalies, decomp)
+} 
 
 #' * Single Site, Anomaly, Across Time *
 #' 
@@ -231,17 +270,24 @@ evp_ms_exp_at <- function(process_output,
 #'         
 evp_ss_anom_at <- function(process_output,
                            output_level,
+                           filter_variable,
                            facet){
   
   if(output_level == 'row'){
-    ct <- 'concept_row_ct'
+    ct <- 'variable_row_ct'
     denom <- 'total_row_ct'
+    prop <- 'prop_row_variable'
     title <- 'Rows'
   }else if(output_level == 'patient'){
-    ct <- 'concept_pt_ct'
+    ct <- 'variable_pt_ct'
     denom <- 'total_pt_ct'
+    prop <- 'prop_pt_variable'
     title <- 'Patients'
   }else(stop('Please choose an acceptable output level: `patient` or `row`'))
+  
+  time_inc <- process_output %>% distinct(time_increment) %>% pull()
+  
+  if(time_inc == 'year'){
   
   facet <- facet %>% append('variable') %>% unique()
   
@@ -250,10 +296,45 @@ evp_ss_anom_at <- function(process_output,
     rename('ycol' = ct,
            'denom' = denom)
   
-  qic(data = final, x = time_start, y = ycol, chart = 'pp', facet = ~facet_col,
+ pp_qi <-  qic(data = final, x = time_start, y = ycol, chart = 'pp', facet = ~facet_col,
       title = paste0('Control Chart: Proportion of ', title, ' per Variable'), 
       ylab = 'Proportion', xlab = 'Time',
       show.grid = TRUE, n = denom)
+ 
+ op_dat <- pp_qi$data
+ 
+ new_pp <- ggplot(op_dat,aes(x,y)) +
+   geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "gray",alpha = 0.4) +
+   geom_line(colour = "black", size = .5) + 
+   geom_line(aes(x,cl)) +
+   geom_point(colour = "black" , fill = "black", size = 1) +
+   geom_point(data = subset(op_dat, y >= ucl), color = "red", size = 2) +
+   geom_point(data = subset(op_dat, y <= lcl), color = "red", size = 2) +
+   facet_wrap(~facet1) +
+   ggtitle(label = paste0('Control Chart: Proportion of ', title, ' per Variable')) +
+   labs(x = 'Time',
+        y = 'Proportion')+
+   theme_minimal()
+ 
+ output <- ggplotly(new_pp)
+  
+  }else{
+    
+    anomalies <- 
+      plot_anomalies(.data=process_output,
+                     .date_var=time_start) %>% 
+      layout(title = paste0('Anomalies for Variable ', filter_variable))
+    
+    decomp <- 
+      plot_anomalies_decomp(.data=process_output,
+                            .date_var=time_start) %>% 
+      layout(title = paste0('Anomalies for Variable ', filter_variable))
+    
+    output <- list(anomalies, decomp)
+    
+  }
+  
+  return(output)
   
 }
 
@@ -279,9 +360,9 @@ evp_ms_anom_at <- function(process_output,
                            filter_variable) {
   
   if(output_level == 'row'){
-    prop <- 'prop_row_concept'
+    prop <- 'prop_row_variable'
   }else if(output_level == 'patient'){
-    prop <- 'prop_pt_concept'
+    prop <- 'prop_pt_variable'
   }else(stop('Please choose an acceptable output level: `patient` or `row`'))
   
   filt_op <- process_output %>% filter(variable == filter_variable) %>%

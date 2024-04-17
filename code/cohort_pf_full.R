@@ -116,7 +116,8 @@ pf_process <- function(cohort = cohort,
   
   ## Step 3: Run Function
   
-  grouped_list <- grouped_list %>% append(c('person_id','start_date','end_date','fu'))
+  #grouped_list <- grouped_list %>% append(c('person_id','start_date','end_date','fu'))
+  grouped_list <- grouped_list %>% append(c('person_id','time_start','time_increment','fu'))
   
   if(is.data.frame(age_groups)){grouped_list <- grouped_list %>% append('age_grp')}
   if(is.data.frame(codeset)){grouped_list <- grouped_list %>% append('flag')}
@@ -199,10 +200,19 @@ pf_process <- function(cohort = cohort,
     
     if(anomaly_or_exploratory == 'anomaly' && multi_or_single_site == 'multi'){
       
-      pf_final <- pf_ms_anom_euclidean(input_tbl = pf_int,
-                                       time_period = time_period)
+      pf_final <- ms_anom_euclidean(fot_input_tbl = pf_int %>% mutate(prop_pts_fact = fact_ct_denom / site_visit_ct),
+                                    grp_vars = c('site', 'visit_type', 'domain'),
+                                    var_col = 'prop_pts_fact',
+                                    time_period = time_period)
       
-    }else{pf_final <- pf_int}
+    }else if(anomaly_or_exploratory == 'anomaly' && multi_or_single_site == 'single'){
+      
+      pf_final <- anomalize_ss_anom_at(fot_input_tbl = pf_int %>% mutate(prop_pts_fact = fact_ct_denom / site_visit_ct),
+                                       time_var = 'time_start',
+                                       grp_vars = c('domain', 'visit_type'),
+                                       var_col = 'prop_pts_fact')
+      
+      }else{pf_final <- pf_int}
     
     }
   
@@ -258,7 +268,7 @@ pf_process <- function(cohort = cohort,
 pf_output <- function(process_output,
                       output_function,
                       output,
-                      facet,
+                      facet = NULL,
                       color = 'auto',
                       time_span = c('2012-01-01', '2023-01-01'),
                       date_breaks_str = '1 year',
@@ -301,7 +311,8 @@ pf_output <- function(process_output,
     pf_output <- pf_ss_anom_at(data_tbl = process_output,
                                output = output,
                                facet = facet,
-                               time_span = time_span)
+                               visit_filter = visit_filter,
+                               domain_filter = domain_filter)
   }else if(output_function == 'pf_ms_exp_at'){
     pf_output <- pf_ms_exp_at(data_tbl = process_output,
                               output = output,

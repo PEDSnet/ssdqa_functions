@@ -142,11 +142,26 @@ scv_process <- function(cohort,
     
     if(multi_or_single_site == 'multi' && anomaly_or_exploratory == 'anomaly'){
       
-      scv_tbl_final <- scv_ms_anom_euclidean(input_tbl = scv_tbl,
-                                             code_type = code_type,
-                                             time_period = time_period)
+      var_col <- ifelse(code_type == 'cdm', 'concept_prop', 'source_prop')
       
-    }else(scv_tbl_final <- scv_tbl)
+      scv_tbl_final <- ms_anom_euclidean(fot_input_tbl = scv_tbl,
+                                         grp_vars = c('site', 'concept_id', 'source_concept_id'),
+                                         var_col = var_col)
+      
+    }else if(multi_or_single_site == 'single' && anomaly_or_exploratory == 'anomaly'){
+      
+      var_col <- ifelse(code_type == 'cdm', 'concept_id', 'source_concept_id')
+      
+      n_mappings_time <- scv_tbl %>%
+        group_by(!!sym(var_col), time_start, time_increment) %>%
+        summarise(n_mappings = n())
+      
+      scv_tbl_final <- anomalize_ss_anom_at(fot_input_tbl = n_mappings_time,
+                                            time_var = 'time_start',
+                                            grp_vars = var_col,
+                                            var_col = 'n_mappings')
+      
+    }else{(scv_tbl_final <- scv_tbl)}
     
   }
   
@@ -211,6 +226,7 @@ scv_output <- function(process_output,
                        mad_dev = 2,
                        vocab_tbl = vocabulary_tbl('concept')){
   
+  if(output_function != 'scv_ss_anom_at'){
   rslt_cid <- join_to_vocabulary(tbl = process_output,
                                  vocab_tbl = vocab_tbl,
                                  col = 'concept_id')
@@ -222,6 +238,10 @@ scv_output <- function(process_output,
   
   process_output <- rslt_cid %>%
     full_join(rslt_scid)
+  
+  }else{
+    process_output <- process_output
+  }
   
   ## Run output functions
   if(output_function == 'scv_ms_anom_nt'){
@@ -253,6 +273,7 @@ scv_output <- function(process_output,
   }else if(output_function == 'scv_ss_anom_at'){
     scv_output <- scv_ss_anom_at(process_output = process_output,
                                  code_type = code_type,
+                                 filter_concept = filter_concept,
                                  facet = facet)
   }else if(output_function == 'scv_ms_exp_at'){
     scv_output <- scv_ss_ms_exp_at(process_output = process_output,

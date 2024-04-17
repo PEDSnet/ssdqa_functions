@@ -135,11 +135,22 @@ evp_process <- function(cohort,
   
   if(time == TRUE && multi_or_single_site == 'multi' && anomaly_or_exploratory == 'anomaly'){
     
-    evp_tbl_final <- evp_ms_anom_euclidean(input_tbl = evp_tbl,
-                                           output_level = output_level,
-                                           time_period = time_period)
+    var_col <- ifelse(output_level == 'row', 'prop_row_variable', 'prop_pt_variable')
     
-  }else(evp_tbl_final <- evp_tbl)
+    evp_tbl_final <- ms_anom_euclidean(fot_input_tbl = evp_tbl,
+                                       grp_vars = c('site', 'variable'),
+                                       var_col = var_col)
+    
+    }else if(time == TRUE && multi_or_single_site == 'single' && anomaly_or_exploratory == 'anomaly'){
+      
+      var_col <- ifelse(output_level == 'row', 'prop_row_variable', 'prop_pt_variable')
+      
+      evp_tbl_final <- anomalize_ss_anom_at(fot_input_tbl = evp_tbl,
+                                            time_var = 'time_start',
+                                            grp_vars = 'variable',
+                                            var_col = var_col)
+      
+    }else(evp_tbl_final <- evp_tbl)
   
   evp_tbl_final %>%
     replace_site_col() %>%
@@ -200,7 +211,8 @@ evp_output <- function(process_output,
     
     evp_output <- evp_ss_anom_at(process_output = process_output,
                                  output_level = output_level,
-                                 facet = facet)
+                                 facet = facet,
+                                 filter_variable = filter_variable)
     
   }else if(output_function == 'evp_ms_exp_nt'){
     

@@ -113,7 +113,7 @@ This line graph displays the proportion of patients belonging to a given variabl
 
 ```{r ss_exp_at}
 
-g <- evp_output(process_output = get_results('evp_ss_at'),
+g <- evp_output(process_output = get_results('evp_ss_exp_at'),
            output_function = 'evp_ss_exp_at',
            output_level = output_level,
            facet = facet)
@@ -128,7 +128,7 @@ This line graph displays the proportion of patients belonging to a given variabl
 
 ```{r ms_exp_at}
 
-g <- evp_output(process_output = get_results('evp_ms_at'),
+g <- evp_output(process_output = get_results('evp_ms_exp_at'),
            output_function = 'evp_ms_exp_at',
            output_level = output_level,
            facet = facet)
@@ -138,14 +138,37 @@ g
 
 ## Single Site, Anomaly, Across Time
 
+### By Year 
+
 This check outputs a control chart that highlights anomalies in the proportion of patients per variable. A `P Prime` chart is used to account for the high sample size, which means that the standard deviation is multiplied by a numerical constant. Blue dots along the line indicate non-anomalous values, while orange dots are anomalies.
 
 ```{r ss_anom_at}
 
-evp_output(process_output = get_results('evp_ss_at'),
+evp_output(process_output = get_results('evp_ss_anom_at_year'),
            output_function = 'evp_ss_anom_at',
            output_level = 'patient',
            facet = facet)
+
+```
+
+### By Month or Smaller
+
+With smaller time increments, seasonality can make it difficult to detect true anomalies in a time series. This output computes anomalies while ignoring seasonality and outputs 2 graphs:
+
+- a time series line graph with anomalies highlighted with a red dot
+- a 4-facet time series line graph that demonstrates the decomposition of the anomalies to make it more clear how the anomalies were identified
+
+```{r ss_anom_at_mnth}
+
+plt <- evp_output(process_output = get_results('evp_ss_anom_at_month'),
+                  output_function = 'evp_ss_anom_at',
+                  output_level = 'row',
+                  facet = facet,
+                  filter_variable = 'JIA')
+
+plt[[1]]
+
+plt[[2]]
 
 ```
 
@@ -161,7 +184,7 @@ Three graphs are output:
 
 ```{r ms_anom_at}
 
-ms_anom_at <- evp_ms_anom_at(process_output = get_results('evp_ms_at_eucl'),
+ms_anom_at <- evp_ms_anom_at(process_output = get_results('evp_ms_anom_at'),
                              output_level = 'row',
                              filter_variable = 'JIA')
 

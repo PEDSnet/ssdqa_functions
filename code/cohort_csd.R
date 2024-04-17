@@ -351,58 +351,6 @@ csd_ms_anom_at_auc <- function(process_output=ms_at %>% filter(variable=='ibd') 
 
 ##############################################################################
 
-#' Create a cross-joined master table for variable reference
-#'
-#' @param cj_tbl multi-site, over time output from check_code_dist_csd function
-#' @param time_period a string indicating the distance between time points in the time series
-#'                    (i.e. `month`, `year`, etc)
-#' @param cj_var_names a vector with the names of variables that should be used as the "anchor"
-#'                     of the cross join where all combinations of the variables should be
-#'                     present in the final table
-#'
-#' @return one data frame with all combinations of the variables from cj_var_names with their
-#'         associated facts from the original cj_tbl input
-#' 
-compute_at_cross_join <- function(cj_tbl,
-                                  time_period = 'month',
-                                  cj_var_names = c('site','concept_id')) {
-  
-  
-  cj_tbl <- ungroup(cj_tbl)
-  blah <- list()
-  
-  date_first <- cj_tbl %>% distinct(time_start) %>% first() %>% pull()
-  date_last <- cj_tbl %>% distinct(time_start) %>% last() %>% pull()
-  
-  all_months <- seq.Date(from=date_first,
-                         to=date_last,
-                         by=time_period)
-  all_months_tbl <- as_tibble(all_months) %>% rename(time_start=value)
-  
-  for(i in 1:length(cj_var_names)) {
-    
-    cj_var_name_i <- (cj_var_names[[i]])
-    
-    cj_tbl_narrowed <- cj_tbl %>% distinct(!! sym(cj_var_name_i))
-    
-    blah[[i]] <- cj_tbl_narrowed
-    
-  }
-  
-  cj_tbl_cjd <- reduce(.x=blah,
-                       .f=cross_join)
-  
-  cj_tbl_cjd_time <- 
-    all_months_tbl %>% cross_join(cj_tbl_cjd)
-  
-  cj_tbl_full <- 
-    cj_tbl_cjd_time %>% 
-    left_join(cj_tbl) %>% 
-    mutate(across(where(is.numeric), ~ replace_na(.x,0)))
-  
-  
-}
-
 # csd_compute_concept_avgs <- function(concept_avg_tbl= ms_at %>% 
 #                                        select(site,
 #                                               time_start,
@@ -519,7 +467,7 @@ csd_ms_anom_euclidean <- function(input_tbl,
                                   time_period = 'month') {
   
   ms_at_cj <- compute_at_cross_join(cj_tbl=input_tbl,
-                                    time_period=time_period,
+                                    #time_period=time_period,
                                     cj_var_names = c('site','concept_id'))
   
   ms_at_cj_avg <- compute_dist_mean_median(tbl=ms_at_cj,

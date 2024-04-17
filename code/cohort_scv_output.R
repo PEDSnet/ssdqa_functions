@@ -122,8 +122,9 @@ scv_ss_exp_nt <- function(process_output,
                                  fill = !!sym(prop))) +
       geom_tile_interactive(aes(tooltip = tooltip)) +
       geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
-      scale_fill_viridis_c(option = 'turbo') +
+      scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
       facet_wrap((facet), scales = 'free') +
+      theme_minimal() +
       theme(axis.text.x = element_blank(),
             text = element_text(size = 9)) +
       labs(title = title,
@@ -209,7 +210,7 @@ scv_ms_exp_nt <- function(process_output,
       #gtExtras::gt_plt_bar_pct(column = pct) %>%
       fmt_number(columns = ct, decimals = 0) %>%
       fmt_percent(columns = prop, decimals = 0) %>%
-      data_color(palette = "Dark2", columns = c(all_of(facet))) %>%
+      data_color(palette = ssdqa_colors_standard, columns = c(all_of(facet))) %>%
       tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Codes')) %>%
       opt_interactive(use_search = TRUE,
                       use_filters = TRUE)
@@ -280,7 +281,9 @@ scv_ss_anom_nt <- function(process_output,
       geom_hline(aes(yintercept = median)) +
       geom_hline(aes(yintercept = q1), linetype = 'dotted') +
       geom_hline(aes(yintercept = q3), linetype = 'dotted') +
+      scale_fill_ssdqa() +
       facet_wrap((facet), scales = 'free') +
+      theme_minimal() +
       theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1, vjust = 1),
             legend.position = 'none') +
       labs(title = 'Codes with Anomalous Number of Unique Mappings',
@@ -358,7 +361,8 @@ scv_ms_anom_nt <- function(process_output,
       geom_tile_interactive(aes(tooltip = tooltip)) +
       facet_wrap((facet), scales = 'free', ncol = 1) +
       #scale_fill_gradientn(colors = viridis::turbo(10))
-      scale_fill_viridis_c(option = 'turbo') +
+      scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
+      theme_minimal() +
       labs(title = 'MAD from Median Number of Mappings per Code',
            y = col) +
       theme(axis.text.x = element_blank())
@@ -419,7 +423,9 @@ scv_ss_ms_exp_at <- function(process_output,
                  label2 = ct
                  )) +
       geom_line() +
+      scale_color_ssdqa() +
       facet_wrap((facet)) +
+      theme_minimal() +
       labs(title = 'Code Mapping Pairs Over Time',
            color = map_col)
     
@@ -574,6 +580,7 @@ scv_ms_anom_at <- function(process_output,
     ggplot(aes(y = prop_col, x = time_start, color = site, group = site, text = text_smooth)) +
     geom_line(data=allsites, linewidth=1.1) +
     geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5, formula = y ~ x) +
+    scale_color_ssdqa() +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
     labs(y = 'Proportion (Loess)',
@@ -585,6 +592,7 @@ scv_ms_anom_at <- function(process_output,
                group=site, text=text_raw)) +
     geom_line(data=allsites,linewidth=1.1) +
     geom_line(linewidth=0.2) +
+    scale_color_ssdqa() +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
     labs(x = 'Time',
@@ -605,7 +613,7 @@ scv_ms_anom_at <- function(process_output,
     guides(theta = guide_axis_theta(angle = 0)) +
     #scale_y_continuous(limits = c(-1,ylim_max)) + 
     theme_minimal() + 
-    scale_fill_viridis_c(option = 'turbo', limits = c(0, 1), oob = scales::squish) +
+    scale_fill_ssdqa(palette = 'sequential', discrete = FALSE) +
     theme(legend.position = 'bottom',
           axis.text.x = element_text(face = 'bold')) + 
     labs(fill = 'Avg. Proportion \n(Loess)', 
@@ -693,7 +701,6 @@ scv_ms_anom_at <- function(process_output,
 #'    return(p)
 #' }
 
-
 #' *Single Site, Anomaly, Across Time*
 #' 
 #' Control chart looking at number of mappings over time
@@ -710,6 +717,7 @@ scv_ms_anom_at <- function(process_output,
 #' 
 scv_ss_anom_at <- function(process_output,
                            code_type,
+                           filter_concept,
                            facet){
   
   if(code_type == 'source'){
@@ -718,14 +726,51 @@ scv_ss_anom_at <- function(process_output,
     col <- 'concept_id'
   }else{stop('Please choose a valid code_type: `cdm` or `source`')}
   
+  time_inc <- process_output %>% distinct(time_increment) %>% pull()
+  
   facet <- facet %>% append(col)
   
-  n_mappings_yr <- process_output %>%
-    group_by(!!!syms(facet), time_start) %>%
-    summarise(n_mappings = n()) %>%
-    unite(facet_col, !!!syms(facet), sep = '\n')
+  if(time_inc == 'year'){
+    
+    n_mappings_time <- process_output %>%
+      group_by(!!!syms(facet), time_start, time_increment) %>%
+      summarise(n_mappings = n()) %>%
+      unite(facet_col, !!!syms(facet), sep = '\n')
   
-  qic(data = n_mappings_yr, x = time_start, y = n_mappings, chart = 'c', facet = ~facet_col,
+  c_qi <- qic(data = n_mappings_time, x = time_start, y = n_mappings, chart = 'c', facet = ~facet_col,
       title = 'Control Chart: Number of Mappings per Code', ylab = '# of Mappings', xlab = 'Time',
       show.grid = TRUE)
+  
+  op_dat <- c_qi$data
+  
+  new_c <- ggplot(op_dat,aes(x,y)) +
+    geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "gray",alpha = 0.4) +
+    geom_line(colour = ssdqa_colors_standard[[12]], size = .5) + 
+    geom_line(aes(x,cl)) +
+    geom_point(colour = ssdqa_colors_standard[[6]] , fill = ssdqa_colors_standard[[6]], size = 1) +
+    geom_point(data = subset(op_dat, y >= ucl), color = ssdqa_colors_standard[[3]], size = 2) +
+    geom_point(data = subset(op_dat, y <= lcl), color = ssdqa_colors_standard[[3]], size = 2) +
+    facet_wrap(~facet1) +
+    theme_minimal() +
+    ggtitle(label = 'Control Chart: Number of Mappings per Code') +
+    labs(x = 'Time',
+         y = '# of Mappings')+
+    theme_minimal()
+  
+  output <- ggplotly(new_c)
+  
+  }else{
+    
+    anomalies <- 
+      plot_anomalies(.data=process_output %>% filter(!!sym(col) == filter_concept),
+                     .date_var=time_start) %>% 
+      layout(title = paste0('Anomalous # of Mappings for ', filter_concept, ' Over Time'))
+    
+    decomp <- 
+      plot_anomalies_decomp(.data=process_output %>% filter(!!sym(col) == filter_concept),
+                            .date_var=time_start) %>% 
+      layout(title = paste0('Anomalous # of Mappings for ', filter_concept, ' Over Time'))
+    
+    output <- list(anomalies, decomp)
+  }
 }

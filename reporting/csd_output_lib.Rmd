@@ -153,6 +153,8 @@ ms_exp_at[[2]]
 
 ## Single Site, Anomaly, Across Time
 
+### By Year
+
 This check outputs a control chart that highlights anomalies in the proportion of patients per concept_id in the provided variable. A `P Prime` chart is used to account for the high sample size, which means that the standard deviation is multiplied by a numerical constant. Blue dots along the line indicate non-anomalous values, while orange dots are anomalies.
 
 ```{r ss_anom_at}
@@ -160,13 +162,32 @@ This check outputs a control chart that highlights anomalies in the proportion o
 ss_anom_at <- csd_output(process_output = get_results('csd_ss_at'),
                         output_function = 'csd_ss_anom_at',
                         vocab_tbl = vocabulary_tbl('concept'),
-                        num_mappings = 10,
-                        filtered_var = 'spondyloarthritis'
-                        )
+                        num_mappings = 6,
+                        filtered_var = 'ibd')
 
 ss_anom_at[[1]]
 
 ss_anom_at[[2]]
+
+```
+
+### By Month or Smaller
+
+With smaller time increments, seasonality can make it difficult to detect true anomalies in a time series. This output computes anomalies while ignoring seasonality and outputs 2 graphs:
+
+- a time series line graph with anomalies highlighted with a red dot
+- a 4-facet time series line graph that demonstrates the decomposition of the anomalies to make it more clear how the anomalies were identified
+
+```{r ss_anom_at_month}
+
+ss_anom_at2 <- csd_output(process_output = get_results('csd_ms_at_month') %>%
+                            filter(site == 'chop'),
+                          output_function = 'csd_ss_anom_at',
+                          filter_concept = '81893')
+
+ss_anom_at2[[1]]
+
+ss_anom_at2[[2]]
 
 ```
 

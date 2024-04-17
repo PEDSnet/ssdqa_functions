@@ -23,36 +23,60 @@
 pf_ss_anom_at <- function(data_tbl,
                           output,
                           facet,
-                          time_span){
+                          visit_filter,
+                          domain_filter){
   
-  if(output=='median_fact_ct'){
-    title='Median Facts Across Time'
-  }else if(output=='sum_fact_ct'){
-    title='Sum of Facts Across Time'
-  }else(stop('Please select a valid output - `median_fact_ct` or `sum_fact_ct`'))
-  # if(output=='fact_ct_denom') {title='What does this represent'}
+  facet <- facet %>% append('domain') %>% append('visit_type')
   
-  facet <- facet %>% append('domain')
+  time_inc <- data_tbl %>% filter(!is.na(time_increment)) %>% distinct(time_increment) %>% pull()
   
-  data_tbl_pad <- data_tbl %>% group_by(across(all_of(facet))) %>%
-    pad_by_time(.date_var = start_date,
-                .by = 'year',
-                .start_date = time_span[1],
-                .end_date = time_span[2],
-                .pad_value = 0)
+  op_w_facet <- data_tbl %>%
+    unite(facet_col, !!!syms(facet), sep = '\n') %>%
+    mutate(prop = fact_ct_denom / pt_ct_denom)
   
-  plot_anomaly_diagnostics(.data=data_tbl_pad,
-                           .facet_vars = facet, 
-                           .date_var = start_date, 
-                           .value=!! sym(output), 
-                           .alpha=0.10, 
-                           .legend_show = FALSE,
-                           .max_anomalies = 0.5, 
-                           .title = title,
-                           .facet_ncol = 3, 
-                           .facet_scales = 'free_y', 
-                           .facet_collapse = TRUE, 
-                           .interactive = FALSE)
+  if(time_inc == 'year'){
+    
+    pp_qi <- qic(data = op_w_facet, x = time_start, y = fact_ct_denom, chart = 'pp', facet = ~facet_col,
+                n = site_visit_ct, title = 'Control Chart: Proportion Patients with Fact', ylab = 'Proportion', 
+                xlab = 'Time', show.grid = TRUE)
+    
+    op_dat <- pp_qi$data
+    
+    new_c <- ggplot(op_dat,aes(x,y)) +
+      geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "gray",alpha = 0.4) +
+      geom_line(colour = ssdqa_colors_standard[[12]], size = .5) + 
+      geom_line(aes(x,cl)) +
+      geom_point(colour = ssdqa_colors_standard[[6]] , fill = ssdqa_colors_standard[[6]], size = 1) +
+      geom_point(data = subset(op_dat, y >= ucl), color = ssdqa_colors_standard[[3]], size = 2) +
+      geom_point(data = subset(op_dat, y <= lcl), color = ssdqa_colors_standard[[3]], size = 2) +
+      facet_wrap(~facet1) +
+      theme_minimal() +
+      ggtitle(label = 'Control Chart: Proportion Patients with Fact') +
+      labs(x = 'Time',
+           y = 'Proportion')+
+      theme_minimal()
+    
+    output <- ggplotly(new_c)
+    
+  }else{
+    
+    anomalies <- 
+      plot_anomalies(.data=data_tbl %>% filter(visit_type == visit_filter,
+                                               domain == domain_filter),
+                     .date_var=time_start) %>% 
+      layout(title = paste0('Anomalous ', visit_filter, ' ', domain_filter, ' Over Time'))
+    
+    decomp <- 
+      plot_anomalies_decomp(.data=data_tbl %>% filter(visit_type == visit_filter,
+                                                      domain == domain_filter),
+                            .date_var=time_start) %>% 
+      layout(title = paste0('Anomalous ', visit_filter, ' ', domain_filter, ' Over Time'))
+    
+    output <- list(anomalies, decomp)
+  }
+  
+  return(output)
+  
 }
 
 #' **Single Site, Exploratory, Over Time**
@@ -98,7 +122,7 @@ pf_ss_exp_at <- function(data_tbl,
     facet_wrap((facet), scales = 'free_y') +
     scale_fill_manual(values=domain_deframe) +
     scale_color_manual(values=domain_deframe) + 
-    theme_classic() +
+    theme_minimal() +
     scale_x_date(date_breaks=date_breaks_str) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     labs(x='Time Period', 
@@ -248,6 +272,7 @@ pf_ms_exp_at <- function(data_tbl,
     ggplot(aes(x = start_date, y = !!sym(output), fill = site, color = site)) +
     geom_line() +
     facet_wrap((facet)) +
+    theme_minimal() + 
     labs(title = title,
          x = 'Time')
   
@@ -301,7 +326,7 @@ pf_ss_anom_nt <- function(data_tbl,
     scale_fill_manual(values = domain_deframe) +
     labs(title = y_title,
          y = 'Domain') +
-    theme_classic() +
+    theme_minimal() + 
     theme(panel.grid.major = element_line(size=0.4, linetype = 'solid'),
           panel.grid.minor = element_line(size=0.2, linetype = 'dashed'))
   
@@ -356,7 +381,7 @@ pf_ss_exp_nt <- function(data_tbl,
          x='Domain') +
     scale_fill_manual(values=domain_deframe) +
     coord_flip() +
-    theme_classic() +
+    theme_minimal() + 
     theme(panel.grid.major = element_line(size=0.4, linetype = 'solid'),
           panel.grid.minor = element_line(size=0.2, linetype = 'dashed'))
   
@@ -453,7 +478,7 @@ pf_ms_exp_nt <- function(data_tbl,
     geom_point(aes(x=domain, y=!! sym(comp_var)), shape=8, size=3, color="black")+
     scale_color_manual(values=site_deframe)+
     facet_wrap((facet), scales="free_x", ncol=2)+
-    theme_bw()+
+    theme_minimal() + 
     labs(y = y_title,
          x = 'Domain') +
     coord_flip()

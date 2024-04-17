@@ -220,7 +220,7 @@ csd_output <- function(process_output=process_output,
                                 output_value=output_value)
   }else if(output_function == 'csd_ss_anom_at'){
     csd_output <- csd_ss_anom_at(process_output=process_output,
-                                #vocab_tbl=vocab_tbl,
+                                filter_concept = filter_concept,
                                 filtered_var=filtered_var,
                                 facet=facet,
                                 top_mapping_n = num_mappings
