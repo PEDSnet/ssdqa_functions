@@ -176,9 +176,9 @@ evp_process <- function(cohort,
 #' @param facet the variables by which you would like to facet the graph. available and/or recommended options for
 #'              faceting variables are provided in the `parameter_summary` csv file
 #' @param kmeans_centers the number of centers that should be included in a K-means analysis; defaults to 2
-#'                       only relevant where output_function = `scv_ms_anom_nt`
+#'                       only relevant where output_function = `evp_ms_anom_nt`
 #' @param mad_dev the number of MAD away from the median that should be considered an outlier; defaults to 2
-#'                only relevant where output_function = `scv_ms_anom_at`
+#'                only relevant where output_function = `evp_ms_anom_at`
 #'
 #' @return a graph to visualize the results from `evp_process` based on the parameters provided
 #' 
@@ -239,7 +239,7 @@ evp_output <- function(process_output,
                                  output_level = output_level,
                                  filter_variable = filter_variable)
     
-  }else(stop('Please enter a valid output function for this check type.'))
+  }else(cli::cli_abort('Please enter a valid output function for this check type.'))
   
   return(evp_output)
   
