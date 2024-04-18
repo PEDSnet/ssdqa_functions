@@ -60,7 +60,7 @@ This output summarizes the proportion of patients that meet the criteria (have a
 
 evp_output(process_output = get_results('evp_ss_exp_nt'),
            output_function = 'evp_ss_exp_nt',
-           output_level = output_level,
+           output_level = 'patient',
            facet = facet)
 
 ```
@@ -71,9 +71,9 @@ This heatmap summarizes the proportion of patients at each site that meet the cr
 
 ```{r ms_exp_nt}
 
-evp_output(process_output = get_results('evp_ms_nt'),
+evp_output(process_output = get_results('evp_ms_exp_nt'),
            output_function = 'evp_ms_exp_nt',
-           output_level = output_level,
+           output_level = 'patient',
            facet = facet)
 
 ```
@@ -86,7 +86,7 @@ This heatmap displays the Jaccard similarity index between concept groups. A hig
 
 g <- evp_output(process_output = get_results('evp_ss_anom_nt'),
                 output_function = 'evp_ss_anom_nt',
-                output_level = output_level,
+                output_level = 'patient',
                 facet = facet)
 
 g
@@ -99,9 +99,9 @@ This check performs a K-means cluster analysis to identify which site has a prop
 
 ```{r ms_anom_nt}
 
-evp_output(process_output = get_results('evp_ms_nt'),
+evp_output(process_output = get_results('evp_ms_anom_nt'),
            output_function = 'evp_ms_anom_nt',
-           output_level = output_level,
+           output_level = 'patient',
            kmeans_centers = 4,
            facet = facet)
 
@@ -115,7 +115,7 @@ This line graph displays the proportion of patients belonging to a given variabl
 
 g <- evp_output(process_output = get_results('evp_ss_exp_at'),
            output_function = 'evp_ss_exp_at',
-           output_level = output_level,
+           output_level = 'patient',
            facet = facet)
 
 g
@@ -130,7 +130,7 @@ This line graph displays the proportion of patients belonging to a given variabl
 
 g <- evp_output(process_output = get_results('evp_ms_exp_at'),
            output_function = 'evp_ms_exp_at',
-           output_level = output_level,
+           output_level = 'patient',
            facet = facet)
 
 g
@@ -160,9 +160,9 @@ With smaller time increments, seasonality can make it difficult to detect true a
 
 ```{r ss_anom_at_mnth}
 
-plt <- evp_output(process_output = get_results('evp_ss_anom_at_month'),
+plt <- evp_output(process_output = get_results('evp_ss_anom_at_month') %>% ungroup(),
                   output_function = 'evp_ss_anom_at',
-                  output_level = 'row',
+                  output_level = 'patient',
                   facet = facet,
                   filter_variable = 'JIA')
 
@@ -185,7 +185,7 @@ Three graphs are output:
 ```{r ms_anom_at}
 
 ms_anom_at <- evp_ms_anom_at(process_output = get_results('evp_ms_anom_at'),
-                             output_level = 'row',
+                             output_level = 'patient',
                              filter_variable = 'JIA')
 
 ms_anom_at[[1]]
