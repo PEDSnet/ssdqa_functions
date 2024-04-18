@@ -144,12 +144,24 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
     
     if(multi_or_single_site == 'multi' & anomaly_or_exploratory=='anomaly') {
       
-      csd_tbl_ms <- csd_ms_anom_euclidean(input_tbl = csd_tbl,
-                                          time_period = time_period)
+      lookup <- csd_tbl %>% ungroup() %>% distinct(variable, concept_id)
       
-      csd_tbl <- csd_tbl_ms
+      csd_tbl_ms <- ms_anom_euclidean(fot_input_tbl = csd_tbl,
+                                      grp_vars = c('site', 'concept_id'),
+                                      var_col = 'prop_concept')
       
-    }
+      csd_tbl <- csd_tbl_ms %>% left_join(lookup)
+      
+    }else if(multi_or_single_site == 'single' & anomaly_or_exploratory=='anomaly'){
+      
+      csd_tbl_ss <- anomalize_ss_anom_at(fot_input_tbl = csd_tbl,
+                                         grp_vars = 'concept_id',
+                                         time_var = 'time_start',
+                                         var_col = 'prop_concept')
+      
+      csd_tbl <- csd_tbl_ss
+      
+    }else{csd_tbl <- csd_tbl}
     
   }
   

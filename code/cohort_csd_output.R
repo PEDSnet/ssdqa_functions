@@ -207,7 +207,7 @@ csd_ss_anom_at <- function(process_output,
                            facet=NULL,
                            top_mapping_n = 6){
   
-  time_inc <- process_output %>% distinct(time_increment) %>% pull()
+  time_inc <- process_output %>% filter(!is.na(time_increment)) %>% distinct(time_increment) %>% pull()
   
   if(time_inc == 'year'){
   
@@ -262,12 +262,21 @@ csd_ss_anom_at <- function(process_output,
   
   }else{
     
-    plt_tbl <- compute_at_cross_join(cj_tbl = process_output,
-                                     cj_var_names = c('site', 'concept_id'),
-                                     join_type = 'full')
+    concept_nm <- process_output %>% 
+      filter(!is.na(concept_name), concept_id == filter_concept) %>% 
+      distinct(concept_name) %>% pull()
     
-    output <- csd_small_time_anom(ss_input_tbl = plt_tbl,
-                                  filter_concept = filter_concept)
+    anomalies <- 
+      plot_anomalies(.data=process_output %>% filter(concept_id == filter_concept),
+                     .date_var=time_start) %>% 
+      layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
+    
+    decomp <- 
+      plot_anomalies_decomp(.data=process_output %>% filter(concept_id == filter_concept),
+                            .date_var=time_start) %>% 
+      layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
+    
+    output <- list(anomalies, decomp)
     
   }
   
