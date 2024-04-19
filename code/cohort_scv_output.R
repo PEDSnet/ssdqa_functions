@@ -64,6 +64,8 @@ scv_ss_exp_nt <- function(process_output,
                           num_codes = 10,
                           num_mappings = 25){
   
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+  
   # picking columns / titles 
   if(code_type == 'cdm'){
     denom <-  'denom_concept_ct'
@@ -81,7 +83,7 @@ scv_ss_exp_nt <- function(process_output,
     map_name <- 'concept_name'
     prop <- 'source_prop'
     title <- paste0('Top ', num_mappings, ' Mappings for Top ', num_codes, ' Source Codes')
-  }else{stop('Please select a valid code_type - `source` or `cdm`')}
+  }else{cli::cli_abort('Please select a valid code_type: {.code source} or {.code cdm}')}
   
   
   ## filter output down to most common codes, selecting a user-provided number
@@ -168,6 +170,8 @@ scv_ms_exp_nt <- function(process_output,
                           facet,
                           num_codes = 10){
   
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+  
   # picking columns / titles 
   if(code_type == 'cdm'){
     denom <-  'denom_concept_ct'
@@ -181,7 +185,7 @@ scv_ms_exp_nt <- function(process_output,
     map_col <- 'concept_id'
     name_col <- 'source_concept_name'
     prop <- 'source_prop'
-  }else{stop('Please select a valid code_type - `source` or `cdm`')}
+  }else{cli::cli_abort('Please select a valid code_type: {.code source} or {.code cdm}')}
   
   ## Enfore site facetting
   facet <- facet %>% append('site') %>% unique()
@@ -243,6 +247,8 @@ scv_ss_anom_nt <- function(process_output,
                            facet,
                            rel_to_median = 'greater'){
   
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+  
   if(code_type == 'source'){
     col <- 'source_concept_id'
     denom <- 'denom_source_ct'
@@ -251,7 +257,7 @@ scv_ss_anom_nt <- function(process_output,
     col <- 'concept_id'
     denom <- 'denom_concept_ct'
     name_col <- 'concept_name'
-  }else{stop('Please select a valid code_type - `source` or `cdm`')}
+  }else{cli::cli_abort('Please select a valid code_type: {.code source} or {.code cdm}')}
   
   mappings_per_code <- compute_mappings_per_code(tbl = process_output,
                                                  col = col,
@@ -264,7 +270,7 @@ scv_ss_anom_nt <- function(process_output,
   }else if(rel_to_median == 'less'){
     tbl_filt <- mappings_per_code %>%
       filter(n_mappings <= median)
-  }else(stop('Invalid selection for rel_to_median: please select `greater` or `less`'))
+  }else(cli::cli_abort('Invalid selection for rel_to_median: please select {.code greater} or {.code less}'))
    
   info <- process_output %>% distinct(!!sym(col), !!sym(denom), concept_name)
    
@@ -321,6 +327,8 @@ scv_ms_anom_nt <- function(process_output,
                            facet,
                            rel_to_median = 'greater'){
   
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+  
   if(code_type == 'source'){
     col <- 'source_concept_id'
     map_col <- 'concept_id'
@@ -329,7 +337,7 @@ scv_ms_anom_nt <- function(process_output,
     col <- 'concept_id'
     map_col <- 'source_concept_id'
     denom <- 'denom_concept_ct'
-  }else{stop('Please select a valid code_type - `source` or `cdm`')}
+  }else{cli::cli_abort('Please select a valid code_type: {.code source} or {.code cdm}')}
   
   mappings_per_code <- compute_mappings_per_code(tbl = process_output,
                                                  col = col,
@@ -343,7 +351,7 @@ scv_ms_anom_nt <- function(process_output,
   }else if(rel_to_median == 'less'){
     tbl_filt <- mappings_per_code %>%
       filter(n_mappings <= median)
-  }else(stop('Invalid selection for rel_to_median: please select `greater` or `less`'))
+  }else(cli::cli_abort('Invalid selection for rel_to_median: please select {.code greater} or {.code less}'))
     
   info <- process_output %>% distinct(!!sym(col), !!sym(denom), concept_name)
   
@@ -397,6 +405,8 @@ scv_ss_ms_exp_at <- function(process_output,
                              code_type,
                              facet){
   
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+  
   if(code_type == 'source'){
     col <- 'source_concept_id'
     map_col <- 'concept_id'
@@ -411,7 +421,7 @@ scv_ss_ms_exp_at <- function(process_output,
     map_name <- 'source_concept_name'
     prop <- 'concept_prop'
     denom <- 'denom_concept_ct'
-  }else{stop('Please select a valid code_type - `source` or `cdm`')}
+  }else{cli::cli_abort('Please select a valid code_type: {.code source} or {.code cdm}')}
   
   facet <- facet %>% append(col) %>% append('site') %>% unique()
     
@@ -460,11 +470,15 @@ produce_multisite_mad_scv <- function(multisite_tbl,
                                       code_type,
                                       facet_var = NULL,
                                       mad_dev) {
+  
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+  
+  
   if(code_type == 'source'){
     concept_col <- 'source_concept_id'
   }else if(code_type == 'cdm'){
     concept_col <- 'concept_id'
-  }else{stop('Please select a valid code type')}
+  }else{cli::cli_abort('Please select a valid code type: {.code source} or {.code cdm}')}
   
   
   if(is.null(facet_var)){
@@ -535,6 +549,8 @@ scv_ms_anom_at <- function(process_output,
                            filter_concept,
                            filter_mapped) {
   
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+  
   if(code_type == 'cdm'){
     prop <- 'concept_prop'
     concept_col <- 'concept_id'
@@ -543,7 +559,7 @@ scv_ms_anom_at <- function(process_output,
     prop <- 'source_prop'
     concept_col <- 'source_concept_id'
     mapped_col <- 'concept_id'
-  }else(stop('Please choose an acceptable output level: `patient` or `row`'))
+  }else(cli::cli_abort('Please select a valid code type: {.code source} or {.code cdm}'))
   
   filt_op <- process_output %>% filter(!!sym(concept_col) == filter_concept,
                                        !!sym(mapped_col) == filter_mapped) %>%
@@ -555,25 +571,17 @@ scv_ms_anom_at <- function(process_output,
     rename(prop_col=mean_allsiteprop) %>% 
     mutate(site='all site average') %>% 
     mutate(text_smooth=paste0("Site: ", site,
-                              #"\n","Proportion: ",prop_concept,
                               "\n","Proportion: ",prop_col),
            text_raw=paste0("Site: ", site,
-                           #"\n","Proportion: ",prop_concept,
                            "\n","Proportion: ",prop_col)) 
   
   dat_to_plot <- 
     filt_op %>% 
     mutate(text_smooth=paste0("Site: ", site,
-                              #"\n","Site Proportion: ",prop_concept,
-                              #"\n","Proportion: ",prop_concept,
-                              #"\n","Site Smoothed Proportion: ",site_loess,
-                              #"\n","All-Site Mean: ",mean_allsiteprop,
                               "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean),
            text_raw=paste0("Site: ", site,
                            "\n","Site Proportion: ",prop_col,
-                           #"\n","Proportion: ",prop_concept,
                            "\n","Site Smoothed Proportion: ",site_loess,
-                           #"\n","All-Site Mean: ",mean_allsiteprop,
                            "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean)) 
   
   p <- dat_to_plot %>%
@@ -632,75 +640,6 @@ scv_ms_anom_at <- function(process_output,
   
 }
 
-
-
-#' #' *Multi Site, Anomaly, Across Time*
-#' #' 
-#' #' codes where a mapping represents a proportion of all mappings for that code which
-#' #' is +/- 2 MAD away from median. 
-#' #' 
-#' #' graph displays the proportion of mappings per code 
-#' #' that are outliers.
-#' #' 
-#' #' @param process_output dataframe output by `scv_process`
-#' #' @param code_type type of code to be used in analysis -- either `source` or `cdm`
-#' #' 
-#' #'                  should match the code_type provided when running `scv_process`
-#' #' @param facet the variables by which you would like to facet the graph
-#' #' @param mad_dev an integer to define the deviation that should be used to compute the upper and lower MAD limits
-#' #' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#' #'                  concept names
-#' #' 
-#' #' @return a heatmap that shows the proportion of mappings for each code that are unstable across
-#' #'         time, meaning they frequently deviate from the all site centroid
-#' #' 
-#' scv_ms_anom_at <- function(process_output,
-#'                            code_type,
-#'                            facet,
-#'                            mad_dev = 2){
-#'   
-#'   if(code_type == 'source'){
-#'     col <- 'source_concept_id'
-#'     denom <- 'denom_source_ct'
-#'   }else if(code_type == 'cdm'){
-#'     col <- 'concept_id'
-#'     denom <- 'denom_concept_ct'
-#'   }else{stop('Please select a valid code_type - `source` or `cdm`')}
-#'   
-#'   fot <- check_fot_multisite(tblx = process_output %>% ungroup() %>%
-#'                      mutate(start_date = time_start, domain = concept_id),
-#'                      domain_list = process_output %>% distinct(concept_id) %>% pull(),
-#'                    target_col = 'ct',
-#'                    facet_var = facet %>% append(c('source_concept_id')))
-#'   
-#'   fot2 <- check_fot_all_dist(fot_check_output = fot$fot_heuristic)
-#'   
-#'   mad <- produce_multisite_mad_scv(multisite_tbl = fot2,
-#'                                    code_type = code_type,
-#'                                    facet_var = facet,
-#'                                    mad_dev = mad_dev)
-#'   
-#'   mad2 <- mad %>% left_join(process_output %>% distinct(site, !!sym(col), !!sym(denom), concept_name))
-#'     
-#'     final <- mad2 %>%
-#'       mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
-#'              tooltip = paste0('Concept Name: ', concept_name, '\nTotal Concept Rows: ', denom_fmt))
-#'     
-#'     r <- ggplot(final, aes(x=site, y=as.character(!!sym(col)), fill=grp_outlier_prop)) +
-#'       geom_tile_interactive(aes(tooltip = tooltip)) +
-#'       facet_wrap((facet)) +
-#'       scale_fill_viridis_c(option = 'turbo') +
-#'       theme_classic() +
-#'       coord_flip() +
-#'       labs(title = 'Stability of Mappings Over Time',
-#'            y = 'Code',
-#'            fill = 'Proportion Unstable \nMappings')
-#'     
-#'     p <- girafe(ggobj = r)
-#'  
-#'    return(p)
-#' }
-
 #' *Single Site, Anomaly, Across Time*
 #' 
 #' Control chart looking at number of mappings over time
@@ -720,11 +659,13 @@ scv_ss_anom_at <- function(process_output,
                            filter_concept,
                            facet){
   
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+  
   if(code_type == 'source'){
     col <- 'source_concept_id'
   }else if(code_type == 'cdm'){
     col <- 'concept_id'
-  }else{stop('Please choose a valid code_type: `cdm` or `source`')}
+  }else{cli::cli_abort('Please choose a valid code_type: {.code source} or {.code cdm}')}
   
   time_inc <- process_output %>% distinct(time_increment) %>% pull()
   
@@ -744,7 +685,7 @@ scv_ss_anom_at <- function(process_output,
   op_dat <- c_qi$data
   
   new_c <- ggplot(op_dat,aes(x,y)) +
-    geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "gray",alpha = 0.4) +
+    geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "lightgray",alpha = 0.4) +
     geom_line(colour = ssdqa_colors_standard[[12]], size = .5) + 
     geom_line(aes(x,cl)) +
     geom_point(colour = ssdqa_colors_standard[[6]] , fill = ssdqa_colors_standard[[6]], size = 1) +

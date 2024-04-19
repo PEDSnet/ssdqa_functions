@@ -115,9 +115,9 @@ scv_process <- function(cohort,
                             .f=dplyr::union)
     
   } else if(time){
-    if(!is.vector(concept_set)){stop('For an over time output, please select 1-5 codes from your
+    if(!is.vector(concept_set)){cli::cli_abort('For an over time output, please select 1-5 codes from your
                                    concept set and include them as a vector in the concept_set argument.')}
-    if(is.vector(concept_set) && length(concept_set) > 5){stop('For an over time output, please select 1-5 
+    if(is.vector(concept_set) && length(concept_set) > 5){cli::cli_abort('For an over time output, please select 1-5 
                                                               codes from your concept set and include them as
                                                              a vector in the concept_set argument.')}
     
@@ -151,6 +151,9 @@ scv_process <- function(cohort,
     }else if(multi_or_single_site == 'single' && anomaly_or_exploratory == 'anomaly'){
       
       var_col <- ifelse(code_type == 'cdm', 'concept_id', 'source_concept_id')
+      time_inc <- scv_tbl %>% ungroup() %>% distinct(time_increment) %>% pull()
+      
+      if(time_inc != 'year'){
       
       n_mappings_time <- scv_tbl %>%
         group_by(!!sym(var_col), time_start, time_increment) %>%
@@ -160,6 +163,9 @@ scv_process <- function(cohort,
                                             time_var = 'time_start',
                                             grp_vars = var_col,
                                             var_col = 'n_mappings')
+      }else{
+        scv_tbl_final <- scv_tbl
+      }
       
     }else{(scv_tbl_final <- scv_tbl)}
     
@@ -283,7 +289,7 @@ scv_output <- function(process_output,
     scv_output <- scv_ss_ms_exp_at(process_output = process_output,
                                    code_type = code_type,
                                    facet = facet)
-  }else(stop('Please enter a valid output function for this check type.'))
+  }else(cli::cli_abort('Please enter a valid output function for this check type.'))
   
   return(scv_output)
   

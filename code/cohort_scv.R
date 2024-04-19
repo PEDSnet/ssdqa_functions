@@ -29,6 +29,8 @@ check_code_dist <- function(cohort,
                             time = FALSE,
                             domain_tbl = read_codeset('scv_domains', 'cccc')){
   
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+  
   # pick the right domain/columns
   domain_filter <- domain_tbl %>% filter(domain == code_domain)
   concept_col <- domain_filter$concept_col
@@ -38,7 +40,7 @@ check_code_dist <- function(cohort,
      final_col = source_col
   }else if(code_type == 'cdm'){
     final_col = concept_col
-  }else{stop(paste0(code_type, ' is not a valid argument. Please select either "source" or "cdm"'))}
+  }else{cli::cli_abort(paste0(code_type, ' is not a valid argument. Please select either {.code source} or {.code cdm}'))}
   
   if(time){
     
