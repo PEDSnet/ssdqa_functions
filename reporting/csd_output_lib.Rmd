@@ -73,7 +73,7 @@ For each site in the cohort, this table summarizes the counts/proportions of eac
 
 ```{r ms_exp_nt}
 
-ms_exp_nt <- csd_output(process_output = get_results('csd_ms_nt'),
+ms_exp_nt <- csd_output(process_output = get_results('csd_ms_exp_nt'),
                         output_function = 'csd_ms_exp_nt',
                         vocab_tbl = vocabulary_tbl('concept'),
                         num_codes = 10)
@@ -103,7 +103,7 @@ For each site in the cohort & each concept in the variable, this graph summarize
 
 ```{r ms_anom_nt}
 
-ms_anom_nt <- csd_output(process_output = get_results('csd_ms_nt'),
+ms_anom_nt <- csd_output(process_output = get_results('csd_ms_anom_nt'),
                         output_function = 'csd_ms_anom_nt',
                         vocab_tbl = vocabulary_tbl('concept'),
                         filtered_var = 'uveitis',
@@ -121,7 +121,7 @@ This line graph displays the proportion of concepts within each variable and how
 
 ```{r ss_exp_at}
 
-ss_exp_at <- csd_output(process_output = get_results('csd_ss_at'),
+ss_exp_at <- csd_output(process_output = get_results('csd_ss_exp_at'),
                         output_function = 'csd_ss_exp_at',
                         vocab_tbl = vocabulary_tbl('concept'),
                         filtered_var = c('general_jia', 'ibd','uveitis'),
@@ -139,7 +139,7 @@ This line graph displays the proportion of concepts at each site for a selection
 
 ```{r ms_exp_at}
 
-ms_exp_at <- csd_output(process_output = get_results('csd_ms_at'),
+ms_exp_at <- csd_output(process_output = get_results('csd_ms_exp_at'),
                         output_function = 'csd_ms_exp_at',
                         vocab_tbl = vocabulary_tbl('concept'),
                         filtered_var = c('ibd'),
@@ -159,7 +159,7 @@ This check outputs a control chart that highlights anomalies in the proportion o
 
 ```{r ss_anom_at}
 
-ss_anom_at <- csd_output(process_output = get_results('csd_ss_at'),
+ss_anom_at <- csd_output(process_output = get_results('csd_ss_anom_at_year'),
                         output_function = 'csd_ss_anom_at',
                         vocab_tbl = vocabulary_tbl('concept'),
                         num_mappings = 6,
@@ -180,8 +180,7 @@ With smaller time increments, seasonality can make it difficult to detect true a
 
 ```{r ss_anom_at_month}
 
-ss_anom_at2 <- csd_output(process_output = get_results('csd_ms_at_month') %>%
-                            filter(site == 'chop'),
+ss_anom_at2 <- csd_output(process_output = get_results('csd_ss_anom_at_month'),
                           output_function = 'csd_ss_anom_at',
                           filter_concept = '81893')
 
@@ -203,7 +202,7 @@ Three graphs are output:
 
 ```{r ms_anom_at}
 
-ms_anom_at <- csd_ms_anom_at(process_output = get_results('csd_ms_at_eucl'),
+ms_anom_at <- csd_ms_anom_at(process_output = get_results('csd_ms_anom_at'),
                              filter_concept = '81893')
 
 ms_anom_at[[1]]

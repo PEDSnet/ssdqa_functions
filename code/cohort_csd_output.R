@@ -68,7 +68,7 @@ csd_ss_exp_nt <- function(process_output,
                                  fill = !!sym(prop))) +
       geom_tile_interactive(aes(tooltip = concept_name)) +
       geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
-      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+      scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) + 
       facet_wrap((facet), scales = 'free') +
       theme_minimal() +
       theme(axis.text.x = element_blank()) +
@@ -135,7 +135,7 @@ csd_ss_anom_nt <- function(process_output,
                                                  '\n', 'co-occurrence = ', cocount,
                                                  '\n','jaccard sim = ',jaccard_index,
                                                  '\n', 'mean = ',var_jaccard_mean,'\n','sd = ', var_jaccard_sd))) + 
-      scale_fill_gradient2(low = 'pink', high = 'maroon') + 
+      scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
        labs(title = filtered_var,
             x = 'concept1',
             y = 'concept2') +
@@ -150,38 +150,6 @@ csd_ss_anom_nt <- function(process_output,
 }
 
 ### ACROSS TIME
-
-#' Find anomalies for smaller time frames
-#'
-#' @param ss_input_tbl output of compute_at_cross_join where the input table uses
-#'                     a time increment smaller than a year
-#' @param filter_concept the concept id of interest for which the plot should be generated
-#'
-#' @return two plots - one with a time series with outliers highlighted in red dots, and
-#'         another with 4 time series visualizing anomaly decomposition
-#' 
-csd_small_time_anom <- function(ss_input_tbl,
-                               filter_concept) {
-  
-  plt_tbl <- ss_input_tbl %>% filter(concept_id == filter_concept)
-  
-  concept_nm <- plt_tbl %>% filter(!is.na(concept_name)) %>% distinct(concept_name) %>% pull()
-  
-  anomalize_tbl <- 
-    anomalize(plt_tbl,.date_var=time_start, .value=prop_concept)
-  
-  anomalies <- 
-    plot_anomalies(.data=anomalize_tbl,
-                   .date_var=time_start) %>% 
-    layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
-  
-  decomp <- 
-    plot_anomalies_decomp(.data=anomalize_tbl,
-                          .date_var=time_start) %>% 
-    layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
-  
-  final <- list(anomalies, decomp)
-} 
 
 #' *Single Site, Anomaly, Across Time*
 #' 
@@ -235,12 +203,12 @@ csd_ss_anom_at <- function(process_output,
   op_dat <- c_plot$data
   
   new_pp <- ggplot(op_dat,aes(x,y)) +
-    geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "gray",alpha = 0.4) +
-    geom_line(colour = "black", size = .5) + 
+    geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "lightgray",alpha = 0.4) +
+    geom_line(colour = ssdqa_colors_standard[[12]], size = .5) +  
     geom_line(aes(x,cl)) +
-    geom_point(colour = "black" , fill = "black", size = 1) +
-    geom_point(data = subset(op_dat, y >= ucl), color = "red", size = 2) +
-    geom_point(data = subset(op_dat, y <= lcl), color = "red", size = 2) +
+    geom_point(colour = ssdqa_colors_standard[[6]] , fill = ssdqa_colors_standard[[6]], size = 1) +
+    geom_point(data = subset(op_dat, y >= ucl), color = ssdqa_colors_standard[[3]], size = 2) +
+    geom_point(data = subset(op_dat, y <= lcl), color = ssdqa_colors_standard[[3]], size = 2) +
     facet_wrap(~facet1) +
     ggtitle(label = 'Control Chart: Code Usage Over Time') +
     labs(x = 'Time',
@@ -346,7 +314,8 @@ csd_ss_exp_at <- function(process_output,
     facet_wrap((facet)) +
     labs(title = 'Concepts per Variable Over Time',
          color = 'concept_id') +
-    theme_minimal() 
+    theme_minimal() +
+    scale_color_ssdqa()
   
   plot <- ggplotly(p, tooltip = "text")
 
@@ -420,7 +389,8 @@ csd_ms_exp_at <- function(process_output,
     facet_wrap((facet)) +
     labs(title = 'Concepts per Site Over Time',
          color = 'Site') +
-    theme_minimal() 
+    theme_minimal() +
+    scale_color_ssdqa()
   
   plot <- ggplotly(p, tooltip = "text")
   
@@ -488,7 +458,7 @@ csd_ms_exp_nt <- function(process_output,
     #gtExtras::gt_plt_bar_pct(column = pct) %>%
     fmt_number(columns = ct, decimals = 0) %>%
     fmt_percent(columns = prop, decimals = 0) %>%
-    data_color(palette = "Dark2", columns = c(all_of(facet))) %>%
+    data_color(palette = ssdqa_colors_standard, columns = c(all_of(facet))) %>%
     tab_header(title = paste0('All Available Mappings for Top ', num_codes, ' Variables')) %>%
     opt_interactive(use_search = TRUE,
                     use_filters = TRUE) 
@@ -548,11 +518,13 @@ csd_ms_anom_nt<-function(process_output,
   
   mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
   
-  plt<-ggplot(dat_to_plot %>% filter(variable == filtered_var), aes(x=site, y=as.character(concept_id), text=text))+
+  plt<-ggplot(dat_to_plot %>% filter(variable == filtered_var), 
+              aes(x=site, y=as.character(concept_id), text=text))+
     geom_point(aes(size=abs_diff_mean,colour=!!sym(comparison_col),shape=anomaly_yn))+
     #aes(stringr::str_wrap(!!sym(concept_label), 20)) +
     scale_shape_manual(values=c(20,8))+
-    scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
+    scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
+    #scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
     scale_y_discrete(labels = function(x) str_wrap(x, width = text_wrapping_char)) +
     theme_minimal() +
     labs(colour="Proportion",
@@ -578,76 +550,6 @@ csd_ms_anom_nt<-function(process_output,
 #' THIS GRAPH SHOWS ONLY ONE CONCEPT AT A TIME!
 #' 
 
-# csd_ms_anom_at <- function(process_output_graph,
-#                            filter_concept) {
-#   
-#   allsites <- 
-#     process_output_graph %>% 
-#     filter(concept_id == filter_concept) %>% 
-#     select(time_start,concept_id,mean_allsiteprop,auc_gold_standard) %>% distinct() %>% 
-#     rename(prop_concept=mean_allsiteprop) %>% 
-#     mutate(site='all site average',
-#            auc_value=auc_gold_standard) %>% 
-#     mutate(text=paste0("Site: ", site,
-#                        #"\n","Proportion: ",prop_concept,
-#                        "\n","AUC Value: ",auc_value,
-#                        "\n","All-Site AUC: ",auc_gold_standard)) 
-#   
-#   dat_to_plot <- 
-#     process_output_graph %>% 
-#     filter(concept_id == filter_concept) %>% 
-#     mutate(text=paste0("Site: ", site,
-#                        #"\n","Proportion: ",prop_concept,
-#                        "\n","AUC Value: ",auc_value,
-#                        "\n","All-Site AUC: ",auc_gold_standard)) 
-#   
-#   concept_id_var <- 
-#     dat_to_plot %>% select(concept_id) %>% distinct() %>% pull
-#   
-#   if(length(concept_id_var) > 1) {stop('Please input only one concept_id')}
-#   
-#   p <- dat_to_plot %>%
-#     #filter(concept_id == 81893) %>% 
-#     ggplot(aes(y = prop_concept, x = time_start, color = site,group=site,text=text)) +
-#     geom_line(data=filter(allsites,concept_id==concept_id_var),linewidth=1.1) +
-#     #stat_smooth(geom='line',alpha=0.7,se=TRUE) +
-#     geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5) +
-#     theme_minimal() +
-#     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
-#   ggtitle(paste0('Proportion of Concept ',concept_id_var,' Across Time',
-#                  '\n','All-Site in Red',
-#                  '\n','AUC value in Tooltip'))
-#   
-#   
-#   gold_standard <- allsites %>%
-#     filter(concept_id == filter_concept) %>% 
-#     select(auc_gold_standard) %>%
-#     distinct() %>% pull()
-#   
-#   p2 <- dat_to_plot %>% 
-#     #filter(concept_id == 81893) %>% 
-#     select(site,auc_value,auc_gold_standard) %>% 
-#     distinct() %>% 
-#     ggplot(aes(y = auc_value, x = site, fill=site)) +
-#     geom_bar(stat='identity') + 
-#     geom_hline(yintercept=gold_standard,
-#                linetype='dashed', color='red') +
-#     coord_flip() +
-#     guides(fill='none') + theme_minimal() +
-#     ggtitle(paste0('Site AUC Value for Concept ',concept_id_var,
-#                    '\n','All-Site in Dashed Red'))
-#   
-#   
-#   plotly_p <- ggplotly(p,tooltip="text")
-#   plotly_p2 <- ggplotly(p2,tooltip='auc_value')
-#   
-#   output <- list(plotly_p,
-#                  plotly_p2)
-#   
-# }
-
-
-
 csd_ms_anom_at <- function(process_output,
                            filter_concept){
   
@@ -659,31 +561,24 @@ csd_ms_anom_at <- function(process_output,
     rename(prop_concept=mean_allsiteprop) %>% 
     mutate(site='all site average') %>% 
     mutate(text_smooth=paste0("Site: ", site,
-                       #"\n","Proportion: ",prop_concept,
                        "\n","Proportion: ",prop_concept),
            text_raw=paste0("Site: ", site,
-                           #"\n","Proportion: ",prop_concept,
                            "\n","Proportion: ",prop_concept)) 
   
   dat_to_plot <- 
     filt_op %>% 
     mutate(text_smooth=paste0("Site: ", site,
-                       #"\n","Site Proportion: ",prop_concept,
-                       #"\n","Proportion: ",prop_concept,
-                       #"\n","Site Smoothed Proportion: ",site_loess,
-                       #"\n","All-Site Mean: ",mean_allsiteprop,
                        "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean),
            text_raw=paste0("Site: ", site,
                            "\n","Site Proportion: ",prop_concept,
-                              #"\n","Proportion: ",prop_concept,
                            "\n","Site Smoothed Proportion: ",site_loess,
-                              #"\n","All-Site Mean: ",mean_allsiteprop,
                            "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean)) 
   
   p <- dat_to_plot %>%
     ggplot(aes(y = prop_concept, x = time_start, color = site, group = site, text = text_smooth)) +
     geom_line(data=allsites, linewidth=1.1) +
     geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5, formula = y ~ x) +
+    scale_color_ssdqa() +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
     labs(y = 'Proportion (Loess)',
@@ -693,6 +588,7 @@ csd_ms_anom_at <- function(process_output,
   q <- dat_to_plot %>%
     ggplot(aes(y = prop_concept, x = time_start, color = site,
                group=site, text=text_raw)) +
+    scale_color_ssdqa() +
     geom_line(data=allsites,linewidth=1.1) +
     geom_line(linewidth=0.2) +
     theme_minimal() +
@@ -705,17 +601,15 @@ csd_ms_anom_at <- function(process_output,
     distinct(site, dist_eucl_mean, site_loess) %>% 
     group_by(site, dist_eucl_mean) %>% 
     summarise(mean_site_loess = mean(site_loess)) %>%
-    mutate(tcol = ifelse(mean_site_loess >= 0.8 | mean_site_loess <= 0.2, 'group1', 'group2')) %>%
     ggplot(aes(x = site, y = dist_eucl_mean, fill = mean_site_loess)) + 
     geom_col() + 
-    geom_text(aes(label = dist_eucl_mean, color = tcol), vjust = 2, size = 3,
+    geom_text(aes(label = dist_eucl_mean), vjust = 2, size = 3,
               show.legend = FALSE) +
-    scale_color_manual(values = c('white', 'black')) +
     coord_radial(r_axis_inside = FALSE, rotate_angle = TRUE) + 
     guides(theta = guide_axis_theta(angle = 0)) +
     #scale_y_continuous(limits = c(-1,ylim_max)) + 
     theme_minimal() + 
-    scale_fill_viridis_c(option = 'turbo', limits = c(0, 1), oob = scales::squish) +
+    scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
     theme(legend.position = 'bottom',
           axis.text.x = element_text(face = 'bold')) + 
     labs(fill = 'Avg. Proportion \n(Loess)', 

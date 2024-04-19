@@ -106,10 +106,11 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
                                                    num_concept_2 = num_concept_2)
       } else {
         variable_compute <- check_code_dist_csd(cohort_codedist = cohort_site,
-                                              #code_type = 'cdm',
-                                              code_domain = code_domain,
-                                              concept_set = concept_set,
-                                              domain_tbl = domain_tbl) 
+                                                concept_set = concept_set,
+                                                time = time,
+                                                time_span = time_span,
+                                                time_period = time_period,
+                                                domain_tbl = domain_tbl) 
       }
       
       
@@ -260,7 +261,7 @@ csd_output <- function(process_output=process_output,
   }else if(output_function == 'csd_ms_anom_at'){
     csd_output <- csd_ms_anom_at(process_output=process_output,
                                  filter_concept=filter_concept)
-  }else(stop('Please enter a valid output_function for this check'))
+  }else(cli::cli_abort('Please enter a valid output_function for this check'))
   
   return(csd_output)
   
