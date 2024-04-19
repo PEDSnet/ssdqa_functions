@@ -116,8 +116,8 @@ pf_process <- function(cohort = cohort,
   
   ## Step 3: Run Function
   
-  #grouped_list <- grouped_list %>% append(c('person_id','start_date','end_date','fu'))
-  grouped_list <- grouped_list %>% append(c('person_id','time_start','time_increment','fu'))
+  if(!time){grouped_list <- grouped_list %>% append(c('person_id','start_date','end_date','fu'))}else{
+    grouped_list <- grouped_list %>% append(c('person_id','time_start','time_increment','fu'))}
   
   if(is.data.frame(age_groups)){grouped_list <- grouped_list %>% append('age_grp')}
   if(is.data.frame(codeset)){grouped_list <- grouped_list %>% append('flag')}
@@ -202,8 +202,7 @@ pf_process <- function(cohort = cohort,
       
       pf_final <- ms_anom_euclidean(fot_input_tbl = pf_int %>% mutate(prop_pts_fact = fact_ct_denom / site_visit_ct),
                                     grp_vars = c('site', 'visit_type', 'domain'),
-                                    var_col = 'prop_pts_fact',
-                                    time_period = time_period)
+                                    var_col = 'prop_pts_fact')
       
     }else if(anomaly_or_exploratory == 'anomaly' && multi_or_single_site == 'single'){
       
@@ -276,15 +275,6 @@ pf_output <- function(process_output,
                       domain_filter = 'conditions_all',
                       visit_filter = 'outpatient'){
   
-  ## Create color palettes for sites and domains
-  
-  site_list <- process_output %>% select(site) %>% distinct() %>% pull()
-  domain_list <- process_output %>% select(domain) %>% distinct() %>% pull()
-  
-  create_color_scheme(type = color,
-                      site_list = site_list,
-                      domain_list = domain_list)
-  
   ## Run output functions
   if(output_function == 'pf_ms_anom_nt'){
     pf_output <- pf_ms_anom_nt(data_tbl = process_output,
@@ -323,7 +313,7 @@ pf_output <- function(process_output,
                               output = output,
                               facet = facet,
                               date_breaks_str = date_breaks_str)
-  }else(stop('Please enter a valid output function for this check type.'))
+  }else(cli::cli_abort('Please enter a valid output_function for this check type.'))
   
   ## Return "raw" output in place of or in addition to .png files
   return(pf_output)

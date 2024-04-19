@@ -57,7 +57,7 @@ This output summarises the median number of facts per patient. The domain is alo
 
 ```{r ss_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output(process_output = get_results('pf_ss_exp_nt') %>% mutate(site = site_summ),
+pf_output(process_output = get_results('pf_ss_exp_nt'),
               output_function = 'pf_ss_exp_nt',
               facet = c('visit_type'),
               output = 'median_site_without0s')
@@ -70,7 +70,7 @@ This output displays the proportion of patients that fall +/- 2 SD away from the
 
 ```{r ss_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output(process_output = get_results('pf_ss_anom_nt') %>% mutate(site = site_summ),
+pf_output(process_output = get_results('pf_ss_anom_nt'),
               output_function = 'pf_ss_anom_nt',
               facet = c('visit_type'),
               output = 'prop_outlier_site_fact')
@@ -83,7 +83,7 @@ The dot plot below shows the median number of facts per patient for each site. T
 
 ```{r ms_exp_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output(process_output = get_results('pf_ms_nt'),
+pf_output(process_output = get_results('pf_ms_exp_nt'),
               output_function = 'pf_ms_exp_nt',
               facet = c('visit_type'),
               output = 'median_site_without0s')
@@ -98,10 +98,10 @@ The number of clusters used in the analysis is controlled by the user.
 
 ```{r ms_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output(process_output = get_results('pf_ms_nt'),
+pf_output(process_output = get_results('pf_ms_anom_nt'),
               output_function = 'pf_ms_anom_nt',
               facet = c('visit_type'),
-              kmeans_clusters = 3,
+              kmeans_clusters = 4,
               output = 'median_site_without0s')
 
 ```
@@ -112,7 +112,7 @@ This line and dot graph shows the median fact count for each domain and how it c
 
 ```{r ss_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output(process_output = get_results('pf_ss_at') %>% mutate(site = site_summ),
+pf_output(process_output = get_results('pf_ss_exp_at'),
               output_function = 'pf_ss_exp_at',
               facet = c('visit_type'),
               output = 'median_fact_ct')
@@ -127,9 +127,7 @@ This check outputs a control chart that highlights anomalies in the proportion o
 
 ```{r ss_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output(process_output = get_results('pf_ss_at') %>% mutate(site = site_summ,
-                                                              time_increment = 'year',
-                                                              time_start = start_date),
+pf_output(process_output = get_results('pf_ss_anom_at_year'),
               output_function = 'pf_ss_anom_at',
               facet = c('visit_type'))
 
@@ -147,7 +145,7 @@ With smaller time increments, seasonality can make it difficult to detect true a
 ss_anom_at2 <- pf_output(process_output = get_results('pf_ss_anom_at_month'),
                           output_function = 'pf_ss_anom_at',
                           visit_filter = 'outpatient',
-                          domain_filter = 'procedures')
+                          domain_filter = 'conditions')
 
 ss_anom_at2[[1]]
 
@@ -161,7 +159,7 @@ This output displays either the median or total (sum) fact count per patient per
 
 ```{r ms_exp_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-pf_output(process_output = get_results('pf_ms_at'),
+pf_output(process_output = get_results('pf_ms_exp_at'),
               output_function = 'pf_ms_exp_at',
               facet = c('visit_type'),
               output = 'median_fact_ct')
@@ -180,10 +178,10 @@ Three graphs are output:
 
 ```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-op <- pf_output(process_output = get_results('pf_ms_at_eucl'),
-          output_function = 'pf_ms_anom_at',
-          domain_filter = 'conditions_all',
-          visit_filter = 'outpatient')
+op <- pf_output(process_output = get_results('pf_ms_anom_at'),
+                output_function = 'pf_ms_anom_at',
+                domain_filter = 'conditions',
+                visit_filter = 'outpatient')
 
 op[[1]]
 op[[2]]

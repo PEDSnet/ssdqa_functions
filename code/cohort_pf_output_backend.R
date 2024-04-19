@@ -178,13 +178,13 @@ if(!is.null(facet_vars)){
   
   prep_regex <- function(domains){
     domains = c(domains)
-    domain_options = paste(domains, collapse = '|')
-    paste0("(", domain_options, ")+_")
+    domain_options = paste(domains, collapse = '|^')
+    paste0("(^", domain_options, ")+_")
   }
   
   regex <- prep_regex(domains)
   
-  facet_list <- lapply(cols, function(x){str_remove_all(string = x, pattern = regex)}) %>% unique()
+  facet_list <- lapply(cols, function(x){gsub(x = x, pattern = regex, replacement = '')}) %>% unique()
   
   #facet_list <- lapply(cols, function(x){sub("^[^_]*_", "", x)}) %>% unique()
   
@@ -262,8 +262,7 @@ produce_kmeans_output <- function(kmeans_list,
     k <- kmeans(kmeans_list[[i]][[1]], centers=centers)
     output_list[[i]] <- fviz_cluster(k, data=kmeans_list[[i]][[1]],
                  main = paste0(paste0('K-Means Cluster Analysis: ', kmeans_list[[i]][[2]])),
-                 palette = 'Dark2',
-                 ggtheme = theme_minimal())
+                 ggtheme = theme_minimal()) + scale_color_ssdqa()
     }
   output_list
 }
@@ -472,76 +471,6 @@ check_fot_multisite <- function(tblx,
   
 }
 
-
-#' loops through each domain and produces interactive graph 
-#' using `girafe` package
-#' 
-#' @param multisite_tbl a tbl with all sites and a `grp_check` column, as well as a 
-#'                      `month_end`, `distance`, `site` columns; output from the 
-#'                      `check_fot_multisite` function
-#' @param date_breaks_str the window length for each unit of time on the x-axis
-#' @param time_span the start and end dates for the time period on the x-axis
-#' @param facet_var list of variables by which the user would like to facet the output;
-#'                  should match the facets used in `check_fot_multisite`
-#' @param site_colors_v the color palette that should be used for the sites; typically use
-#'                      the palette output by `create_color_scheme`
-#' 
-
-create_multisite_exp <- function(multisite_tbl,
-                                 date_breaks_str,
-                                 time_span,
-                                 facet_var = NULL,
-                                 site_colors_v) {
-  
-  grp_list <- 
-    multisite_tbl %>% 
-    select(grp_check) %>% distinct() %>% pull() %>% as.list()
-  
-  grp_output <- list()
-  
-  for(i in grp_list) {
-    
-    if(is.null(facet_var)){
-      multisite_plot_exp <- 
-        ggplot(multisite_tbl %>% 
-                 filter(grp_check==i,start_date < time_span[2],start_date > time_span[1]),
-               aes(x=start_date,y=distance,group=site,color=site), size=1) +
-        geom_line_interactive(aes(tooltip=site, data_id=site)) +
-        scale_color_manual(values=site_colors_v)+
-        scale_x_date(date_breaks=date_breaks_str) +
-        theme_bw() +
-        ggtitle(paste0('Multisite Exploratory: ',i)) +
-        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-    }else{
-      multisite_plot_exp <- 
-        ggplot(multisite_tbl %>% 
-                 filter(grp_check==i,start_date < time_span[2],start_date > time_span[1]),
-               aes(x=start_date,y=distance,group=site,color=site), size=1) +
-        geom_line_interactive(aes(tooltip=site, data_id=site)) +
-        facet_wrap(facets = eval(facet_var), scales = 'free_y')+
-        scale_color_manual(values=site_colors_v)+
-        scale_x_date(date_breaks=date_breaks_str) +
-        theme_bw() +
-        ggtitle(paste0('Multisite Exploratory: ',i)) +
-        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-    }
-    
-    multi_girafe <- 
-      girafe(ggobj = multisite_plot_exp,
-             width_svg = 8,
-             height_svg = 4) %>% 
-      girafe_options(opts_tooltip(use_fill=TRUE, css='color:black;', offx=20),
-                     opts_hover(css='fill:blue;stroke-width:2;'),
-                     opts_hover_inv(css='opacity:0.3'))
-    
-    
-    grp_output[[i]] <- multi_girafe
-    #ggplotly(multisite_plot_exp)
-  }
-  
-  grp_output
-}
-
 #' output of `check_fot_multisite` to look for points where
 #' a site is +/- 2 MAD from the median/centoid
 #' 
@@ -643,128 +572,4 @@ create_color_scheme <- function(type = 'auto',
     write.csv(domain_color, file.path(base_dir, 'specs/domain_color_config.csv'), row.names = FALSE)
   }
   
-}
-
-#' generate csv with summary of pf process parameters and recs for output function
-#'
-#' @param site_list - list of sites used to generate output
-#' @param visit_list - list of visit types used to generate output
-#' @param ms_site - multi- or single-site output, as selected by user
-#' @param anom_exp - anomaly or exploratory analysis, as selected by user
-#' @param time - logical to denote whether the analysis was conducted over time, as selected by user
-#' @param time_span - if time = TRUE, the start and end dates for the time period of interest
-#' @param age - csv file that defines age groupings for the cohort, as designated by user. left NULL if age groups
-#'              were not desired
-#' @param cs - csv file that defines codeset flags for the cohort, as designated by user. left NULL if codeset flags
-#'            were not desired
-#'
-#' @return a csv file with summary information about the parameters used in the `pf_process` function as well as 
-#'         recommendations based on those parameters on how to configure the `pf_output_gen` function
-#' 
-param_csv_summary <- function(site_list,
-                              visit_list,
-                              ms_site,
-                              anom_exp,
-                              time,
-                              time_span,
-                              age,
-                              cs){
-  
-  facet_list <- list()
-  
-  if(!is.null(age)){facet_list <- facet_list %>% append('age_grp')}
-  if(!is.null(cs)){facet_list <- facet_list %>% append('flag')}
-  if(length(visit_list) > 1){facet_list <- facet_list %>% append('visit_type')}
-  
-  dataframe <- data.frame('parameter' = c('site_list', 'visit_types', 'multi_or_single_site',
-                                          'anomaly_or_exploratory', 'time', 'time_span', 'facet'),
-                          'inputs' = c(paste(site_list, collapse = ','), paste(visit_list, collapse = ','), ms_site, 
-                                       anom_exp, time, paste(time_span, collapse = ','), paste(facet_list, collapse = ',')),
-                          'description' = c('The list of sites included in the output',
-                                            'List of visit types available in the output',
-                                            'Multi- or Single-Site output',
-                                            'Anomaly or Exploratory output',
-                                            'Boolean that defines if the output is to be examined over time',
-                                            'The time span over which across-time output is examined',
-                                            'List of recommended facets for output based on user input'))
-  
-  if(!time){
-    if(anom_exp == 'anomaly'){
-      if(ms_site == 'multi'){
-        dataframe <- dataframe %>% add_row('parameter' = c('output_function', 'output options','kmeans_clusters'),
-                                           'inputs' = c('pf_ms_anom_nt', 'median_site_with0s, median_site_without0s, prop_all_w_fact','2'),
-                                           'description' = c('The function for output generation that will be run based on user input',
-                                                             'Options for statistics to use in the output. median_site_with0s is the median number of patients
-                                                             with a fact, including patients without the fact. median_site_without0s is the median
-                                                             number of patients with a fact, excluding patients without the fact. prop_all_w_fact is the proportion
-                                                             of total patients with a fact type.',
-                                                             'The number of kmeans clusters recommended as a default. If the function outputs
-                                                             an error, this number should be adjusted to fit the appropriate number of clusters
-                                                             for the dimensions in your data.'))
-      }else{
-        dataframe <- dataframe %>% add_row('parameter' = c('output_function', 'output options'),
-                                           'inputs' = c('pf_ss_anom_nt', 'outlier_fact, prop_outlier_fact, outlier_site_fact, prop_outlier_site_fact'),
-                                           'description' = c('The function for output generation that will be run based on user input',
-                                                             'Options for statistics to use in the output. Each of the statistics defines an outlier as a fact
-                                                             count that falls +/- 2 standard deviations from the mean. outlier_fact computes this as an overall
-                                                             count of outliers, and prop_outlier_fact is the overall proportion of outliers. outlier_site_fact and
-                                                             prop_outlier_site_fact are the same, but they look at the data at a site by site level rather than overall.'))
-      }
-    }else{
-      if(ms_site == 'multi'){
-        dataframe <- dataframe %>% add_row('parameter' = c('output_function', 'output options'),
-                                           'inputs' = c('pf_ms_exp_nt', 'median_site_with0s, median_site_without0s'),
-                                           'description' = c('The function for output generation that will be run based on user input',
-                                                             'Options for statistics to use in the output. median_site_with0s is the median number of patients
-                                                             with a fact, including patients without the fact. median_site_without0s is the median
-                                                             number of patients with a fact, excluding patients without the fact.'))
-      }else{
-        dataframe <- dataframe %>% add_row('parameter' = c('output_function', 'output options'),
-                                           'inputs' = c('pf_ss_exp_nt', 'median_site_with0s, median_site_without0s, prop_all_w_fact'),
-                                           'description' = c('The function for output generation that will be run based on user input',
-                                                             'Options for statistics to use in the output. median_site_with0s is the median number of patients
-                                                             with a fact, including patients without the fact. median_site_without0s is the median
-                                                             number of patients with a fact, excluding patients without the fact. prop_all_w_fact is the proportion
-                                                             of total patients with a fact type.'))
-      }
-    }
-  }else{
-    if(anom_exp == 'anomaly'){
-      if(ms_site == 'multi'){
-        dataframe <- dataframe %>% add_row('parameter' = c('output_function', 'output options'),
-                                           'inputs' = c('pf_ms_anom_at', 'grp_outlier_num, grp_outlier_prop'),
-                                           'description' = c('The function for output generation that will be run based on user input',
-                                                             'Options for statistics to use in the output. grp_outlier_num is the number
-                                                             of patients 2 absolute deviations away from the median. grp_outlier_prop is
-                                                             the proportion of patients 2 absolute deviations away from the median.'))
-      }else{
-        dataframe <- dataframe %>% add_row('parameter' = c('output_function', 'output options'),
-                                           'inputs' = c('pf_ss_anom_at', 'median_fact_ct, sum_fact_ct'),
-                                           'description' = c('The function for output generation that will be run based on user input',
-                                                             'Options for statistics to use in the output. median_fact_ct is the median
-                                                             number of facts per domain in the specified time period. sum_fact_ct is the sum of
-                                                             facts per domain in the specified time period.'))
-      }
-    }else{
-      if(ms_site == 'multi'){
-        dataframe <- dataframe %>% add_row('parameter' = c('output_function', 'output options'),
-                                           'inputs' = c('pf_ms_exp_at', 'median_fact_ct, sum_fact_ct'),
-                                           'description' = c('The function for output generation that will be run based on user input',
-                                                             'Options for statistics to use in the output. median_fact_ct is the median
-                                                             number of facts per domain in the specified time period. sum_fact_ct is the sum of
-                                                             facts per domain in the specified time period.'))
-      }else{
-        dataframe <- dataframe %>% add_row('parameter' = c('output_function', 'date_breaks_str', 'output options'),
-                                           'inputs' = c('pf_ss_exp_at', '1 year', 'median_fact_ct, sum_fact_ct'),
-                                           'description' = c('The function for output generation that will be run based on user input',
-                                                             'For this over time function, the length of time that should be used to divide
-                                                                   the output. Weeks, months, and years are the recommended stratification options; the
-                                                                   number of those time spans can be changed based on user preference 
-                                                                   (i.e. 2 weeks, 6 months, 3 years).',
-                                                             'Options for statistics to use in the output. median_fact_ct is the median
-                                                             number of facts per domain in the specified time period. sum_fact_ct is the sum of
-                                                             facts per domain in the specified time period.'))
-      }
-    }
-  }
 }

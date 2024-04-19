@@ -492,6 +492,8 @@ csd_ms_anom_nt<-function(process_output,
                         comparison_col='prop_concept',
                         grouped_vars=c('variable','concept_id')){
   
+  grouped_vars <- grouped_vars %>% append('variable') %>% append('concept_id') %>% unique()
+  
   mean_tbl <- 
     compute_dist_mean_median(tbl=process_output,
                              grp_vars = grouped_vars,
