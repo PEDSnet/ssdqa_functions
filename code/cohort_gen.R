@@ -795,3 +795,124 @@ anomalize_ss_anom_at <- function(fot_input_tbl,
   return(final_tbl)
   
 }
+
+#' @param df_tbl output from the computation of a particular function for anomaly detection
+#' @param grp_vars the columns to group by to compute the summary statistics for
+#' @param prop_concept column to perform summary statistics for, to detect an anomaly 
+#' 
+#' @return the `df_tbl` with the following computed: 
+#'  `mean_val`, `median_val`, `sd_val`, `mad_val`, `cov_val`, `max_val`, 
+#'  `min_val`, `range_val`, `total_ct`, `analysis_eligible`
+#'  the `analysis_eligible` will indicate whether the group for which the user
+#'  wishes to detect an anomaly for is eligible for analysis.
+#'  
+#'  The following conditions will disquality a group from the anomaly detection analysis:
+#'  (1) Sample size < 5 in group
+#'  (2) Mean < 0.02 or Median < 0.01
+#'  (3) Mean value < 0.05 and range <0.01
+#'  (4) Coefficient of variance <0.01 and sample size <11
+#'  
+
+
+compute_dist_anomalies <- function(df_tbl,
+                                   grp_vars,
+                                   var_col){
+  
+  site_rows <-
+    df_tbl %>% ungroup() %>% select(site) %>% distinct()
+  grpd_vars_tbl <- tbl %>% ungroup() %>% select(!!!syms(grp_vars)) %>% distinct()
+  
+  tbl_new <- 
+    cross_join(site_rows,
+               grpd_vars_tbl) %>% 
+    left_join(tbl) %>% 
+    mutate(across(where(is.numeric), ~replace_na(.x,0)))
+  
+  
+  stats <- tbl_new %>%
+    group_by(!!!syms(grp_vars))%>%
+    summarise(mean_val=mean(!!!syms(var_col)),
+              median_val=median(!!!syms(var_col)),
+              sd_val=sd(!!!syms(var_col), na.rm=TRUE),
+              mad_val=mad(!!!syms(var_col)),
+              cov_val=sd(!!!syms(var_col),na.rm=TRUE)/mean(!!!syms(var_col)),
+              max_val=max(!!!syms(var_col)),
+              min_val=min(!!!syms(var_col)),
+              range_val=max_val-min_val,
+              total_ct=n()) %>% ungroup() %>% 
+    ungroup() %>% mutate(analysis_eligible = 
+                           case_when(mean_val < 0.02 | median_val < 0.01 | 
+                                       (mean_val < 0.05 & range_val < 0.1) | 
+                                       (cov_val < 0.1 & total_ct < 11) ~ 'no',
+                                     TRUE ~ 'yes'))
+  tbl_new %>% left_join(stats,
+                        by=c('variable','concept_id'))
+  
+  
+}
+
+
+
+#' Computes anomaly detection for a group (e.g., multi-site analysis)
+#' Assumes: (1) No time component; (2) Table has a column indicating 
+#' whether a particular group or row is eligible for analysis; (3) column 
+#' variable exists for which to compute the anomaly
+#' 
+#' @param df_tbl tbl for analysis; usually output from `compute_dist_anomalies`
+#' @param tail_input whether to detect anomaly on right, left, or both sides; defaults to `both`
+#' @param p_input the threshold for anomaly; defaults to 0.9
+#' @param column_analysis a string, which the name of the column for which to compute anomaly detection;
+#' @param column_variable a string, which is the name of the variable to compute summary statistics for;
+#' @param column_eligible a string, which is the name of the column that indicates eligibility for analysis
+#' 
+
+detect_outliers <- function(df_tbl,
+                            tail_input = 'both', 
+                            p_input = 0.9,
+                            column_analysis = 'prop_concept',
+                            column_eligible = 'analysis_eligible',
+                            column_variable = 'concept_id') {
+  
+  final <- list()
+  
+  eligible_outliers <- 
+    df_tbl %>% filter(!! sym(column_eligible) == 'yes')
+  
+  groups_analysis <- 
+    eligible_outliers %>% select(!! sym(column_variable)) %>% distinct() %>% pull()
+  
+  for(i in groups_analysis) {
+    
+    filtered <- 
+      eligible_outliers %>% filter(!! sym(column_variable) == i) 
+    
+    vector_outliers <- 
+      filtered %>% select(!! sym(column_analysis)) %>% pull()
+    
+    outliers_test <- 
+      hotspots::outliers(x=vector_outliers, p=p_input, tail= tail_input)
+    
+    output <- filtered %>% mutate(
+      lower_tail = outliers_test[[10]],
+      upper_tail = outliers_test[[9]]
+    ) %>% mutate(anomaly_yn = case_when(!! sym(column_analysis) < lower_tail |
+                                          !! sym(column_analysis) > upper_tail ~ 'outlier',
+                                        TRUE ~ 'not outlier'))
+    
+    final[[i]] <- output
+    
+    
+  }
+  
+  final
+  
+  output_final_anomaly <- purrr::reduce(.x=final,
+                                        .f=dplyr::union)
+  
+  output_final_all <- df_tbl %>% left_join(output_final_anomaly) %>% 
+    mutate(anomaly_yn=case_when(
+      is.na(anomaly_yn) ~ 'no outlier in group',
+      TRUE ~ anomaly_yn
+    ))
+}
+
