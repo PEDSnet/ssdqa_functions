@@ -91,6 +91,7 @@ evp_ss_anom_nt <- function(process_output,
                            facet){
   
   plot <- process_output %>%
+    mutate(jaccard_index = round(jaccard_index, 3)) %>%
     ggplot(aes(x = as.character(concept1), y = as.character(concept2), 
                fill = jaccard_index)) + 
     geom_tile_interactive(aes(tooltip = paste0('concept1 = ',concept1, '; n= ',concept1_ct,'\n','concept2 = ',concept2,'; n= ',concept2_ct,

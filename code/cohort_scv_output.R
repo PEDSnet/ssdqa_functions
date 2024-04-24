@@ -123,7 +123,7 @@ scv_ss_exp_nt <- function(process_output,
     plot <- final %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
                                  fill = !!sym(prop))) +
       geom_tile_interactive(aes(tooltip = tooltip)) +
-      geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
+      geom_text(aes(label = !!sym(prop)), size = 3, color = 'black') +
       scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
       facet_wrap((facet), scales = 'free') +
       theme_minimal() +
@@ -621,7 +621,7 @@ scv_ms_anom_at <- function(process_output,
     guides(theta = guide_axis_theta(angle = 0)) +
     #scale_y_continuous(limits = c(-1,ylim_max)) + 
     theme_minimal() + 
-    scale_fill_ssdqa(palette = 'sequential', discrete = FALSE) +
+    scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
     theme(legend.position = 'bottom',
           axis.text.x = element_text(face = 'bold')) + 
     labs(fill = 'Avg. Proportion \n(Loess)', 

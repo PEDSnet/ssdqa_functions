@@ -67,7 +67,7 @@ csd_ss_exp_nt <- function(process_output,
     plot <- final %>% ggplot(aes(x = xaxis, y = as.character(!!sym(map_col)), 
                                  fill = !!sym(prop))) +
       geom_tile_interactive(aes(tooltip = concept_name)) +
-      geom_text(aes(label = !!sym(prop)), size = 2, color = 'black') +
+      geom_text(aes(label = !!sym(prop)), size = 3, color = 'black') +
       scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) + 
       facet_wrap((facet), scales = 'free') +
       theme_minimal() +
