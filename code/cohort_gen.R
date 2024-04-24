@@ -227,6 +227,8 @@ check_site_type <- function(cohort,
                             #site_list,
                             multi_or_single_site){
   
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+  
   if('site' %in% colnames(cohort)){
     
     # count number of sites in site list that also exist in the cohort
@@ -247,8 +249,8 @@ check_site_type <- function(cohort,
       
     }else if(multi_or_single_site == 'multi' && n_site == 1){
       
-      stop('Please include data from multiple sites in your cohort to 
-           conduct a multi-site analysis.')
+      cli::cli_abort('Please include data from multiple sites in your cohort to 
+                      conduct a multi-site analysis.')
       
     }else if((multi_or_single_site == 'single' && n_site == 1) ||
              (multi_or_single_site == 'multi' && n_site > 1)){
@@ -262,8 +264,8 @@ check_site_type <- function(cohort,
       grouped_list <- c('site')
       site_list_adj <- site_list
       
-    }else{stop('Invalid argument for multi_or_single_site. Please select either `single` or `multi`')}
-  }else{stop('Please include a `site` column in your cohort.')}
+    }else{cli::cli_abort('Invalid argument for multi_or_single_site. Please select either {.code single} or {.code multi}')}
+  }else{cli::cli_abort('Please include a {.code site} column in your cohort.')}
   
   final <- list('cohort' = cohort_final, 
                 'grouped_list' = grouped_list, 
@@ -472,80 +474,80 @@ compute_dist_mean_median <- function(tbl,
 }
 
 
-#' *Compute AUC for checks across time*
-#' computes AUC for comparisons, iterating through a group of variables
-#' for comparative AUC's
+#' #' *Compute AUC for checks across time*
+#' #' computes AUC for comparisons, iterating through a group of variables
+#' #' for comparative AUC's
+#' #' 
+#' #' @param tbl_name the tbl name to pass through
+#' #' @param iterate_var the variable to iterate and compute an AUC for; 
+#' #'                    defaults to `site`
+#' #' @param time_var  the variable that contains the time; 
+#' #'                   defaults to `time_start`
+#' #' @param outcome_var the outcome variable
+#' #' @param gold_standard_var the variable that contains the gold standard (e.g., all site mean)
+#' #' 
+#' #' @return the variables given as input, with the AUC computed for a given time period, 
+#' #' for all sites provided
+#' #' 
 #' 
-#' @param tbl_name the tbl name to pass through
-#' @param iterate_var the variable to iterate and compute an AUC for; 
-#'                    defaults to `site`
-#' @param time_var  the variable that contains the time; 
-#'                   defaults to `time_start`
-#' @param outcome_var the outcome variable
-#' @param gold_standard_var the variable that contains the gold standard (e.g., all site mean)
-#' 
-#' @return the variables given as input, with the AUC computed for a given time period, 
-#' for all sites provided
-#' 
-
-compute_auc_at <- function(tbl_name,
-                           iterate_var = 'site',
-                           time_var = 'time_start',
-                           outcome_var = 'prop_concept',
-                           gold_standard_var = 'mean') {
-  
-  
-  
-  tbl_name_vars_ready <- 
-    tbl_name %>% 
-    rename(xaxis_time=!!sym(time_var),
-           yaxis=!!sym(outcome_var),
-           gold_standard=!!sym(gold_standard_var),
-           iterate=!!sym(iterate_var)) %>% 
-    select(iterate,
-           xaxis_time,
-           yaxis,
-           gold_standard)
-  
-  iterate_vector <- 
-    tbl_name_vars_ready %>% 
-    select(iterate) %>% 
-    distinct() %>% pull()
-  
-  final <- list()
-  
-  for(i in 1:length(iterate_vector)) {
-    
-    tbl_norms <- 
-      tbl_name_vars_ready %>% 
-      filter(iterate==iterate_vector[i]) %>% 
-      mutate(xaxis=row_number())
-    
-    auc_val <- DescTools::AUC(tbl_norms$xaxis,tbl_norms$yaxis,method='spline')
-    
-    
-    tbl_norms_auc <- tbl_norms %>% mutate(auc_value=round(auc_val,2))
-    
-    final[[i]] <- tbl_norms_auc
-  }
-  
-  final_reduce <- reduce(.x=final,
-                         .f=dplyr::union)
-  overall <- final_reduce %>% select(xaxis_time,
-                                     gold_standard) %>% distinct() %>% 
-    mutate(xaxis=row_number()) 
-  auc_avg_val <- DescTools::AUC(overall$xaxis,overall$gold_standard,method='spline')
-  
-  output <- 
-    final_reduce %>% 
-    mutate(auc_gold_standard=round(auc_avg_val,4)) %>% 
-    rename(!!sym(time_var):=xaxis_time,
-           !!sym(outcome_var):=yaxis,
-           !!sym(gold_standard_var):=gold_standard,
-           !!sym(iterate_var):=iterate) 
-  
-  return(output)
-}
+#' compute_auc_at <- function(tbl_name,
+#'                            iterate_var = 'site',
+#'                            time_var = 'time_start',
+#'                            outcome_var = 'prop_concept',
+#'                            gold_standard_var = 'mean') {
+#'   
+#'   
+#'   
+#'   tbl_name_vars_ready <- 
+#'     tbl_name %>% 
+#'     rename(xaxis_time=!!sym(time_var),
+#'            yaxis=!!sym(outcome_var),
+#'            gold_standard=!!sym(gold_standard_var),
+#'            iterate=!!sym(iterate_var)) %>% 
+#'     select(iterate,
+#'            xaxis_time,
+#'            yaxis,
+#'            gold_standard)
+#'   
+#'   iterate_vector <- 
+#'     tbl_name_vars_ready %>% 
+#'     select(iterate) %>% 
+#'     distinct() %>% pull()
+#'   
+#'   final <- list()
+#'   
+#'   for(i in 1:length(iterate_vector)) {
+#'     
+#'     tbl_norms <- 
+#'       tbl_name_vars_ready %>% 
+#'       filter(iterate==iterate_vector[i]) %>% 
+#'       mutate(xaxis=row_number())
+#'     
+#'     auc_val <- DescTools::AUC(tbl_norms$xaxis,tbl_norms$yaxis,method='spline')
+#'     
+#'     
+#'     tbl_norms_auc <- tbl_norms %>% mutate(auc_value=round(auc_val,2))
+#'     
+#'     final[[i]] <- tbl_norms_auc
+#'   }
+#'   
+#'   final_reduce <- reduce(.x=final,
+#'                          .f=dplyr::union)
+#'   overall <- final_reduce %>% select(xaxis_time,
+#'                                      gold_standard) %>% distinct() %>% 
+#'     mutate(xaxis=row_number()) 
+#'   auc_avg_val <- DescTools::AUC(overall$xaxis,overall$gold_standard,method='spline')
+#'   
+#'   output <- 
+#'     final_reduce %>% 
+#'     mutate(auc_gold_standard=round(auc_avg_val,4)) %>% 
+#'     rename(!!sym(time_var):=xaxis_time,
+#'            !!sym(outcome_var):=yaxis,
+#'            !!sym(gold_standard_var):=gold_standard,
+#'            !!sym(iterate_var):=iterate) 
+#'   
+#'   return(output)
+#' }
 
 #' loops through visit types and sites to compute patient facts
 #' 
@@ -705,6 +707,53 @@ compute_at_cross_join <- function(cj_tbl,
   
 }
 
+#' Compute Euclidean Distance
+#'
+#' @param ms_tbl output from compute_dist_mean_median where the cross-joined table from
+#'               compute_at_cross_join is used as input
+#' @param output_var the output variable that should be used to compute the Euclidean distance
+#'                   i.e. a count or proportion
+#'
+#' @return one dataframe with all variables from ms_tbl with the addition of columns with a site Loess
+#'         value and a site Euclidean distance value
+#' 
+compute_euclidean <- function(ms_tbl,
+                              output_var,
+                              grp_vars = c('site', 'concept_id')) {
+  
+  grp_tbls <- group_split(ms_tbl %>% unite(facet_col, !!!syms(grp_vars), sep = '_', remove = FALSE) %>%
+                            group_by(facet_col))
+  
+  euclidean_dist <- function(x, y) sqrt(sum((x - y)^2)) 
+  
+  overall <- list()
+  
+  for(i in 1:length(grp_tbls)) {
+    
+    site_datenumeric <- 
+      grp_tbls[[i]] %>%  
+      mutate(date_numeric = as.numeric(time_start),
+             output_var = !!sym(output_var))
+    site_loess <- loess(output_var ~ date_numeric, data=site_datenumeric)
+    site_loess_df <- as_tibble(predict(site_loess)) %>% rename(site_loess=1) 
+    euclidean_site_loess <- euclidean_dist(predict(site_loess), site_datenumeric$mean_allsiteprop)
+    ms_witheuclidean <- 
+      cbind(site_datenumeric,site_loess_df) %>% 
+      mutate(dist_eucl_mean=euclidean_site_loess) #%>% 
+    # mutate(loess_predicted=predict(site_loess)) 
+    
+    overall[[i]] <- ms_witheuclidean
+    
+  }
+  
+  overall_reduce <- reduce(.x=overall,
+                           .f=dplyr::union) %>% as_tibble() %>% 
+    mutate(dist_eucl_mean=round(dist_eucl_mean,2),
+           site_loess=round(site_loess,2)) %>%
+    select(-facet_col)
+  
+}
+
 #' Euclidean Distance for *_ms_anom_at output
 #'
 #' @param fot_input_tbl table output by compute_fot where the check of interest
@@ -788,7 +837,8 @@ anomalize_ss_anom_at <- function(fot_input_tbl,
                              .value=!!sym(var_col))
   
   final_tbl <- plt_tbl %>%
-    left_join(anomalize_tbl)
+    left_join(anomalize_tbl) %>%
+    ungroup()
   
   }
   
@@ -820,12 +870,12 @@ compute_dist_anomalies <- function(df_tbl,
   
   site_rows <-
     df_tbl %>% ungroup() %>% select(site) %>% distinct()
-  grpd_vars_tbl <- tbl %>% ungroup() %>% select(!!!syms(grp_vars)) %>% distinct()
+  grpd_vars_tbl <- df_tbl %>% ungroup() %>% select(!!!syms(grp_vars)) %>% distinct()
   
   tbl_new <- 
     cross_join(site_rows,
                grpd_vars_tbl) %>% 
-    left_join(tbl) %>% 
+    left_join(df_tbl) %>% 
     mutate(across(where(is.numeric), ~replace_na(.x,0)))
   
   
@@ -845,8 +895,10 @@ compute_dist_anomalies <- function(df_tbl,
                                        (mean_val < 0.05 & range_val < 0.1) | 
                                        (cov_val < 0.1 & total_ct < 11) ~ 'no',
                                      TRUE ~ 'yes'))
-  tbl_new %>% left_join(stats,
-                        by=c('variable','concept_id'))
+  final <- tbl_new %>% left_join(stats,
+                        by=c(grp_vars))
+  
+  return(final)
   
   
 }
@@ -878,21 +930,29 @@ detect_outliers <- function(df_tbl,
   eligible_outliers <- 
     df_tbl %>% filter(!! sym(column_eligible) == 'yes')
   
-  groups_analysis <- 
-    eligible_outliers %>% select(!! sym(column_variable)) %>% distinct() %>% pull()
-  
-  for(i in groups_analysis) {
+  if(nrow(eligible_outliers) == 0){
     
-    filtered <- 
-      eligible_outliers %>% filter(!! sym(column_variable) == i) 
+    output_final_all <- df_tbl %>% mutate(anomaly_yn = 'no outlier in group')
+    
+    cli::cli_warn('No variables were eligible for anomaly detection analysis')
+  
+  }else{
+  
+  groups_analysis <- group_split(eligible_outliers %>% unite(facet_col, !!!syms(column_variable), sep = '_', remove = FALSE) %>%
+                                   group_by(facet_col))
+  
+  for(i in 1:length(groups_analysis)) {
+    
+    # filtered <- 
+    #   eligible_outliers %>% filter(!!! syms(column_variable) == i) 
     
     vector_outliers <- 
-      filtered %>% select(!! sym(column_analysis)) %>% pull()
+      groups_analysis[[i]] %>% select(!! sym(column_analysis)) %>% pull()
     
     outliers_test <- 
       hotspots::outliers(x=vector_outliers, p=p_input, tail= tail_input)
     
-    output <- filtered %>% mutate(
+    output <- groups_analysis[[i]] %>% mutate(
       lower_tail = outliers_test[[10]],
       upper_tail = outliers_test[[9]]
     ) %>% mutate(anomaly_yn = case_when(!! sym(column_analysis) < lower_tail |
@@ -914,5 +974,61 @@ detect_outliers <- function(df_tbl,
       is.na(anomaly_yn) ~ 'no outlier in group',
       TRUE ~ anomaly_yn
     ))
+  }
+  
+  return(output_final_all)
 }
 
+
+#' Compute Jaccard Index
+#' 
+#' @param jaccard_input_tbl tbl that will undergo jaccard index computation;
+#'                          the requirement is that it contains at least two columns: `person_id` and `concept_id`
+#'                          where each row represents an instance where a specific `concept_id` is used for a given patient (`person_id`)
+#'                          Alternatively, it can be a list of all unique `person_id` and `concept_id` combinations
+#' @param var_col the column within `jaccard_input_table` that contains all the concepts that should be compared to each other
+#'                          
+#' @return a table with both concepts, labeled `concept1` and `concept2`, the co-occurrence (`cocount`), individual
+#'         concept counts (`concept1_ct`, `concept2_ct`), total unique patient counts where either code is used (`concept_count_union`), 
+#'         the `jaccard_index`, as well as proportion of patients where the concept appears (`concept1_prop`, `concepet2_prop`) 
+
+
+compute_jaccard <- function(jaccard_input_tbl,
+                            var_col) {
+  
+  match_class <- function(x, type = var_class) {class(x) <- type; x}
+  
+  persons_concepts <- 
+    jaccard_input_tbl %>% ungroup %>% #distinct() %>% collect()
+    select(person_id,
+           var_col) %>% distinct() %>% collect()
+  
+  var_class <- class(persons_concepts[[var_col]])
+  
+  persons_concepts_cts <- 
+    persons_concepts %>% 
+    group_by(!!sym(var_col)) %>% 
+    summarise(var_person_ct=n_distinct(person_id))
+  
+  concord <- 
+    persons_concepts %>% table() %>% crossprod()
+  diag(concord) <- -1
+  
+  best <- as_tibble(concord, rownames='concept1') %>% 
+    pivot_longer(!concept1, names_to = 'concept2', values_to='cocount') %>% 
+    filter(cocount != -1L) %>% mutate(across(.cols = c(concept1, concept2), .fns=match_class)) %>%
+    mutate(cocount = as.integer(cocount)) %>%
+    left_join(persons_concepts_cts, by = c('concept1'=var_col))%>%
+    rename(concept1_ct=var_person_ct)%>%
+    left_join(persons_concepts_cts, by = c('concept2'=var_col))%>%
+    rename(concept2_ct=var_person_ct) %>%
+    mutate(concept_count_union=concept1_ct+concept2_ct-cocount,
+           jaccard_index=cocount/concept_count_union) %>% 
+    mutate(concept1_prop=round(cocount/concept1_ct,2),
+           concept2_prop=round(cocount/concept2_ct,2)) %>% 
+    filter(concept1_ct > 0 & concept2_ct > 0 & cocount > 0) %>% 
+    filter(concept1 > concept2) 
+  
+  best
+  
+}
