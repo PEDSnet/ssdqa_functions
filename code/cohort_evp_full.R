@@ -52,6 +52,7 @@ evp_process <- function(cohort,
                         anomaly_or_exploratory='exploratory',
                         output_level = 'row',
                         age_groups = NULL,
+                        p_value = 0.9,
                         time = FALSE,
                         time_span = c('2012-01-01', '2020-01-01'),
                         time_period = 'year'
@@ -150,7 +151,22 @@ evp_process <- function(cohort,
                                             grp_vars = 'variable',
                                             var_col = var_col)
       
-    }else(evp_tbl_final <- evp_tbl)
+    }else if(time != TRUE && multi_or_single_site == 'multi' && anomaly_or_exploratory == 'anomaly'){
+      
+      var_col <- ifelse(output_level == 'row', 'prop_row_variable', 'prop_pt_variable')
+      
+      evp_tbl_int <- compute_dist_anomalies(df_tbl = evp_tbl,
+                                            grp_vars = c('variable'), 
+                                            var_col = var_col) 
+      
+      evp_tbl_final <- detect_outliers(df_tbl = evp_tbl_int,
+                                       tail_input = 'both',
+                                       p_input = p_value,
+                                       column_analysis = var_col,
+                                       column_variable = 'variable')
+      
+      
+    }else{(evp_tbl_final <- evp_tbl)}
   
   evp_tbl_final %>%
     replace_site_col() %>%
@@ -223,14 +239,13 @@ evp_output <- function(process_output,
   }else if(output_function == 'evp_ms_anom_nt'){
     
     evp_output <- evp_ms_anom_nt(process_output = process_output,
-                                 output_level = output_level,
-                                 facet = facet,
-                                 kmeans_centers = kmeans_centers)
+                                 output_level = output_level)
     
   }else if(output_function == 'evp_ms_exp_at'){
     
     evp_output <- evp_ms_exp_at(process_output = process_output,
                                  output_level = output_level,
+                                filter_variable = filter_variable,
                                  facet = facet)
     
   }else if(output_function == 'evp_ms_anom_at'){

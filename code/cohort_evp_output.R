@@ -23,7 +23,15 @@ evp_ss_exp_nt <- function(process_output,
     title <- 'Patients'
   }else(cli::cli_abort('Please choose an acceptable output level: {.code patient} or {.code row}'))
   
+  var_ct <- process_output %>%
+    distinct(variable) %>%
+    summarise(n()) %>% pull()
+  
+  if(var_ct > 20){cli::cli_alert_warning('Output has been limited to top 20 variables to improve visibility on y-axis.')}
+  
   process_output %>%
+    arrange(desc(!!sym(prop))) %>%
+    slice(1:20) %>%
     ggplot(aes(y = variable, x = !!sym(prop), fill = variable)) +
     geom_col(show.legend = FALSE) +
     facet_wrap((facet)) +
@@ -90,7 +98,25 @@ evp_ms_exp_nt <- function(process_output,
 evp_ss_anom_nt <- function(process_output,
                            facet){
   
+  var_ct <- process_output %>%
+    select(concept1, concept2) %>% 
+    pivot_longer(cols = c('concept1', 'concept2')) %>%
+    distinct(value) %>% summarise(n()) %>% pull()
+  
+  if(var_ct > 20){cli::cli_alert_warning('Output has been limited to top 20 variables to improve visibility on axes.')}
+  
+  vars <- process_output %>%
+    select(concept1, concept2, concept1_ct, concept2_ct) %>% 
+    pivot_longer(cols = c('concept1', 'concept2')) %>% 
+    rename(concept1 = concept1_ct, concept2 = concept2_ct) %>% 
+    pivot_longer(cols = c(concept1, concept2), 
+                 names_to = 'name2', values_to = 'value2') %>% 
+    filter(name == name2) %>% 
+    distinct(value, value2) %>% 
+    arrange(desc(value2)) %>% slice(1:20) %>% pull(value)
+  
   plot <- process_output %>%
+    filter(concept1 %in% vars & concept2 %in% vars) %>%
     mutate(jaccard_index = round(jaccard_index, 3)) %>%
     ggplot(aes(x = as.character(concept1), y = as.character(concept2), 
                fill = jaccard_index)) + 
@@ -123,32 +149,86 @@ evp_ss_anom_nt <- function(process_output,
 #' @return one cluster graph per facet grouping with sites comprising the cluster elements
 #'         if facet = NULL, one cluster graph will be output
 #' 
-evp_ms_anom_nt <- function(process_output,
-                           output_level,
-                           kmeans_centers = 2, 
-                           facet){
+# evp_ms_anom_nt <- function(process_output,
+#                            output_level,
+#                            kmeans_centers = 2, 
+#                            facet){
+#   
+#   cli::cli_div(theme = list(span.code = list(color = 'blue')))
+#   
+#   if(output_level == 'row'){
+#     prop <- 'prop_row_variable'
+#     title <- 'Rows'
+#   }else if(output_level == 'patient'){
+#     prop <- 'prop_pt_variable'
+#     title <- 'Patients'
+#   }else(cli::cli_abort('Please choose an acceptable output level: {.code patient} or {.code row}'))
+#   
+#   process_output_prep <- process_output %>%
+#     mutate(domain = variable)
+#   
+#   kmeans_prep <- prep_kmeans(dat = process_output_prep,
+#                              output = prop,
+#                              facet_vars = facet)
+#   
+#   kmeans_output <- produce_kmeans_output(kmeans_list = kmeans_prep,
+#                                          centers = kmeans_centers)
+#   
+#   return(kmeans_output)
+# }
+
+evp_ms_anom_nt<-function(process_output,
+                         output_level,
+                         text_wrapping_char = 60){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
   if(output_level == 'row'){
     prop <- 'prop_row_variable'
-    title <- 'Rows'
+    title <- 'Row'
   }else if(output_level == 'patient'){
     prop <- 'prop_pt_variable'
-    title <- 'Patients'
+    title <- 'Patient'
   }else(cli::cli_abort('Please choose an acceptable output level: {.code patient} or {.code row}'))
   
-  process_output_prep <- process_output %>%
-    mutate(domain = variable)
+  # grouped_vars <- grouped_vars %>% append('variable') %>% append('concept_id') %>% unique()
   
-  kmeans_prep <- prep_kmeans(dat = process_output_prep,
-                             output = prop,
-                             facet_vars = facet)
+  # mean_tbl <- 
+  #   compute_dist_mean_median(tbl=process_output,
+  #                            grp_vars = grouped_vars,
+  #                            var_col = comparison_col,
+  #                            num_sd=2,
+  #                            num_mad=2)
   
-  kmeans_output <- produce_kmeans_output(kmeans_list = kmeans_prep,
-                                         centers = kmeans_centers)
+  comparison_col = prop
   
-  return(kmeans_output)
+  dat_to_plot <- process_output %>%
+    mutate(text=paste("Variable: ",variable,
+                      "\nSite: ",site,
+                      "\nProportion: ",round(!!sym(comparison_col),2),
+                      "\nMean proportion:",round(mean_val,2),
+                      "\nMedian proportion: ",round(median_val,2),
+                      "\nMAD: ", round(mad_val,2)))
+  
+  
+  #mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
+  
+  plt<-ggplot(dat_to_plot %>% filter(anomaly_yn != 'no outlier in group'),
+              aes(x=site, y=variable, text=text, color=!!sym(comparison_col)))+
+    geom_point_interactive(aes(size=mad_val,shape=anomaly_yn, tooltip = text))+
+    scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
+    scale_shape_manual(values=c(20,8))+
+    scale_y_discrete(labels = function(x) str_wrap(x, width = text_wrapping_char)) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle=60)) +
+    labs(y = "Variable",
+         size="",
+         title=paste0('Anomalous Variables per ', title, ' by Site')) +
+    guides(color = guide_colorbar(title = 'Proportion'),
+           shape = guide_legend(title = 'Anomaly'),
+           size = 'none')
+  
+  girafe(ggobj = plt)
 }
 
 #' * Single Site, Exploratory, Across Time *
@@ -204,6 +284,7 @@ evp_ss_exp_at <- function(process_output,
 #' 
 evp_ms_exp_at <- function(process_output,
                           output_level,
+                          filter_variable,
                           facet){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
@@ -218,7 +299,13 @@ evp_ms_exp_at <- function(process_output,
   
   facet <- facet %>% append('variable') %>% unique()
   
+  time_inc <- process_output %>% filter(!is.na(time_increment)) %>% distinct(time_increment) %>% pull()
+  
+  if(time_inc == 'year' && length(filter_variable) > 3){cli::cli_abort('Please choose up to 3 variables for this output type')
+    }else if(time_inc != 'year' && length(filter_variable) > 1){cli::cli_abort('Please choose 1 variable for this output type')}
+  
   p <- process_output %>%
+    filter(variable %in% filter_variable) %>%
     ggplot(aes(y = !!sym(prop), x = time_start, color = site)) +
     geom_line() +
     scale_color_ssdqa() +
@@ -270,6 +357,7 @@ evp_ss_anom_at <- function(process_output,
   facet <- facet %>% append('variable') %>% unique()
   
   final <- process_output %>%
+    filter(variable == filter_variable) %>%
     unite(facet_col, !!!syms(facet), sep = '\n') %>%
     rename('ycol' = ct,
            'denom' = denom)
@@ -403,6 +491,7 @@ evp_ms_anom_at <- function(process_output,
     theme_minimal() + 
     scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
     theme(legend.position = 'bottom',
+          legend.text = element_text(angle = 45, vjust = 0.9, hjust = 1),
           axis.text.x = element_text(face = 'bold')) + 
     labs(fill = 'Avg. Proportion \n(Loess)', 
          y ='Euclidean Distance', 

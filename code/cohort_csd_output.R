@@ -28,8 +28,10 @@ csd_ss_exp_nt <- function(process_output,
     col <- 'variable'
     map_col <- 'concept_id'
     prop <- 'prop_concept'
-    title <- paste0('Top ', num_mappings, ' Concepts For ', num_codes, ' Top Variables')
-  
+    title <- paste0('Top ', num_mappings, ' Concepts For Top ', num_codes, ' Variables')
+    
+    
+  if(num_codes > 12){cli::cli_abort('Please only select up to 12 variables to maintain readability in the output.')}
   
   ## filter output down to most common codes, selecting a user-provided number
   topcodes <- process_output %>%
@@ -113,6 +115,27 @@ csd_ss_anom_nt <- function(process_output,
                           #num_mappings = 10,
                           filtered_var = 'general_jia'){
   
+  ## Check for limit
+  var_ct <- process_output %>%
+    filter(variable == filtered_var, above_sd == TRUE) %>%
+    select(concept1, concept2) %>% 
+    pivot_longer(cols = c('concept1', 'concept2')) %>%
+    distinct(value) %>% summarise(n()) %>% pull()
+  
+  if(var_ct > 20){cli::cli_alert_warning('Output has been limited to top 20 concepts to improve visibility on axes.')}
+  
+  vars <- process_output %>%
+    filter(variable == filtered_var, above_sd == TRUE) %>%
+    select(concept1, concept2, concept1_ct, concept2_ct) %>% 
+    pivot_longer(cols = c('concept1', 'concept2')) %>% 
+    rename(concept1 = concept1_ct, concept2 = concept2_ct) %>% 
+    pivot_longer(cols = c(concept1, concept2), 
+                 names_to = 'name2', values_to = 'value2') %>% 
+    filter(name == name2) %>% 
+    distinct(value, value2) %>% 
+    arrange(desc(value2)) %>% slice(1:20) %>% pull(value)
+  
+  ## Join to vocab
   firstcolnames <- join_to_vocabulary(tbl = process_output, #tbl_input,
                                       vocab_tbl = vocab_tbl,
                                       col = 'concept1') %>% 
@@ -126,8 +149,10 @@ csd_ss_anom_nt <- function(process_output,
   final <- 
     process_output %>% 
     left_join(firstcolnames) %>% 
-    left_join(secondcolnames) %>% distinct()
+    left_join(secondcolnames) %>% distinct() %>%
+    filter(concept1 %in% vars & concept2 %in% vars)
     
+  ## Output graph
     plot <- final %>% filter(variable==filtered_var) %>% filter(above_sd == TRUE) %>% 
       ggplot(aes(x = as.character(concept1), y = as.character(concept2), 
              fill = jaccard_index)) + 
@@ -172,8 +197,7 @@ csd_ss_anom_nt <- function(process_output,
 csd_ss_anom_at <- function(process_output,
                            filtered_var='ibd',
                            filter_concept=81893,
-                           facet=NULL,
-                           top_mapping_n = 6){
+                           facet=NULL){
   
   time_inc <- process_output %>% filter(!is.na(time_increment)) %>% distinct(time_increment) %>% pull()
   
@@ -181,16 +205,8 @@ csd_ss_anom_at <- function(process_output,
   
   facet <- facet %>% append('concept_id') %>% unique()
   
-  top_n <- 
-    process_output %>% filter(variable == filtered_var) %>% 
-    ungroup() %>% 
-    group_by(variable, concept_id) %>% 
-    summarise(total_ct = sum(ct_concept)) %>% 
-    ungroup() %>% arrange(desc(total_ct)) %>% 
-    top_n(n=top_mapping_n) %>% select(concept_id) %>% pull()
-  
-  c_added <- process_output %>% filter(variable == filtered_var) %>% 
-    filter(concept_id %in% top_n)
+  c_added <- process_output %>% filter(variable == filtered_var,
+                                       concept_id == filter_concept)
 
   
   c_final <- c_added %>% group_by(!!!syms(facet), time_start, ct_concept) %>%
@@ -217,8 +233,8 @@ csd_ss_anom_at <- function(process_output,
   
   output_int <- ggplotly(new_pp)
   
-  ref_tbl <- generate_ref_table(tbl = c_added %>% filter(variable == filtered_var) %>% 
-                                  filter(concept_id %in% top_n) %>% 
+  ref_tbl <- generate_ref_table(tbl = c_added %>% filter(variable == filtered_var,
+                                                         concept_id == filter_concept) %>% 
                                   mutate(concept_id=as.integer(concept_id)),
                                 id_col = 'concept_id',
                                 denom = 'ct_concept',
@@ -272,11 +288,13 @@ csd_ss_anom_at <- function(process_output,
 #'         time period
 #' 
 csd_ss_exp_at <- function(process_output,
-                             facet=NULL,
-                             filtered_var = c('ibd','spondyloarthritis'),
-                             #multi_or_single_site = 'multi',
-                             #vocab_tbl = vocabulary_tbl('concept'),
-                             output_value='prop_concept'){
+                          facet=NULL,
+                          filtered_var = c('spondyloarthritis'),
+                          num_mappings = 10,
+                          output_value='prop_concept'){
+  
+  denom <- 'ct_concept'
+  col <- 'concept_id'
   
   output_value <- output_value
   
@@ -288,9 +306,23 @@ csd_ss_exp_at <- function(process_output,
   } else {
     facet <- facet %>% append('variable')
   }
-
   
-  dat_to_plot <- process_output %>% filter(variable %in% filtered_var) %>% 
+  topcodes <- process_output %>%
+    filter(variable == filtered_var) %>%
+    ungroup() %>%
+    group_by(!!sym(col)) %>% 
+    select(!!sym(col), !!sym(denom), all_of(facet)) %>%
+    distinct() %>%
+    summarise(total_sum = sum(!! sym(denom))) %>% 
+    arrange(desc(total_sum)) %>% 
+    slice(1:num_mappings)
+  
+  ref <- process_output %>% 
+    filter(variable == filtered_var) %>%
+    ungroup() %>%
+    inner_join(topcodes) 
+  
+  dat_to_plot <- ref %>% 
     mutate(text=paste("Concept: ",concept_id,
                       "\nConcept Name: ",concept_name,
                       "\nSite: ",site,
@@ -306,13 +338,13 @@ csd_ss_exp_at <- function(process_output,
                                 name_col = 'concept_name',
                                 time = TRUE)
   
-  p <-dat_to_plot %>% filter(variable %in% filtered_var)  %>%
+  p <-dat_to_plot %>% filter(variable == filtered_var)  %>%
     mutate(concept_id=as.character(concept_id)) %>% 
     ggplot(aes(y = !!sym(output_value), x = time_start, color = concept_id,
                group=concept_id, text=text)) +
     geom_line() +
     facet_wrap((facet)) +
-    labs(title = 'Concepts per Variable Over Time',
+    labs(title = paste0('Top ', num_mappings, ' Concepts for ', filtered_var, ' Over Time'),
          color = 'concept_id') +
     theme_minimal() +
     scale_color_ssdqa()
@@ -358,7 +390,7 @@ csd_ms_exp_at <- function(process_output,
     process_output %>% ungroup() %>%select(site) %>% distinct() %>% pull()
   
   if(length(site_num)>1){
-    facet <- facet %>% append('concept_id')
+    facet <- facet %>% append('concept_id_label')
   } else {
     facet <- facet %>% append('variable')
   }
@@ -366,6 +398,7 @@ csd_ms_exp_at <- function(process_output,
   
   dat_to_plot <- process_output %>% filter(variable %in% filtered_var,
                                            concept_id %in% filtered_concept) %>% 
+    mutate(concept_id_label = paste0(variable, '\n', concept_id)) %>%
     mutate(text=paste("Concept: ",concept_id,
                       "\nConcept Name: ",concept_name,
                       "\nSite: ",site,
@@ -387,7 +420,7 @@ csd_ms_exp_at <- function(process_output,
                group=site, text=text)) +
     geom_line() +
     facet_wrap((facet)) +
-    labs(title = 'Concepts per Site Over Time',
+    labs(title = paste0('Concepts per Site Over Time'),
          color = 'Site') +
     theme_minimal() +
     scale_color_ssdqa()
@@ -494,14 +527,14 @@ csd_ms_anom_nt<-function(process_output,
   
   grouped_vars <- grouped_vars %>% append('variable') %>% append('concept_id') %>% unique()
   
-  mean_tbl <- 
-    compute_dist_mean_median(tbl=process_output,
-                             grp_vars = grouped_vars,
-                             var_col = comparison_col,
-                             num_sd=2,
-                             num_mad=2)
+  # mean_tbl <- 
+  #   compute_dist_mean_median(tbl=process_output,
+  #                            grp_vars = grouped_vars,
+  #                            var_col = comparison_col,
+  #                            num_sd=2,
+  #                            num_mad=2)
   
-  cname_samp <- mean_tbl %>% head(1) %>% select(concept_name) %>% pull()
+  cname_samp <- process_output %>% head(1) %>% select(concept_name) %>% pull()
   
   if(cname_samp == 'No vocabulary table input'){
     concept_label <- 'concept_id'
@@ -509,33 +542,34 @@ csd_ms_anom_nt<-function(process_output,
   
   comparison_col = comparison_col
   
-  dat_to_plot <- mean_tbl %>% filter(variable == filtered_var) %>% 
+  dat_to_plot <- process_output %>% filter(variable == filtered_var) %>% 
     mutate(text=paste("Concept: ",!!sym(concept_label),
                       "\nSite: ",site,
                       "\nProportion: ",round(!!sym(comparison_col),2),
-                      "\nMean proportion:",round(mean,2),
-                      "\nMedian proportion: ",round(median,2),
-                      "\nSD: ", round(sd,4)))
+                      "\nMean proportion:",round(mean_val,2),
+                      "\nMedian proportion: ",round(median_val,2),
+                      "\nMAD: ", round(mad_val,2)))
   
   
-  mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
+  #mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
   
-  plt<-ggplot(dat_to_plot %>% filter(variable == filtered_var), 
-              aes(x=site, y=as.character(concept_id), text=text))+
-    geom_point(aes(size=abs_diff_mean,colour=!!sym(comparison_col),shape=anomaly_yn))+
-    #aes(stringr::str_wrap(!!sym(concept_label), 20)) +
-    scale_shape_manual(values=c(20,8))+
+  plt<-ggplot(dat_to_plot %>% filter(variable == filtered_var,
+                                     anomaly_yn != 'no outlier in group'),
+              aes(x=site, y=as.character(concept_id), text=text, color=!!sym(comparison_col)))+
+    geom_point_interactive(aes(size=mad_val,shape=anomaly_yn, tooltip = text))+
     scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
-    #scale_color_gradient2(midpoint=mid,low='#8c510a',mid='#f5f5f5', high='#01665e')+
+    scale_shape_manual(values=c(20,8))+
     scale_y_discrete(labels = function(x) str_wrap(x, width = text_wrapping_char)) +
     theme_minimal() +
-    labs(colour="Proportion",
-         shape="Anomaly",
-         y = "Concept",
-         size="")+
-    theme(axis.text.x = element_text(angle=60)) 
+    theme(axis.text.x = element_text(angle=60)) +
+    labs(y = "Concept",
+         size="",
+         title=paste0('Anomalous Concepts for ', filtered_var, ' per Site')) +
+    guides(color = guide_colorbar(title = 'Proportion'),
+           shape = guide_legend(title = 'Anomaly'),
+           size = 'none')
   
-  ggplotly(plt, tooltip="text")
+  girafe(ggobj = plt)
 }
 
 #' **Multi-Site Across Time Anomaly**
@@ -613,6 +647,7 @@ csd_ms_anom_at <- function(process_output,
     theme_minimal() + 
     scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
     theme(legend.position = 'bottom',
+          legend.text = element_text(angle = 45, vjust = 0.9, hjust = 1),
           axis.text.x = element_text(face = 'bold')) + 
     labs(fill = 'Avg. Proportion \n(Loess)', 
          y ='Euclidean Distance', 

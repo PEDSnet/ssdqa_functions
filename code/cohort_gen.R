@@ -973,7 +973,7 @@ detect_outliers <- function(df_tbl,
     mutate(anomaly_yn=case_when(
       is.na(anomaly_yn) ~ 'no outlier in group',
       TRUE ~ anomaly_yn
-    ))
+    )) %>% select(-facet_col)
   }
   
   return(output_final_all)

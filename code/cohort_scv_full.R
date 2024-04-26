@@ -58,6 +58,7 @@ scv_process <- function(cohort,
                         code_domain = 'condition_occurrence',
                         multi_or_single_site = 'single',
                         anomaly_or_exploratory='exploratory',
+                        p_value = 0.9,
                         age_groups = NULL,
                         time = FALSE,
                         time_span = c('2012-01-01', '2020-01-01'),
@@ -111,8 +112,43 @@ scv_process <- function(cohort,
       
     }
     
-    scv_tbl_final <- reduce(.x=site_output,
-                            .f=dplyr::union)
+    scv_tbl <- reduce(.x=site_output,
+                      .f=dplyr::union)
+    
+    if(anomaly_or_exploratory == 'anomaly'){
+      
+      prop_col <- ifelse(code_type == 'cdm', 'concept_prop', 'source_prop')
+      var_col <-  ifelse(code_type == 'cdm', 'concept_id', 'source_concept_id')
+      denom_col <- ifelse(code_type == 'cdm', 'denom_concept_ct', 'denom_source_ct')
+      
+      if(multi_or_single_site == 'single'){
+        
+        # mappings_per_code <- compute_mappings_per_code(tbl = scv_tbl,
+        #                                                col = var_col,
+        #                                                denom = denom_col,
+        #                                                facet = grouped_list)
+      
+      scv_tbl_int <- compute_dist_anomalies(df_tbl = scv_tbl %>% replace_site_col(),
+                                            grp_vars = c('domain', var_col), 
+                                            var_col = prop_col) 
+      
+      scv_tbl_final <- detect_outliers(df_tbl = scv_tbl_int,
+                                       tail_input = 'both',
+                                       p_input = p_value,
+                                       column_analysis = prop_col,
+                                       column_variable = c('domain', var_col))
+      
+      }else{scv_tbl_int <- compute_dist_anomalies(df_tbl = scv_tbl %>% replace_site_col(),
+                                                  grp_vars = c('domain', 'source_concept_id', 'concept_id'), 
+                                                  var_col = prop_col) 
+      
+      scv_tbl_final <- detect_outliers(df_tbl = scv_tbl_int,
+                                       tail_input = 'both',
+                                       p_input = p_value,
+                                       column_analysis = prop_col,
+                                       column_variable = c('concept_id', 'source_concept_id')) }
+      
+    }else{scv_tbl_final <- scv_tbl}
     
   } else if(time){
     if(!is.vector(concept_set)){cli::cli_abort('For an over time output, please select 1-5 codes from your
@@ -254,12 +290,14 @@ scv_output <- function(process_output,
     scv_output <- scv_ms_anom_nt(process_output = process_output,
                                  code_type = code_type,
                                  facet = facet,
-                                 rel_to_median = rel_to_median)
+                                 filter_concept = filter_concept,
+                                 num_mappings = num_mappings)
   }else if(output_function == 'scv_ss_anom_nt'){
     scv_output <- scv_ss_anom_nt(process_output = process_output,
                                  code_type = code_type,
                                  facet = facet,
-                                 rel_to_median = rel_to_median)
+                                 num_codes = num_codes,
+                                 num_mappings = num_mappings)
   }else if(output_function == 'scv_ms_exp_nt'){
     scv_output <- scv_ms_exp_nt(process_output = process_output,
                                 code_type = code_type,
@@ -282,13 +320,16 @@ scv_output <- function(process_output,
                                  filter_concept = filter_concept,
                                  facet = facet)
   }else if(output_function == 'scv_ms_exp_at'){
-    scv_output <- scv_ss_ms_exp_at(process_output = process_output,
-                                   code_type = code_type,
-                                   facet = facet)
+    scv_output <- scv_ms_exp_at(process_output = process_output,
+                                code_type = code_type,
+                                filter_concept = filter_concept,
+                                num_mappings = num_mappings,
+                                facet = facet)
   }else if(output_function == 'scv_ss_exp_at'){
-    scv_output <- scv_ss_ms_exp_at(process_output = process_output,
-                                   code_type = code_type,
-                                   facet = facet)
+    scv_output <- scv_ss_exp_at(process_output = process_output,
+                                code_type = code_type,
+                                num_mappings = num_mappings,
+                                facet = facet)
   }else(cli::cli_abort('Please enter a valid output function for this check type.'))
   
   return(scv_output)

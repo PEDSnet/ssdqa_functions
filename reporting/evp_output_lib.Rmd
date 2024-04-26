@@ -101,9 +101,7 @@ This check performs a K-means cluster analysis to identify which site has a prop
 
 evp_output(process_output = get_results('evp_ms_anom_nt'),
            output_function = 'evp_ms_anom_nt',
-           output_level = 'patient',
-           kmeans_centers = 4,
-           facet = facet)
+           output_level = 'patient')
 
 ```
 
@@ -113,10 +111,10 @@ This line graph displays the proportion of patients belonging to a given variabl
 
 ```{r ss_exp_at}
 
-g <- evp_output(process_output = get_results('evp_ss_exp_at'),
+g <- evp_output(process_output = get_results('evp_ss_exp_at_agegrp') %>% filter(age_grp != 'No Group'),
            output_function = 'evp_ss_exp_at',
            output_level = 'patient',
-           facet = facet)
+           facet = 'age_grp')
 
 g
 
@@ -131,6 +129,7 @@ This line graph displays the proportion of patients belonging to a given variabl
 g <- evp_output(process_output = get_results('evp_ms_exp_at'),
            output_function = 'evp_ms_exp_at',
            output_level = 'patient',
+           filter_variable = c('cancer', 'JIA', 'TNFI'),
            facet = facet)
 
 g
@@ -147,6 +146,7 @@ This check outputs a control chart that highlights anomalies in the proportion o
 evp_output(process_output = get_results('evp_ss_anom_at_year'),
            output_function = 'evp_ss_anom_at',
            output_level = 'patient',
+           filter_variable = 'JIA',
            facet = facet)
 
 ```

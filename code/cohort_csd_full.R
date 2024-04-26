@@ -57,6 +57,7 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
                         num_concept_combined = FALSE,
                         num_concept_1 = 30,
                         num_concept_2 = 30,
+                        p_value = 0.9,
                         age_groups = FALSE, #read_codeset('age_group_definitions'),
                         time = TRUE,
                         time_span = c('2012-01-01', '2020-01-01'),
@@ -121,6 +122,20 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
     csd_tbl <- reduce(.x=site_output,
                       .f=dplyr::union) #%>% mutate(site=site_list_thisrnd)
     
+    if(multi_or_single_site == 'multi' & anomaly_or_exploratory == 'anomaly'){
+      
+      csd_tbl_int <- compute_dist_anomalies(df_tbl = csd_tbl,
+                                            grp_vars = c('variable', 'concept_id'), 
+                                            var_col = 'prop_concept') 
+      
+      csd_tbl_final <- detect_outliers(df_tbl = csd_tbl_int,
+                                       tail_input = 'both',
+                                       p_input = p_value,
+                                       column_analysis = 'prop_concept',
+                                       column_variable = 'concept_id')
+      
+    }else{csd_tbl_final <- csd_tbl}
+    
   } else {
    
     
@@ -151,7 +166,7 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
                                       grp_vars = c('site', 'concept_id'),
                                       var_col = 'prop_concept')
       
-      csd_tbl <- csd_tbl_ms %>% left_join(lookup)
+      csd_tbl_final <- csd_tbl_ms %>% left_join(lookup)
       
     }else if(multi_or_single_site == 'single' & anomaly_or_exploratory=='anomaly'){
       
@@ -160,16 +175,13 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
                                          time_var = 'time_start',
                                          var_col = 'prop_concept')
       
-      csd_tbl <- csd_tbl_ss
+      csd_tbl_final <- csd_tbl_ss
       
-    }else{csd_tbl <- csd_tbl}
+    }else{csd_tbl_final <- csd_tbl}
     
   }
   
-  final_csd_tbl <- 
-    replace_site_col(csd_tbl)
-  
-  return(final_csd_tbl)
+  return(csd_tbl_final %>% replace_site_col())
   
   
 }
@@ -195,7 +207,7 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
 csd_output <- function(process_output=process_output,
                        output_function,
                        vocab_tbl = vocabulary_tbl('concept'),
-                       num_codes = 10,
+                       num_variables = 10,
                        num_mappings = 10,
                        filtered_var = 'general_jia',
                        filter_concept = 81893,
@@ -219,7 +231,7 @@ csd_output <- function(process_output=process_output,
   if(output_function == 'csd_ss_exp_nt'){
     csd_output <- csd_ss_exp_nt(process_output=process_output,
                                  #vocab_tbl = vocab_tbl,
-                                 num_codes = num_codes,
+                                 num_codes = num_variables,
                                  num_mappings = num_mappings)
   }else if(output_function == 'csd_ss_anom_nt'){
     csd_output <- csd_ss_anom_nt(process_output,
@@ -229,20 +241,18 @@ csd_output <- function(process_output=process_output,
     csd_output <- csd_ss_exp_at(process_output,
                                 facet=facet,
                                 filtered_var = filtered_var,
-                                #vocab_tbl = vocab_tbl,
+                                num_mappings = num_mappings,
                                 output_value=output_value)
   }else if(output_function == 'csd_ss_anom_at'){
     csd_output <- csd_ss_anom_at(process_output=process_output,
                                 filter_concept = filter_concept,
                                 filtered_var=filtered_var,
-                                facet=facet,
-                                top_mapping_n = num_mappings
-                                )
+                                facet=facet)
   }else if(output_function == 'csd_ms_exp_nt'){
     csd_output <- csd_ms_exp_nt(process_output=process_output,
                                  facet=facet,
                                  #vocab_tbl = vocab_tbl,
-                                 num_codes = num_codes)
+                                 num_codes = num_variables)
   }else if(output_function == 'csd_ms_anom_nt'){
     csd_output <- csd_ms_anom_nt(process_output=process_output,
                                    #vocab_tbl=vocab_tbl,

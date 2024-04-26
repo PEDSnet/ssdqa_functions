@@ -58,7 +58,7 @@ The heatmap summarizes the top user-selected number of codes for a user-selected
 ss_exp_nt <- csd_output(process_output = get_results('csd_ss_exp_nt'),
                         output_function = 'csd_ss_exp_nt',
                         vocab_tbl = vocabulary_tbl('concept'),
-                        num_codes = 5,
+                        num_variables = 5,
                         num_mappings = 10)
 
 ss_exp_nt[[1]]
@@ -76,7 +76,7 @@ For each site in the cohort, this table summarizes the counts/proportions of eac
 ms_exp_nt <- csd_output(process_output = get_results('csd_ms_exp_nt'),
                         output_function = 'csd_ms_exp_nt',
                         vocab_tbl = vocabulary_tbl('concept'),
-                        num_codes = 10)
+                        num_variables = 10)
 
 ms_exp_nt
 
@@ -99,7 +99,7 @@ ss_anom_nt
 
 ## Multi Site, Anomaly, No Time
 
-For each site in the cohort & each concept in the variable, this graph summarizes how frequently that concept appears (size of the dot), how far away from the mean proportion that concept falls (color of the dot), and whether the distance from the mean constitutes an anomaly (stars).
+For each site in the cohort & each concept in the variable, this graph summarizes the MAD value for that concept_id (size of the dot), the proportion representing how often that concept_id is used (color of the dot), and whether that concept_id is anomalous (stars).
 
 ```{r ms_anom_nt}
 
@@ -124,7 +124,8 @@ This line graph displays the proportion of concepts within each variable and how
 ss_exp_at <- csd_output(process_output = get_results('csd_ss_exp_at'),
                         output_function = 'csd_ss_exp_at',
                         vocab_tbl = vocabulary_tbl('concept'),
-                        filtered_var = c('general_jia', 'ibd','uveitis'),
+                        num_mappings = 20,
+                        filtered_var = c('general_jia'),
                         output_value = 'prop_concept')
 
 ss_exp_at[[1]]
@@ -162,8 +163,9 @@ This check outputs a control chart that highlights anomalies in the proportion o
 ss_anom_at <- csd_output(process_output = get_results('csd_ss_anom_at_year'),
                         output_function = 'csd_ss_anom_at',
                         vocab_tbl = vocabulary_tbl('concept'),
-                        num_mappings = 6,
-                        filtered_var = 'ibd')
+                        #num_mappings = 6,
+                        filtered_var = 'ibd',
+                        filter_concept = 81893)
 
 ss_anom_at[[1]]
 

@@ -80,8 +80,9 @@ This output displays the number of mappings associated with each SNOMED code. Th
 scv_output(process_output = get_results('scv_ss_anom_nt'),
            output_function = 'scv_ss_anom_nt',
            code_type = 'cdm',
+           num_codes = 10,
+           num_mappings = 25,
            facet = NULL,
-           rel_to_median = 'greater',
            vocab_tbl = vocabulary_tbl('concept'))
 
 ```
@@ -111,8 +112,8 @@ scv_output(process_output = get_results('scv_ms_anom_nt'),
            output_function = 'scv_ms_anom_nt',
            code_type = 'cdm',
            facet = 'site',
-           rel_to_median = 'greater',
-           mad_dev = 2,
+           filter_concept = 437082,
+           num_mappings = 20,
            vocab_tbl = vocabulary_tbl('concept'))
 
 ```
@@ -126,6 +127,7 @@ For each concept_id, this graph displays the proportion of each source_concept_i
 op <- scv_output(process_output = get_results('scv_ss_exp_at'),
            output_function = 'scv_ss_exp_at',
            code_type = 'cdm',
+           num_mappings = 25,
            facet = NULL,
            vocab_tbl = vocabulary_tbl('concept'))
 
@@ -145,6 +147,7 @@ This check outputs a control chart that highlights anomalies in the number of ma
 scv_output(process_output = get_results('scv_ss_anom_at_year'),
            output_function = 'scv_ss_anom_at',
            code_type = 'cdm',
+           filter_concept = '4259507',
            facet = NULL)
 
 ```
@@ -179,7 +182,9 @@ For each concept_id & site, this graph displays the proportion of each source_co
 op <- scv_output(process_output = get_results('scv_ms_exp_at'),
            output_function = 'scv_ms_exp_at',
            code_type = 'cdm',
-           facet = 'site',
+           filter_concept = '4132811',
+           num_mappings = 12,
+           facet = NULL,
            vocab_tbl = vocabulary_tbl('concept'))
 
 op[[1]]
