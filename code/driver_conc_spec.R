@@ -45,6 +45,7 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
              name='cnc_sp_ms_nt')
   
   message('site site, over time')
+  # by year
   cnc_sp_ss_at <- conc_process(cohort=cohort,
                                multi_or_single_site='single',
                                care_site=TRUE,
@@ -56,6 +57,18 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer','
                                time_period='year')
   output_tbl(cnc_sp_ss_at,
              name='cnc_sp_ss_at')
+  # by month
+  cnc_sp_ss_at_month <- conc_process(cohort=cohort,
+                                     multi_or_single_site='single',
+                                     care_site=TRUE,
+                                     provider=TRUE,
+                                     codeset_tbl=read_codeset("conc_codesets", col_types = 'cccc'),
+                                     visit_type_tbl=read_codeset('conc_visit_types', col_type='ic'),
+                                     time=TRUE,
+                                     time_span=c('2012-01-01', '2022-01-01'),
+                                     time_period='month')
+  output_tbl(cnc_sp_ss_at_month,
+             name='cnc_sp_ss_at_month')
   
   message('multi site, over time')
   cnc_sp_ms_at <- conc_process(cohort=cohort,
