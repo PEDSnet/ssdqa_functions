@@ -35,8 +35,9 @@ require(ggplot2)
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 jspa_output_ss_nt<-results_tbl('cnc_sp_ss_nt')%>%collect()
 jspa_output_ms_nt<-results_tbl('cnc_sp_ms_nt')%>%collect()
-jspa_output_ss_at<-results_tbl('cnc_sp_ss_at')%>%collect()
+jspa_output_ss_at_yr<-results_tbl('cnc_sp_ss_at')%>%collect()
 jspa_output_ms_at<-results_tbl('cnc_sp_ms_at')%>%collect()
+jspa_output_ss_at_month<-results_tbl('cnc_sp_ss_at_month')%>%collect()
 
 concept_names_grouped <- read.csv('../results/specialty_concept_names_named.csv')
 ```
@@ -159,7 +160,7 @@ Notes:
       - x% of the years are anomolous? (not sure how we'd implement this without doing computation outside of the qi chart code)
 
 ```{r fig.width=10, fig.height=10}
-output_ss_an_at <- conc_output_gen(conc_process_output=jspa_output_ss_at,
+output_ss_an_at <- conc_output_gen(conc_process_output=jspa_output_ss_at_yr,
                                 conc_process_names=concept_names_grouped,
                                 multi_or_single_site='single',
                                 anomaly_or_exploratory='anomaly',
@@ -167,6 +168,28 @@ output_ss_an_at <- conc_output_gen(conc_process_output=jspa_output_ss_at,
                                 facet_vars=c('codeset_name'),
                                 color_var='specialty_name')
 output_ss_an_at
+```
+
+# Year Increment
+
+- Top n filters to the total number of visits for that cluster over all time for the given specialty
+    - If multiple specialties are plotted, the top n will be shown for each specialty
+    - If top_n is not specified, all clusters are plotted
+- User must filter specialty names: can be one or many
+    - Caution against too many, as the plot will become cluttered
+
+```{r}
+output_ss_an_at <- conc_output_gen(conc_process_output=jspa_output_ss_at_yr,
+                                conc_process_names=concept_names_grouped,
+                                multi_or_single_site='single',
+                                anomaly_or_exploratory='anomaly',
+                                time_dimension=TRUE,
+                                facet_vars=c('specialty_name'),
+                                specialty_filter=c("Rheumatology", "Dermatology"),
+                                top_n=2)
+output_ss_an_at[[1]]
+
+output_ss_an_at[[2]]
 ```
 
 

@@ -174,7 +174,8 @@ conc_output_gen <- function(conc_process_output,
                             color_var=NULL,
                             top_n=nrow(conc_process_output),
                             n_mad=3L,
-                            alt=FALSE){
+                            alt=FALSE,
+                            specialty_filter){
   message('Preparing data for visualization')
   if('cluster'%in%facet_vars&'visit_type'%in%facet_vars){
     stop("Can only stratify by visit_type or cluster, not both")
@@ -186,7 +187,7 @@ conc_output_gen <- function(conc_process_output,
     gp_vars<-c('codeset_name')
   }
   if(time_dimension){
-    gp_vars <- gp_vars %>%append('time_start')
+    gp_vars <- gp_vars %>%append(c('time_start','time_increment'))
   }
   if(multi_or_single_site=='multi'){
     gp_vars <- gp_vars %>% append('site')
@@ -288,7 +289,21 @@ conc_output_gen <- function(conc_process_output,
     ## SINGLE SITE, ANOMALY
     if(time_dimension){
       # over time
-      conc_output_plot<-plot_cnc_sp_ss_an_at(data_tbl=conc_output_pp)
+      conc_output_pp <- insert_top_n_indicator(dat=conc_output_pp,
+                                               gp_cols=c('cluster'),
+                                               val_col="total",
+                                               n=top_n,
+                                               sum_first=TRUE)%>%
+        filter(top_n_indicator)
+      
+      conc_output_plot<-plot_cnc_sp_ss_an_at(process_output=conc_output_pp,
+                                             filt_list=list(specialty_name=specialty_filter),
+                                             ct_col=n,
+                                             id_col='cluster',
+                                             denom_col='total',
+                                             name_col='specialty_name',
+                                             facet=c('specialty_name', 'cluster'),
+                                             plot_title_text='Visits with Specialties')
     }else{
       # not over time
       conc_output_plot <- plot_cnc_sp_ss_an_nt(data_tbl=conc_output_pp)

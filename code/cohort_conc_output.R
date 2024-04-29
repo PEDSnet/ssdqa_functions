@@ -401,11 +401,131 @@ plot_cnc_sp_ss_an_nt<- function(data_tbl){
 #'      for single site, anomaly, across time
 #' @param data_tbl table which must contain the cols: time_start | n | specialty_name
 #' @return control chart with time on x axis, number of visits on y axis, faceted by specialty
-plot_cnc_sp_ss_an_at<-function(data_tbl){
+plot_cnc_sp_ss_an_at_old<-function(data_tbl){
   qic(data=data_tbl, x=time_start, y = n, chart='pp', facets=~specialty_name, #can also do cluster~specialty_name
       scales='free_y',
       x.angle=45,
       title="Control Chart: Specialty Concordance for Clusters Over Time",
       show.grid = TRUE,
       xlab='Time', n=total)
+}
+
+
+#' *Single Site, Anomaly, Across Time*
+#' 
+#' Control chart looking at proportion of visits with specialty over time
+#'     and a reference table
+#' 
+#' 
+#' @param process_output dataframe output by the corresponding ssdqa check
+#' @param filt_list a named list with names equal to the column name/s that must exist in the `process_output`
+#'                                    and values equal to the values on which to filter
+#'                                    e.g. filt_list=list(concepts=c(first_concept, second_concept),
+#'                                                        another_column_name=c('some_value_found_in_another_column_name'))
+#' @param facet the variables by which you would like to facet the graph; defaults to NULL
+#' @param plot_title_text text to display as the plot title. Will be tacked on to the text 'Control Chart: '
+#' 
+#' @return a list where:
+#'      the first element is a P prime control chart that highlights points in time that are anomalous
+#'      the second element is a gt table with the total counts based on the specified stratification 
+#'        
+#' 
+plot_cnc_sp_ss_an_at <- function(process_output,
+                           # filtered_var='ibd',
+                           # filter_concept=81893,
+                           filt_list,
+                           ct_col,
+                           denom_col,
+                           id_col,
+                           name_col,
+                           facet=NULL,
+                           plot_title_text){
+  
+  time_inc <- process_output %>% filter(!is.na(time_increment)) %>% distinct(time_increment) %>% pull()
+  
+  if(time_inc == 'year'){
+    # can we pass into the function this additional variable in a list for this check? (i.e. not something the user would have to enter, but something that is tacked on when feeding into this output function) 
+    # facet <- facet %>% append('concept_id') %>% unique()
+    
+    # can we define the name of the filtering column/s and values for filters in a list instead (filt_list) so that it can be used across inputs with different column names? (filt_list)
+    # c_added <- process_output %>% filter(variable == filtered_var,
+    #                                      concept_id == filter_concept)
+    
+    # applying all defined filters
+    for(i in 1:length(filt_list)){
+      var_name<-names(filt_list[i])
+      var_value<-filt_list[[i]]
+      
+      if(exists('c_added')){
+        c_added<-c_added%>%filter(!!sym(var_name)%in%var_value)
+      }else{
+        # first time around, construct new df
+        c_added<-process_output%>%filter(!!sym(var_name)%in%var_value)
+      }
+    }
+
+    
+    # change ct_concept in this group_by to the name of the column for this output, or standardize the name of the "count" type columns in the output
+    c_final <- c_added %>% group_by(!!!syms(facet), time_start, n) %>%
+      unite(facet_col, !!!syms(facet), sep = '\n') 
+    # same here with standardizing name of count column
+    c_plot <- qic(data = c_final, x = time_start, y = n, chart = 'pp', facet = ~facet_col,
+                  title = 'Control Chart: Code Usage Over Time', show.grid = TRUE, n = total,
+                  ylab = 'Proportion', xlab = 'Time')
+    
+    op_dat <- c_plot$data
+    
+    new_pp <- ggplot(op_dat,aes(x,y)) +
+      geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "lightgray",alpha = 0.4) +
+      geom_line(colour = ssdqa_colors_standard[[12]], size = .5) +  
+      geom_line(aes(x,cl)) +
+      geom_point(colour = ssdqa_colors_standard[[6]] , fill = ssdqa_colors_standard[[6]], size = 1) +
+      geom_point(data = subset(op_dat, y >= ucl), color = ssdqa_colors_standard[[3]], size = 2) +
+      geom_point(data = subset(op_dat, y <= lcl), color = ssdqa_colors_standard[[3]], size = 2) +
+      facet_wrap(~facet1, scales="free_y") +
+      ggtitle(label = paste('Control Chart: ', plot_title_text)) +
+      labs(x = 'Time',
+           y = 'Proportion')+
+      theme_minimal()
+    
+    output_int <- ggplotly(new_pp)
+    
+    # same here with passing in name of column
+    # is there a need to apply an additional filter here, since c_added already has filtering applied?
+    ref_tbl <- generate_ref_table(tbl = c_added,# %>% filter(specialty_name == filtered_var,
+                                                #           cluster == filter_concept), #%>% 
+                                   # mutate(concept_id=as.integer(concept_id)),
+                                  #id_col = 'concept_id',
+                                  id_col=id_col,
+                                  #denom = 'ct_concept',
+                                  denom=denom_col,
+                                  #name_col = 'concept_name',
+                                  name_col=name_col,
+                                  #vocab_tbl = vocab_tbl,
+                                  time = TRUE)
+    
+    output <- list(output_int, ref_tbl)
+    
+  }else{
+    
+    concept_nm <- process_output %>% 
+      filter(!is.na(concept_name), concept_id == filter_concept) %>% 
+      distinct(concept_name) %>% pull()
+    
+    anomalies <- 
+      plot_anomalies(.data=process_output %>% filter(concept_id == filter_concept),
+                     .date_var=time_start) %>% 
+      layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
+    
+    decomp <- 
+      plot_anomalies_decomp(.data=process_output %>% filter(concept_id == filter_concept),
+                            .date_var=time_start) %>% 
+      layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
+    
+    output <- list(anomalies, decomp)
+    
+  }
+  
+  return(output)
+
 }
