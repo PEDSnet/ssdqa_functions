@@ -443,6 +443,20 @@ plot_cnc_sp_ss_an_at <- function(process_output,
   
   time_inc <- process_output %>% filter(!is.na(time_increment)) %>% distinct(time_increment) %>% pull()
   
+  # applying all defined filters
+  for(i in 1:length(filt_list)){
+    var_name<-names(filt_list[i])
+    var_value<-filt_list[[i]]
+    
+    if(exists('c_added')){
+      c_added<-c_added%>%filter(!!sym(var_name)%in%var_value)
+    }else{
+      # first time around, construct new df
+      c_added<-process_output%>%filter(!!sym(var_name)%in%var_value)
+    }
+  }
+  
+  
   if(time_inc == 'year'){
     # can we pass into the function this additional variable in a list for this check? (i.e. not something the user would have to enter, but something that is tacked on when feeding into this output function) 
     # facet <- facet %>% append('concept_id') %>% unique()
@@ -451,24 +465,10 @@ plot_cnc_sp_ss_an_at <- function(process_output,
     # c_added <- process_output %>% filter(variable == filtered_var,
     #                                      concept_id == filter_concept)
     
-    # applying all defined filters
-    for(i in 1:length(filt_list)){
-      var_name<-names(filt_list[i])
-      var_value<-filt_list[[i]]
-      
-      if(exists('c_added')){
-        c_added<-c_added%>%filter(!!sym(var_name)%in%var_value)
-      }else{
-        # first time around, construct new df
-        c_added<-process_output%>%filter(!!sym(var_name)%in%var_value)
-      }
-    }
-
-    
-    # change ct_concept in this group_by to the name of the column for this output, or standardize the name of the "count" type columns in the output
-    c_final <- c_added %>% group_by(!!!syms(facet), time_start, n) %>%
+    c_final <- c_added %>% group_by(!!!syms(facet), time_start, !!sym(ct_col)) %>%
       unite(facet_col, !!!syms(facet), sep = '\n') 
-    # same here with standardizing name of count column
+    # figure out here how to reference ct_col instead of hard coded value
+    #y_col<-!!sym(ct_col)
     c_plot <- qic(data = c_final, x = time_start, y = n, chart = 'pp', facet = ~facet_col,
                   title = 'Control Chart: Code Usage Over Time', show.grid = TRUE, n = total,
                   ylab = 'Proportion', xlab = 'Time')
@@ -492,6 +492,9 @@ plot_cnc_sp_ss_an_at <- function(process_output,
     
     # same here with passing in name of column
     # is there a need to apply an additional filter here, since c_added already has filtering applied?
+    if(!'site'%in%colnames(c_added)){
+      c_added<-c_added%>%mutate(site='combined')
+    }
     ref_tbl <- generate_ref_table(tbl = c_added,# %>% filter(specialty_name == filtered_var,
                                                 #           cluster == filter_concept), #%>% 
                                    # mutate(concept_id=as.integer(concept_id)),
@@ -508,20 +511,25 @@ plot_cnc_sp_ss_an_at <- function(process_output,
     
   }else{
     
-    concept_nm <- process_output %>% 
-      filter(!is.na(concept_name), concept_id == filter_concept) %>% 
-      distinct(concept_name) %>% pull()
-    
-    anomalies <- 
-      plot_anomalies(.data=process_output %>% filter(concept_id == filter_concept),
-                     .date_var=time_start) %>% 
-      layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
-    
-    decomp <- 
-      plot_anomalies_decomp(.data=process_output %>% filter(concept_id == filter_concept),
-                            .date_var=time_start) %>% 
-      layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
-    
+    # concept_nm <- process_output %>% 
+    #   filter(!is.na(concept_name), concept_id == filter_concept) %>% 
+    #   distinct(concept_name) %>% pull()
+    # add in an if statement for if data is already anomalized?
+    concept_nm<-process_output%>%distinct(specialty_name)%>%pull()
+    anom_to_plot<-anomalize(.data=c_added%>%
+                              group_by(!!!syms(facet)),
+                            .date_var=time_start,
+                            .value=!!sym(ct_col))
+    anomalies <-
+      plot_anomalies(.data=anom_to_plot,# %>% filter(concept_id == filter_concept),
+                     .date_var=time_start) %>%
+      layout(title = paste0('Anomalies for ', plot_title_text))
+
+    decomp <-
+      plot_anomalies_decomp(.data=anom_to_plot,# %>% filter(concept_id == filter_concept),
+                            .date_var=time_start) %>%
+      layout(title = paste0('Anomalies for ', plot_title_text))
+
     output <- list(anomalies, decomp)
     
   }

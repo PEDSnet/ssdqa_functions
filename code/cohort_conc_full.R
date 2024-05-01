@@ -298,12 +298,12 @@ conc_output_gen <- function(conc_process_output,
       
       conc_output_plot<-plot_cnc_sp_ss_an_at(process_output=conc_output_pp,
                                              filt_list=list(specialty_name=specialty_filter),
-                                             ct_col=n,
+                                             ct_col='n',
                                              id_col='cluster',
                                              denom_col='total',
                                              name_col='specialty_name',
                                              facet=c('specialty_name', 'cluster'),
-                                             plot_title_text='Visits with Specialties')
+                                             plot_title_text=paste0('Visits with specialties'))
     }else{
       # not over time
       conc_output_plot <- plot_cnc_sp_ss_an_nt(data_tbl=conc_output_pp)

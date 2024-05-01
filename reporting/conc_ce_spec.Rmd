@@ -25,12 +25,14 @@ tryCatch(source('../site/run.R'),
 # Set to "local" to read data from ../results, or another value to read from db
 data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
 
+require(tidyverse)
 require(tidyr)
 require(knitr)
 require(kableExtra)
 require(stringr)
 require(tibble)
 require(ggplot2)
+require(timetk)
 
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 jspa_output_ss_nt<-results_tbl('cnc_sp_ss_nt')%>%collect()
@@ -104,7 +106,7 @@ Line plot with time on the x axis, proportion of visits with each specialty for 
 ### No stratification
 
 ```{r}
-output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at,
+output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at_yr,
                                          conc_process_names=concept_names_grouped,
                                          multi_or_single_site='single',
                                          anomaly_or_exploratory='exploratory',
@@ -117,7 +119,7 @@ output_ss_expl_at
 ### Stratified by Cluster
 
 ```{r}
-output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at,
+output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at_yr,
                                          conc_process_names=concept_names_grouped,
                                          multi_or_single_site='single',
                                          anomaly_or_exploratory='exploratory',
@@ -151,26 +153,7 @@ output_ss_an
 
 ## Single Site, Anomaly, Over Time (cnc_sp_ss_an_at)
 
-Control chart showing number of visits per specialty across time.
-
-Notes:
-  - Lots of plots if do cluster x specialty
-  - Could still do cluster x specialty, but only show them if: 
-      - Above a certain number of visits?
-      - x% of the years are anomolous? (not sure how we'd implement this without doing computation outside of the qi chart code)
-
-```{r fig.width=10, fig.height=10}
-output_ss_an_at <- conc_output_gen(conc_process_output=jspa_output_ss_at_yr,
-                                conc_process_names=concept_names_grouped,
-                                multi_or_single_site='single',
-                                anomaly_or_exploratory='anomaly',
-                                time_dimension=TRUE,
-                                facet_vars=c('codeset_name'),
-                                color_var='specialty_name')
-output_ss_an_at
-```
-
-# Year Increment
+### Year Increment
 
 - Top n filters to the total number of visits for that cluster over all time for the given specialty
     - If multiple specialties are plotted, the top n will be shown for each specialty
@@ -192,6 +175,24 @@ output_ss_an_at[[1]]
 output_ss_an_at[[2]]
 ```
 
+### Month increment
+
+  - One specialty at a time
+  - Specialty must have at least one period
+  - Top n clusters for the specialty can be specified
+  
+```{r}
+output_ss_an_at_month <- conc_output_gen(conc_process_output=jspa_output_ss_at_month,
+                                conc_process_names=concept_names_grouped,
+                                multi_or_single_site='single',
+                                anomaly_or_exploratory='anomaly',
+                                time_dimension=TRUE,
+                                facet_vars=c('specialty_name'),
+                                specialty_filter="Rheumatology",
+                                top_n=2)
+output_ss_an_at_month[[1]]
+output_ss_an_at_month[[2]]
+```
 
 ## Multi Site, Exploratory, No Time (cnc_sp_ms_exp_nt)
 
