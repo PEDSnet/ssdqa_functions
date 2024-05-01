@@ -218,21 +218,28 @@ conc_output_gen <- function(conc_process_output,
       collect()
   }
   
-  # compute means and sd for anomaly detection
+  # compute Euclidean distance for MS anomaly AT
   if(anomaly_or_exploratory=='anomaly'&multi_or_single_site=='multi'){
-    gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site']
-    message('Computing median and distance to median')
-    conc_output_pp <- compute_dist_median_conc(tbl=conc_output_pp,
-                                               grp_vars=gp_vars_no_site,
-                                               var_col='prop',
-                                               num_mad=n_mad)
-    
-    message('Flagging the anomalies')
-    # only select the specialties where at least one site is an anomaly
-    conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
-                                    facet_vars=facet_vars,
-                                    distinct_vars=c('codeset_name', 'specialty_name'))
-      
+    if(time_dimension){
+    conc_output_pp<-ms_anom_euclidean(fot_input_tbl=conc_output_pp,
+                                      grp_vars=c('site','specialty_name'),
+                                      var_col='prop')
+    }else{
+      gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site']
+      message('Computing median and distance to median')
+      conc_output_pp <- compute_dist_median_conc(tbl=conc_output_pp,
+                                                 grp_vars=gp_vars_no_site,
+                                                 var_col='prop',
+                                                 num_mad=n_mad)
+
+      message('Flagging the anomalies')
+      # only select the specialties where at least one site is an anomaly
+      conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
+                                      facet_vars=facet_vars,
+                                      distinct_vars=c('codeset_name', 'specialty_name'))
+    }
+
+
   }
   if(anomaly_or_exploratory=='anomaly'&multi_or_single_site=='single'&!time_dimension){
     gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site'&!spec_gp_vars=='cluster']
@@ -332,8 +339,11 @@ conc_output_gen <- function(conc_process_output,
   }else if(multi_or_single_site=='multi'&anomaly_or_exploratory=='anomaly'){
     if(time_dimension){
       # over time
-      conc_output_plot <- plot_cnc_sp_ms_an_at(data_tbl=conc_output_pp)
-      
+      conc_output_plot <- plot_cnc_sp_ms_an_at(process_output=conc_output_pp,
+                                               grp_vars=c('specialty_name', 'time_start', 
+                                                          'mean_allsiteprop'),
+                                               filt_list=list(specialty_name=specialty_filter))
+                                               
     }else{
       # not over time
       conc_output_plot <- plot_cnc_sp_ms_an_nt(data_tbl=conc_output_pp)

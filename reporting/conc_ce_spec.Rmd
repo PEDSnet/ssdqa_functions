@@ -168,7 +168,7 @@ output_ss_an_at <- conc_output_gen(conc_process_output=jspa_output_ss_at_yr,
                                 anomaly_or_exploratory='anomaly',
                                 time_dimension=TRUE,
                                 facet_vars=c('specialty_name'),
-                                specialty_filter=c("Rheumatology", "Dermatology"),
+                                specialty_filter=c("Rheumatology"),
                                 top_n=2)
 output_ss_an_at[[1]]
 
@@ -257,11 +257,15 @@ output_ms_an_nt
 
 ##  Multi-Site, Anomaly, Across Time (cnc_sp_ms_an_at)
 
-Heatmap with time on the x axis, site on the y axis, and colors indicating the number of MAD from the median for the specialty for the year:
+This check displays the Euclidean distance between two time series: the smoothed (Loess) proportion of a user-selected specialty for a given site and the all-site average proportion for each time point.
 
-  - MAD is computed for each specialty for each year, and each site is compared to the median for that specialty for the given year
-  
-Note: We could give the option to limit to only show "top n", but would need to figure out what that means in this context: specialties where there is the largest n_mad in one of the years, regardless of the year? something else?
+Three graphs are output:
+
+  - a line graph displaying the smoothed proportion of visits with the given specialty at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+  - a line graph displaying the raw (not smoothed) proportion of visits with the given specialty at each site over time
+  - a circular bar graph displaying the Euclidean distance from the all-site mean where the fill represents the average Loess proportion over time
+
+### Rheumatology
 
 ```{r}
 output_ms_an_ot <- conc_output_gen(conc_process_output=jspa_output_ms_at,
@@ -269,7 +273,26 @@ output_ms_an_ot <- conc_output_gen(conc_process_output=jspa_output_ms_at,
                                    multi_or_single_site='multi',
                                    anomaly_or_exploratory='anomaly',
                                    time_dimension=TRUE,
-                                   facet_vars=c('codeset_name'))
+                                   facet_vars=c('codeset_name'),
+                                   specialty_filter=c("Rheumatology"))
 
-output_ms_an_ot
+output_ms_an_ot[[1]]
+output_ms_an_ot[[2]]
+output_ms_an_ot[[3]]
+```
+
+### General Pediatrics
+
+```{r}
+output_ms_an_ot <- conc_output_gen(conc_process_output=jspa_output_ms_at,
+                                   conc_process_names=concept_names_grouped,
+                                   multi_or_single_site='multi',
+                                   anomaly_or_exploratory='anomaly',
+                                   time_dimension=TRUE,
+                                   facet_vars=c('codeset_name'),
+                                   specialty_filter=c("General Pediatrics"))
+
+output_ms_an_ot[[1]]
+output_ms_an_ot[[2]]
+output_ms_an_ot[[3]]
 ```

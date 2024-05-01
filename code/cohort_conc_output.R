@@ -318,7 +318,7 @@ plot_cnc_sp_ms_exp_at <- function(data_tbl,
 #' @return ggplot heatmap with time on the x axis, site on the y,
 #'          and fill color representing the number of MAD from the across-site median
 #'          for that specialty for the given year
-plot_cnc_sp_ms_an_at<- function(data_tbl){
+plot_cnc_sp_ms_an_at_old<- function(data_tbl){
   plt<-ggplot(data_tbl, aes(x=time_start,y=site,fill=n_mad))+
     geom_tile()+
     facet_wrap(~specialty_name)+
@@ -536,4 +536,116 @@ plot_cnc_sp_ss_an_at <- function(process_output,
   
   return(output)
 
+}
+
+#' **Multi-Site Across Time Anomaly**
+#' Function to generate output displaying the Euclidean distance between two time series: the smoothed (Loess) proportion of a user-selected specialty for a given site and the all-site average proportion for each time point.
+#' Three graphs are output:
+#'        a line graph displaying the smoothed proportion of variable specified at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+#'        a line graph displaying the raw variable specified at each site over time
+#'        a circular bar graph displaying the Euclidean distance from the all-site mean where the fill represents the average Loess proportion over time
+#' @param process_output output from the associated ssdqa check
+#'          should contain the columns specified in `grp_vars`
+#'                                      and in `filt_list`
+#' @param filt_list a named list 
+#'        with names that must exist in the `process_output`
+#'        and values equal to the values on which to filter
+#'        e.g. filt_list=list(concepts=c(first_concept, second_concept),
+#'        another_column_name=c('some_value_found_in_another_column_name'))
+
+# want to also add in the name of the column to use as the proportions
+
+
+plot_cnc_sp_ms_an_at <- function(process_output,
+                                 grp_vars,
+                                 filt_list=NULL){
+  
+  # apply defined filters, if supplied
+  if(!is.null(filt_list)){# applying all defined filters
+    for(i in 1:length(filt_list)){
+      var_name<-names(filt_list[i])
+      var_value<-filt_list[[i]]
+      
+      if(exists('filt_op')){
+        filt_op<-filt_op%>%filter(!!sym(var_name)%in%var_value)
+      }else{
+        # first time around, construct new df
+        filt_op<-process_output%>%filter(!!sym(var_name)%in%var_value)
+      }
+    }
+  }else{filt_op<-process_output}
+  
+  
+  
+  allsites <-
+    filt_op %>%
+    select(!!!syms(grp_vars))%>%#time_start,concept_id,mean_allsiteprop) 
+    distinct() %>%
+    rename(prop=mean_allsiteprop) %>%
+    mutate(site='all site average') %>%
+    mutate(text_smooth=paste0("Site: ", site,
+                              "\n","Proportion: ",prop),
+           text_raw=paste0("Site: ", site,
+                           "\n","Proportion: ",prop))
+
+  dat_to_plot <-
+    filt_op %>%
+    mutate(text_smooth=paste0("Site: ", site,
+                              "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean),
+           text_raw=paste0("Site: ", site,
+                           "\n","Site Proportion: ",prop,
+                           "\n","Site Smoothed Proportion: ",site_loess,
+                           "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean))
+
+  p <- dat_to_plot %>%
+    ggplot(aes(y = prop, x = time_start, color = site, group = site, text = text_smooth)) +
+    geom_line(data=allsites, linewidth=1.1) +
+    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5, formula = y ~ x) +
+    scale_color_ssdqa() +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    labs(y = 'Proportion (Loess)',
+         x = 'Time',
+         title = paste0('Smoothed Proportion Across Time'))
+
+  q <- dat_to_plot %>%
+    ggplot(aes(y = prop, x = time_start, color = site,
+               group=site, text=text_raw)) +
+    scale_color_ssdqa() +
+    geom_line(data=allsites,linewidth=1.1) +
+    geom_line(linewidth=0.2) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    labs(x = 'Time',
+         y = 'Proportion',
+         title = paste0('Proportion Across Time'))
+
+  t <- dat_to_plot %>%
+    distinct(site, dist_eucl_mean, site_loess) %>%
+    group_by(site, dist_eucl_mean) %>%
+    summarise(mean_site_loess = mean(site_loess)) %>%
+    ggplot(aes(x = site, y = dist_eucl_mean, fill = mean_site_loess)) +
+    geom_col() +
+    geom_text(aes(label = dist_eucl_mean), vjust = 2, size = 3,
+              show.legend = FALSE) +
+    coord_radial(r_axis_inside = FALSE, rotate_angle = TRUE) +
+    guides(theta = guide_axis_theta(angle = 0)) +
+    theme_minimal() +
+    scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
+    theme(legend.position = 'bottom',
+          legend.text = element_text(angle = 45, vjust = 0.9, hjust = 1),
+          axis.text.x = element_text(face = 'bold')) +
+    labs(fill = 'Avg. Proportion \n(Loess)',
+         y ='Euclidean Distance',
+         x = '',
+         title = paste0('Euclidean Distance'))
+
+  plotly_p <- ggplotly(p,tooltip="text")
+  plotly_q <- ggplotly(q,tooltip="text")
+
+  output <- list(plotly_p,
+                 plotly_q,
+                 t)
+
+  return(output)
 }
