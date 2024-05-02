@@ -547,24 +547,27 @@ csd_ms_anom_nt<-function(process_output,
                       "\nSite: ",site,
                       "\nProportion: ",round(!!sym(comparison_col),2),
                       "\nMean proportion:",round(mean_val,2),
+                      '\nSD: ', round(sd_val,2),
                       "\nMedian proportion: ",round(median_val,2),
                       "\nMAD: ", round(mad_val,2)))
   
   
-  #mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
-  
-  plt<-ggplot(dat_to_plot %>% filter(variable == filtered_var,
+  plt <-
+    ggplot(dat_to_plot %>% filter(variable == filtered_var,
                                      anomaly_yn != 'no outlier in group'),
               aes(x=site, y=as.character(concept_id), text=text, color=!!sym(comparison_col)))+
-    geom_point_interactive(aes(size=mad_val,shape=anomaly_yn, tooltip = text))+
+    geom_point_interactive(aes(size=mean_val,shape=anomaly_yn, tooltip = text))+
+    geom_point_interactive(data = dat_to_plot %>% filter(anomaly_yn == 'not outlier'), 
+                           aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
     scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
-    scale_shape_manual(values=c(20,8))+
+    scale_shape_manual(values=c(19,8))+
     scale_y_discrete(labels = function(x) str_wrap(x, width = text_wrapping_char)) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle=60)) +
     labs(y = "Concept",
          size="",
-         title=paste0('Anomalous Concepts for ', filtered_var, ' per Site')) +
+         title=paste0('Anomalous Concepts for ', filtered_var, ' per Site'),
+         subtitle = 'Dot size is the mean proportion per concept') +
     guides(color = guide_colorbar(title = 'Proportion'),
            shape = guide_legend(title = 'Anomaly'),
            size = 'none')

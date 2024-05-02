@@ -95,7 +95,7 @@ g
 
 ## Multi Site, Anomaly, No Time
 
-This check performs a K-means cluster analysis to identify which site has a proportion of patients or rows (decided by the user) that may be very different from the rest. The number of clusters used in the analysis is decided by the user. When a facet is included, one graph is produced per group as facetting is not native to the K-means graph type.
+This is a dot plot representing anomalous proportions of patients (or rows) with a given variable. Anomalies represent sites that are anomalous when compared to others for that variable. The shape of the dot represents whether or not it is an anomaly, the color of the dot represents the raw proportion of patients (or rows) for that variable, and the size of the dot represents the MAD.
 
 ```{r ms_anom_nt}
 

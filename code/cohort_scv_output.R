@@ -313,6 +313,7 @@ scv_ss_anom_nt <- function(process_output,
                       "\nSite: ",site,
                       "\nProportion: ",round(!!sym(comparison_col),2),
                       "\nMean proportion:",round(mean_val,2),
+                      '\nSD: ', round(sd_val,2),
                       "\nMedian proportion: ",round(median_val,2),
                       "\nMAD: ", round(mad_val,2)))
   
@@ -321,15 +322,17 @@ scv_ss_anom_nt <- function(process_output,
   
   plt<-ggplot(dat_to_plot %>% filter(anomaly_yn != 'no outlier in group'),
               aes(x=!!sym(col), y=!!sym(map_col), text=text, color=!!sym(comparison_col)))+
-    geom_point_interactive(aes(size=mad_val,shape=anomaly_yn, tooltip = text))+
+    geom_point_interactive(aes(size=mean_val,shape=anomaly_yn, tooltip = text))+
+    geom_point_interactive(data = dat_to_plot %>% filter(anomaly_yn == 'not outlier'), 
+                           aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
     scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
-    scale_shape_manual(values=c(20,8))+
+    scale_shape_manual(values=c(19,8))+
     scale_y_discrete(labels = function(x) str_wrap(x, width = 60)) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle=60, hjust = 1)) +
     labs(size="",
          title=paste0('Anomalous Concept Pairs'),
-         subtitle = paste0('For Top ', num_codes, ' Codes and Top ', num_mappings, ' Mappings')) +
+         subtitle = paste0('For Top ', num_codes, ' Codes and Top ', num_mappings, ' Mappings \nDot size is the mean proportion')) +
     guides(color = guide_colorbar(title = 'Proportion'),
            shape = guide_legend(title = 'Anomaly'),
            size = 'none')
@@ -408,6 +411,7 @@ scv_ms_anom_nt <- function(process_output,
                       "\nSite: ",site,
                       "\nProportion: ",round(!!sym(comparison_col),2),
                       "\nMean proportion:",round(mean_val,2),
+                      '\nSD: ', round(sd_val,2),
                       "\nMedian proportion: ",round(median_val,2),
                       "\nMAD: ", round(mad_val,2)))
   
@@ -418,15 +422,17 @@ scv_ms_anom_nt <- function(process_output,
   
   plt<-ggplot(dat_to_plot %>% filter(anomaly_yn != 'no outlier in group'),
               aes(x=site, y=!!sym(map_col), text=text, color=!!sym(comparison_col)))+
-    geom_point_interactive(aes(size=mad_val,shape=anomaly_yn, tooltip = text))+
+    geom_point_interactive(aes(size=mean_val,shape=anomaly_yn, tooltip = text))+
+    geom_point_interactive(data = dat_to_plot %>% filter(anomaly_yn == 'not outlier'), 
+                           aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
     scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
-    scale_shape_manual(values=c(20,8))+
+    scale_shape_manual(values=c(19,8))+
     scale_y_discrete(labels = function(x) str_wrap(x, width = 60)) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle=60, hjust = 1)) +
     labs(size="",
          title=paste0('Anomalous Mappings for ', filter_concept, ' : ', title_name),
-         subtitle = paste0('From Top ', num_mappings, ' Mappings')) +
+         subtitle = paste0('From Top ', num_mappings, ' Mappings \nDot size is the mean proportion per mapped concept')) +
     guides(color = guide_colorbar(title = 'Proportion'),
            shape = guide_legend(title = 'Anomaly'),
            size = 'none')

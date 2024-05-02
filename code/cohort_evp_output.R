@@ -191,15 +191,6 @@ evp_ms_anom_nt<-function(process_output,
     title <- 'Patient'
   }else(cli::cli_abort('Please choose an acceptable output level: {.code patient} or {.code row}'))
   
-  # grouped_vars <- grouped_vars %>% append('variable') %>% append('concept_id') %>% unique()
-  
-  # mean_tbl <- 
-  #   compute_dist_mean_median(tbl=process_output,
-  #                            grp_vars = grouped_vars,
-  #                            var_col = comparison_col,
-  #                            num_sd=2,
-  #                            num_mad=2)
-  
   comparison_col = prop
   
   dat_to_plot <- process_output %>%
@@ -207,6 +198,7 @@ evp_ms_anom_nt<-function(process_output,
                       "\nSite: ",site,
                       "\nProportion: ",round(!!sym(comparison_col),2),
                       "\nMean proportion:",round(mean_val,2),
+                      '\nSD: ', round(sd_val,2),
                       "\nMedian proportion: ",round(median_val,2),
                       "\nMAD: ", round(mad_val,2)))
   
@@ -215,15 +207,18 @@ evp_ms_anom_nt<-function(process_output,
   
   plt<-ggplot(dat_to_plot %>% filter(anomaly_yn != 'no outlier in group'),
               aes(x=site, y=variable, text=text, color=!!sym(comparison_col)))+
-    geom_point_interactive(aes(size=mad_val,shape=anomaly_yn, tooltip = text))+
+    geom_point_interactive(aes(size=mean_val,shape=anomaly_yn, tooltip = text))+
+    geom_point_interactive(data = dat_to_plot %>% filter(anomaly_yn == 'not outlier'), 
+                           aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
     scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
-    scale_shape_manual(values=c(20,8))+
+    scale_shape_manual(values=c(19,8))+
     scale_y_discrete(labels = function(x) str_wrap(x, width = text_wrapping_char)) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle=60)) +
     labs(y = "Variable",
          size="",
-         title=paste0('Anomalous Variables per ', title, ' by Site')) +
+         title=paste0('Anomalous Variables per ', title, ' by Site'),
+         subtitle = 'Dot size is the mean proportion per variable') +
     guides(color = guide_colorbar(title = 'Proportion'),
            shape = guide_legend(title = 'Anomaly'),
            size = 'none')
@@ -354,35 +349,35 @@ evp_ss_anom_at <- function(process_output,
   
   if(time_inc == 'year'){
   
-  facet <- facet %>% append('variable') %>% unique()
-  
-  final <- process_output %>%
-    filter(variable == filter_variable) %>%
-    unite(facet_col, !!!syms(facet), sep = '\n') %>%
-    rename('ycol' = ct,
-           'denom' = denom)
-  
- pp_qi <-  qic(data = final, x = time_start, y = ycol, chart = 'pp', facet = ~facet_col,
-      title = paste0('Control Chart: Proportion of ', title, ' per Variable'), 
-      ylab = 'Proportion', xlab = 'Time',
-      show.grid = TRUE, n = denom)
+    facet <- facet %>% append('variable') %>% unique()
+    
+    final <- process_output %>%
+      filter(variable == filter_variable) %>%
+      unite(facet_col, !!!syms(facet), sep = '\n') %>%
+      rename('ycol' = ct,
+             'denom' = denom)
+    
+    pp_qi <-  qic(data = final, x = time_start, y = ycol, chart = 'pp', facet = ~facet_col,
+        title = paste0('Control Chart: Proportion of ', title, ' per Variable'), 
+        ylab = 'Proportion', xlab = 'Time',
+        show.grid = TRUE, n = denom)
+   
+    op_dat <- pp_qi$data
  
- op_dat <- pp_qi$data
- 
- new_pp <- ggplot(op_dat,aes(x,y)) +
-   geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "lightgray",alpha = 0.4) +
-   geom_line(colour = ssdqa_colors_standard[[12]], size = .5) +  
-   geom_line(aes(x,cl)) +
-   geom_point(colour = ssdqa_colors_standard[[6]] , fill = ssdqa_colors_standard[[6]], size = 1) +
-   geom_point(data = subset(op_dat, y >= ucl), color = ssdqa_colors_standard[[3]], size = 2) +
-   geom_point(data = subset(op_dat, y <= lcl), color = ssdqa_colors_standard[[3]], size = 2) +
-   facet_wrap(~facet1) +
-   ggtitle(label = paste0('Control Chart: Proportion of ', title, ' per Variable')) +
-   labs(x = 'Time',
-        y = 'Proportion')+
-   theme_minimal()
- 
- output <- ggplotly(new_pp)
+   new_pp <- ggplot(op_dat,aes(x,y)) +
+     geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "lightgray",alpha = 0.4) +
+     geom_line(colour = ssdqa_colors_standard[[12]], size = .5) +  
+     geom_line(aes(x,cl)) +
+     geom_point(colour = ssdqa_colors_standard[[6]] , fill = ssdqa_colors_standard[[6]], size = 1) +
+     geom_point(data = subset(op_dat, y >= ucl), color = ssdqa_colors_standard[[3]], size = 2) +
+     geom_point(data = subset(op_dat, y <= lcl), color = ssdqa_colors_standard[[3]], size = 2) +
+     facet_wrap(~facet1) +
+     ggtitle(label = paste0('Control Chart: Proportion of ', title, ' per Variable')) +
+     labs(x = 'Time',
+          y = 'Proportion')+
+     theme_minimal()
+   
+   output <- ggplotly(new_pp)
   
   }else{
     

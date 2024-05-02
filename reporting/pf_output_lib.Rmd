@@ -92,17 +92,16 @@ pf_output(process_output = get_results('pf_ms_exp_nt'),
 
 ## Multi Site, Anomaly Detection, No Time
 
-This is a K-means cluster analysis comparing each site in order to identify potential outliers. One k-means cluster graph is output for each of the user provided facets, so here, one graph is output per visit type. Any site that is far away from others or not part of a "main" cluster can be considered an outlier.
-
-The number of clusters used in the analysis is controlled by the user.
+This is a dot plot representing anomalous proportions of patients with a given fact type for the user selected visit type. Anomalies represent sites that are anomalous when compared to others for that domain & visit type pair. The shape of the dot represents whether or not it is an anomaly, the color of the dot represents the raw proportion of patients for that fact, and the size of the dot represents the MAD.
 
 ```{r ms_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
 pf_output(process_output = get_results('pf_ms_anom_nt'),
               output_function = 'pf_ms_anom_nt',
-              facet = c('visit_type'),
-              kmeans_clusters = 4,
-              output = 'median_site_without0s')
+              facet = NULL,
+              #kmeans_clusters = 4,
+              #output = 'median_site_without0s',
+          visit_filter = 'inpatient')
 
 ```
 
@@ -129,7 +128,9 @@ This check outputs a control chart that highlights anomalies in the proportion o
 
 pf_output(process_output = get_results('pf_ss_anom_at_year'),
               output_function = 'pf_ss_anom_at',
-              facet = c('visit_type'))
+              facet = c('visit_type'),
+          visit_filter = 'outpatient',
+          domain_filter = 'conditions')
 
 ```
 

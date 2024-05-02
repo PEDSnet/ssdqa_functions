@@ -31,6 +31,8 @@ pf_ss_anom_at <- function(data_tbl,
   time_inc <- data_tbl %>% filter(!is.na(time_increment)) %>% distinct(time_increment) %>% pull()
   
   op_w_facet <- data_tbl %>%
+    filter(domain == domain_filter,
+           visit_type == visit_filter) %>%
     unite(facet_col, !!!syms(facet), sep = '\n') %>%
     mutate(prop = fact_ct_denom / pt_ct_denom)
   
@@ -49,9 +51,9 @@ pf_ss_anom_at <- function(data_tbl,
       geom_point(colour = ssdqa_colors_standard[[6]] , fill = ssdqa_colors_standard[[6]], size = 1) +
       geom_point(data = subset(op_dat, y >= ucl), color = ssdqa_colors_standard[[3]], size = 2) +
       geom_point(data = subset(op_dat, y <= lcl), color = ssdqa_colors_standard[[3]], size = 2) +
-      facet_wrap(~facet1) +
+      #facet_wrap(~facet1) +
       theme_minimal() +
-      ggtitle(label = 'Control Chart: Proportion Patients with Fact') +
+      ggtitle(label = paste0('Control Chart: Proportion Patients with ', visit_filter, ' ', domain_filter)) +
       labs(x = 'Time',
            y = 'Proportion')+
       theme_minimal()
@@ -210,6 +212,7 @@ pf_ms_anom_at <- function(process_output,
     theme_minimal() + 
     scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
     theme(legend.position = 'bottom',
+          legend.text = element_text(angle = 45, vjust = 0.9, hjust = 1),
           axis.text.x = element_text(face = 'bold')) + 
     labs(fill = 'Avg. Proportion \n(Loess)', 
          y ='Euclidean Distance', 
@@ -257,8 +260,10 @@ pf_ms_exp_at <- function(data_tbl,
   
   if(output=='median_fact_ct'){
     title <- 'Median Fact Count Across Time'
+    y_lab <- 'Median Fact Count'
   }else if(output=='sum_fact_ct'){
     title <- 'Total Fact Count Across Time'
+    y_lab <- 'Sum Fact Count'
   }else(cli::cli_abort('Please select a valid output: {.code median_fact_ct} or {.code sum_fact_ct}'))
   
   facet <- facet %>% append('domain') %>% unique()
@@ -273,7 +278,8 @@ pf_ms_exp_at <- function(data_tbl,
     scale_fill_ssdqa() +
     scale_color_ssdqa() +
     labs(title = title,
-         x = 'Time')
+         x = 'Time',
+         y = y_lab)
   
   ggplotly(p)
 }
@@ -306,12 +312,16 @@ pf_ss_anom_nt <- function(data_tbl,
   
   if(output=='outlier_fact'){
     y_title = 'Number of Overall Patients +/- 2 SD Away from Mean'
+    x_lab = 'Number of Anomalous Patients'
   }else if(output=='prop_outlier_fact'){
     y_title = 'Proportion of Overall Patients +/- 2 SD Away from Mean'
+    x_lab = 'Proportion of Anomalous Patients'
   }else if(output=='outlier_site_fact'){
     y_title = 'Number of Site Patients +/- 2 SD Away from Mean'
+    x_lab = 'Number of Anomalous Patients'
   }else if(output=='prop_outlier_site_fact'){
       y_title = 'Proportion of Site Patients +/- 2 SD Away from Mean'
+      x_lab = 'Proportion of Anomalous Patients'
   }else(cli::cli_abort('Please select a valid output: {.code outlier_fact}, {.code prop_outlier_fact}, {.code outlier_site_fact}, or 
              {.code prop_outlier_site_fact}'))
   
@@ -326,7 +336,8 @@ pf_ss_anom_nt <- function(data_tbl,
     facet_wrap((facet)) +
     scale_fill_ssdqa() +
     labs(title = y_title,
-         y = 'Domain') +
+         y = 'Domain',
+         x = x_lab) +
     theme_minimal() + 
     theme(panel.grid.major = element_line(size=0.4, linetype = 'solid'),
           panel.grid.minor = element_line(size=0.2, linetype = 'dashed'))
@@ -363,9 +374,9 @@ pf_ss_exp_nt <- function(data_tbl,
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
   if(output=='median_site_with0s'){
-    y_title='Median for All Patients'
+    y_title='Median Facts / Follow-Up for All Patients'
   }else if(output=='median_site_without0s'){
-      y_title='Median for Patients with Fact'
+      y_title='Median Facts / Follow-Up for Patients with Fact'
   }else(cli::cli_abort('Please select a valid output: {.code median_site_with0s} or {.code median_site_without0s}'))
   
   domain_deframe <- 
@@ -415,24 +426,62 @@ pf_ss_exp_nt <- function(data_tbl,
 #' 
 
 pf_ms_anom_nt <- function(data_tbl,
-                          output,
-                          facet,
-                          kmeans_clusters){
+                          #output,
+                          facet = NULL,
+                          #kmeans_clusters,
+                          visit_filter = 'inpatient'){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
-  if(output=='median_site_with0s'){
-    pass <- TRUE
-  }else if(output=='median_site_without0s'){
-    pass <- TRUE
-  }else(cli::cli_abort('Please select a valid output: {.code median_site_with0s} or {.code median_site_without0s}'))
+  # if(output=='median_site_with0s'){
+  #   pass <- TRUE
+  # }else if(output=='median_site_without0s'){
+  #   pass <- TRUE
+  # }else(cli::cli_abort('Please select a valid output: {.code median_site_with0s} or {.code median_site_without0s}'))
   
-  output_prep <- prep_kmeans(dat = data_tbl, 
-                             output = output,
-                             facet_vars = facet)
+  # output_prep <- prep_kmeans(dat = data_tbl, 
+  #                            output = output,
+  #                            facet_vars = facet)
+  # 
+  # output <- produce_kmeans_output(kmeans_list = output_prep,
+  #                                 centers = kmeans_clusters)
   
-  output <- produce_kmeans_output(kmeans_list = output_prep,
-                                  centers = kmeans_clusters)
+  comparison_col <- 'prop_pt_fact'
+  
+  dat_to_plot <- data_tbl %>%
+    filter(visit_type == visit_filter) %>%
+    mutate(text=paste("Domain: ", domain,
+                      "\nSite: ",site,
+                      "\nProportion: ",round(!!sym(comparison_col),2),
+                      "\nMean proportion:",round(mean_val,2),
+                      '\nSD: ', round(sd_val,2),
+                      "\nMedian proportion: ",round(median_val,2),
+                      "\nMAD: ", round(mad_val,2)))
+  
+  
+  #mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
+  
+  plt<-ggplot(dat_to_plot %>% filter(anomaly_yn != 'no outlier in group'),
+              aes(x=site, y=domain, text=text, color=!!sym(comparison_col)))+
+    geom_point_interactive(aes(size=mean_val,shape=anomaly_yn, tooltip = text))+
+    geom_point_interactive(data = dat_to_plot %>% filter(anomaly_yn == 'not outlier'), 
+                           aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
+    scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
+    scale_shape_manual(values=c(19,8))+
+    scale_y_discrete(labels = function(x) str_wrap(x, width = 60)) +
+    theme_minimal() +
+    facet_wrap((facet)) +
+    theme(axis.text.x = element_text(angle=60, hjust = 1)) +
+    labs(size="",
+         title=paste0('Anomalous Proportion of Patients with Facts \nfor ', visit_filter, ' Visits'),
+         subtitle = 'Dot size is the mean proportion per domain',
+         y = 'Domain',
+         x = 'Site') +
+    guides(color = guide_colorbar(title = 'Proportion'),
+           shape = guide_legend(title = 'Anomaly'),
+           size = 'none')
+  
+  girafe(ggobj = plt)
   
 }
 
@@ -463,10 +512,10 @@ pf_ms_exp_nt <- function(data_tbl,
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
   if(output=='median_site_with0s'){
-    y_title='Median for All Patients Across Sites'
+    y_title='Median Facts / Follow-Up for All Patients Across Sites'
     comp_var = 'median_all_with0s'
   }else if(output=='median_site_without0s'){
-      y_title='Median for Patients with Fact Across Sites'
+      y_title='Median Facts / Follow-Up for Patients with Fact Across Sites'
       comp_var = 'median_all_without0s'
   }else(stop('Please select a valid output: {.code median_site_with0s} or {.code median_site_without0s}'))
   

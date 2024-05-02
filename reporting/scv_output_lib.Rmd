@@ -73,7 +73,7 @@ op[[2]]
 
 ## Single Site, Anomaly Detection, No Time
 
-This output displays the number of mappings associated with each SNOMED code. The user can select either greater or less than the median number of mappings in order to identify anomalies.
+This is a dot plot representing anomalous proportions of patients with a given concept pair for the top N codes and their top N mappings. Anomalies represent concept pairs that are anomalous when compared to other concept pairs. The shape of the dot represents whether or not it is an anomaly, the color of the dot represents the raw proportion of patients for that concept pair, and the size of the dot represents the MAD.
 
 ```{r ss_anom_nt, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -104,7 +104,7 @@ scv_output(process_output = get_results('scv_ms_exp_nt'),
 
 ## Multi Site, Anomaly Detection, No Time
 
-This output calculates the number of mappings per concept_id, then displays the number of MAD that concept_id from the all site median number of mappings. The user chooses whether to display a number of mappings greater or less than the median -- greater is shown below. Here, warmer colors indicate outlying concept_ids.
+This is a dot plot representing anomalous proportions of patients with a given mapped concept for a user selected concept filter. In this case, a CDM concept was chosen as the filter and the top 20 mapped concepts are displayed. Anomalies represent sites that are anomalous when compared to others for that concept pair. The shape of the dot represents whether or not it is an anomaly, the color of the dot represents the raw proportion of patients for that concept pair, and the size of the dot represents the MAD.
 
 ```{r ms_anom_nt, echo=FALSE, message=FALSE, warning=FALSE, fig.height = 8}
 

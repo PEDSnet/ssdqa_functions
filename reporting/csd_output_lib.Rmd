@@ -99,7 +99,7 @@ ss_anom_nt
 
 ## Multi Site, Anomaly, No Time
 
-For each site in the cohort & each concept in the variable, this graph summarizes the MAD value for that concept_id (size of the dot), the proportion representing how often that concept_id is used (color of the dot), and whether that concept_id is anomalous (stars).
+This is a dot plot representing anomalous proportions of patients with a given concept_id for the user selected variable. Anomalies represent sites that are anomalous when compared to others for that concept_id & variable pair. The shape of the dot represents whether or not it is an anomaly, the color of the dot represents the raw proportion of patients for that concept_id, and the size of the dot represents the MAD.
 
 ```{r ms_anom_nt}
 
