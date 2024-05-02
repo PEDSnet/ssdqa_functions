@@ -89,6 +89,7 @@ pf_process <- function(cohort = cohort,
                        time = FALSE,
                        time_span = c('2014-01-01', '2023-01-01'),
                        time_period = 'year',
+                       p_value = 0.9,
                        age_groups = NULL,
                        codeset = NULL,
                        anomaly_or_exploratory='anomaly',
@@ -191,6 +192,22 @@ pf_process <- function(cohort = cohort,
                                        site_col = site_col,
                                        agegrp= age_groups,
                                        codeset = codeset)
+    } else if(anomaly_or_exploratory == 'anomaly' && multi_or_single_site == 'multi'){
+      
+      pf_int_summ <- pf_int %>% group_by(site, visit_type, domain) %>% 
+        summarise(tot_pt = n_distinct(person_id), n_pt_fact = sum(var_ever)) %>% 
+        mutate(prop_pt_fact = n_pt_fact / tot_pt)
+      
+      pf_anom_int <- compute_dist_anomalies(df_tbl = pf_int_summ %>% replace_site_col(),
+                                            grp_vars = c('domain', 'visit_type'), 
+                                            var_col = 'prop_pt_fact') 
+      
+      pf_final <- detect_outliers(df_tbl = pf_anom_int,
+                                  tail_input = 'both',
+                                  p_input = p_value,
+                                  column_analysis = 'prop_pt_fact',
+                                  column_variable = c('domain', 'visit_type'))
+      
     } else {pf_final <- compute_pf_medians(data_input=pf_int,
                                             site_col = site_col,
                                             agegrp = age_groups,
@@ -268,19 +285,20 @@ pf_output <- function(process_output,
                       output_function,
                       output,
                       facet = NULL,
-                      color = 'auto',
+                      #color = 'auto',
                       time_span = c('2012-01-01', '2023-01-01'),
                       date_breaks_str = '1 year',
-                      kmeans_clusters = 2,
+                      #kmeans_clusters = 2,
                       domain_filter = 'conditions_all',
                       visit_filter = 'outpatient'){
   
   ## Run output functions
   if(output_function == 'pf_ms_anom_nt'){
     pf_output <- pf_ms_anom_nt(data_tbl = process_output,
-                               output = output,
+                               #output = output,
                                facet = facet,
-                               kmeans_clusters = kmeans_clusters)
+                               #kmeans_clusters = kmeans_clusters
+                               visit_filter = visit_filter)
   }else if(output_function == 'pf_ss_anom_nt'){
     pf_output <- pf_ss_anom_nt(data_tbl = process_output,
                                output = output,
