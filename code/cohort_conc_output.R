@@ -318,7 +318,7 @@ plot_cnc_sp_ms_exp_at <- function(data_tbl,
 #' @return ggplot heatmap with time on the x axis, site on the y,
 #'          and fill color representing the number of MAD from the across-site median
 #'          for that specialty for the given year
-plot_cnc_sp_ms_an_at<- function(data_tbl){
+plot_cnc_sp_ms_an_at_old<- function(data_tbl){
   plt<-ggplot(data_tbl, aes(x=time_start,y=site,fill=n_mad))+
     geom_tile()+
     facet_wrap(~specialty_name)+
@@ -401,11 +401,251 @@ plot_cnc_sp_ss_an_nt<- function(data_tbl){
 #'      for single site, anomaly, across time
 #' @param data_tbl table which must contain the cols: time_start | n | specialty_name
 #' @return control chart with time on x axis, number of visits on y axis, faceted by specialty
-plot_cnc_sp_ss_an_at<-function(data_tbl){
+plot_cnc_sp_ss_an_at_old<-function(data_tbl){
   qic(data=data_tbl, x=time_start, y = n, chart='pp', facets=~specialty_name, #can also do cluster~specialty_name
       scales='free_y',
       x.angle=45,
       title="Control Chart: Specialty Concordance for Clusters Over Time",
       show.grid = TRUE,
       xlab='Time', n=total)
+}
+
+
+#' *Single Site, Anomaly, Across Time*
+#' 
+#' Control chart looking at proportion of visits with specialty over time
+#'     and a reference table
+#' 
+#' 
+#' @param process_output dataframe output by the corresponding ssdqa check
+#' @param filt_list a named list with names equal to the column name/s that must exist in the `process_output`
+#'                                    and values equal to the values on which to filter
+#'                                    e.g. filt_list=list(concepts=c(first_concept, second_concept),
+#'                                                        another_column_name=c('some_value_found_in_another_column_name'))
+#' @param facet the variables by which you would like to facet the graph; defaults to NULL
+#' @param plot_title_text text to display as the plot title. Will be tacked on to the text 'Control Chart: '
+#' 
+#' @return a list where:
+#'      the first element is a P prime control chart that highlights points in time that are anomalous
+#'      the second element is a gt table with the total counts based on the specified stratification 
+#'        
+#' 
+plot_cnc_sp_ss_an_at <- function(process_output,
+                           # filtered_var='ibd',
+                           # filter_concept=81893,
+                           filt_list,
+                           ct_col,
+                           denom_col,
+                           id_col,
+                           name_col,
+                           facet=NULL,
+                           plot_title_text){
+  
+  time_inc <- process_output %>% filter(!is.na(time_increment)) %>% distinct(time_increment) %>% pull()
+  
+  # applying all defined filters
+  for(i in 1:length(filt_list)){
+    var_name<-names(filt_list[i])
+    var_value<-filt_list[[i]]
+    
+    if(exists('c_added')){
+      c_added<-c_added%>%filter(!!sym(var_name)%in%var_value)
+    }else{
+      # first time around, construct new df
+      c_added<-process_output%>%filter(!!sym(var_name)%in%var_value)
+    }
+  }
+  
+  
+  if(time_inc == 'year'){
+    # can we pass into the function this additional variable in a list for this check? (i.e. not something the user would have to enter, but something that is tacked on when feeding into this output function) 
+    # facet <- facet %>% append('concept_id') %>% unique()
+    
+    # can we define the name of the filtering column/s and values for filters in a list instead (filt_list) so that it can be used across inputs with different column names? (filt_list)
+    # c_added <- process_output %>% filter(variable == filtered_var,
+    #                                      concept_id == filter_concept)
+    
+    c_final <- c_added %>% group_by(!!!syms(facet), time_start, !!sym(ct_col)) %>%
+      unite(facet_col, !!!syms(facet), sep = '\n') 
+    # figure out here how to reference ct_col instead of hard coded value
+    #y_col<-!!sym(ct_col)
+    c_plot <- qic(data = c_final, x = time_start, y = n, chart = 'pp', facet = ~facet_col,
+                  title = 'Control Chart: Code Usage Over Time', show.grid = TRUE, n = total,
+                  ylab = 'Proportion', xlab = 'Time')
+    
+    op_dat <- c_plot$data
+    
+    new_pp <- ggplot(op_dat,aes(x,y)) +
+      geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "lightgray",alpha = 0.4) +
+      geom_line(colour = ssdqa_colors_standard[[12]], size = .5) +  
+      geom_line(aes(x,cl)) +
+      geom_point(colour = ssdqa_colors_standard[[6]] , fill = ssdqa_colors_standard[[6]], size = 1) +
+      geom_point(data = subset(op_dat, y >= ucl), color = ssdqa_colors_standard[[3]], size = 2) +
+      geom_point(data = subset(op_dat, y <= lcl), color = ssdqa_colors_standard[[3]], size = 2) +
+      facet_wrap(~facet1, scales="free_y") +
+      ggtitle(label = paste('Control Chart: ', plot_title_text)) +
+      labs(x = 'Time',
+           y = 'Proportion')+
+      theme_minimal()
+    
+    output_int <- ggplotly(new_pp)
+    
+    # same here with passing in name of column
+    # is there a need to apply an additional filter here, since c_added already has filtering applied?
+    if(!'site'%in%colnames(c_added)){
+      c_added<-c_added%>%mutate(site='combined')
+    }
+    ref_tbl <- generate_ref_table(tbl = c_added,# %>% filter(specialty_name == filtered_var,
+                                                #           cluster == filter_concept), #%>% 
+                                   # mutate(concept_id=as.integer(concept_id)),
+                                  #id_col = 'concept_id',
+                                  id_col=id_col,
+                                  #denom = 'ct_concept',
+                                  denom=denom_col,
+                                  #name_col = 'concept_name',
+                                  name_col=name_col,
+                                  #vocab_tbl = vocab_tbl,
+                                  time = TRUE)
+    
+    output <- list(output_int, ref_tbl)
+    
+  }else{
+    
+    # concept_nm <- process_output %>% 
+    #   filter(!is.na(concept_name), concept_id == filter_concept) %>% 
+    #   distinct(concept_name) %>% pull()
+    # add in an if statement for if data is already anomalized?
+    concept_nm<-process_output%>%distinct(specialty_name)%>%pull()
+    anom_to_plot<-anomalize(.data=c_added%>%
+                              group_by(!!!syms(facet)),
+                            .date_var=time_start,
+                            .value=!!sym(ct_col))
+    anomalies <-
+      plot_anomalies(.data=anom_to_plot,# %>% filter(concept_id == filter_concept),
+                     .date_var=time_start) %>%
+      layout(title = paste0('Anomalies for ', plot_title_text))
+
+    decomp <-
+      plot_anomalies_decomp(.data=anom_to_plot,# %>% filter(concept_id == filter_concept),
+                            .date_var=time_start) %>%
+      layout(title = paste0('Anomalies for ', plot_title_text))
+
+    output <- list(anomalies, decomp)
+    
+  }
+  
+  return(output)
+
+}
+
+#' **Multi-Site Across Time Anomaly**
+#' Function to generate output displaying the Euclidean distance between two time series: the smoothed (Loess) proportion of a user-selected specialty for a given site and the all-site average proportion for each time point.
+#' Three graphs are output:
+#'        a line graph displaying the smoothed proportion of variable specified at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+#'        a line graph displaying the raw variable specified at each site over time
+#'        a circular bar graph displaying the Euclidean distance from the all-site mean where the fill represents the average Loess proportion over time
+#' @param process_output output from the associated ssdqa check
+#'          should contain the columns specified in `grp_vars`
+#'                                      and in `filt_list`
+#' @param filt_list a named list 
+#'        with names that must exist in the `process_output`
+#'        and values equal to the values on which to filter
+#'        e.g. filt_list=list(concepts=c(first_concept, second_concept),
+#'        another_column_name=c('some_value_found_in_another_column_name'))
+
+# want to also add in the name of the column to use as the proportions
+
+
+plot_cnc_sp_ms_an_at <- function(process_output,
+                                 grp_vars,
+                                 filt_list=NULL){
+  
+  # apply defined filters, if supplied
+  if(!is.null(filt_list)){# applying all defined filters
+    for(i in 1:length(filt_list)){
+      var_name<-names(filt_list[i])
+      var_value<-filt_list[[i]]
+      
+      if(exists('filt_op')){
+        filt_op<-filt_op%>%filter(!!sym(var_name)%in%var_value)
+      }else{
+        # first time around, construct new df
+        filt_op<-process_output%>%filter(!!sym(var_name)%in%var_value)
+      }
+    }
+  }else{filt_op<-process_output}
+  
+  
+  
+  allsites <-
+    filt_op %>%
+    select(!!!syms(grp_vars))%>%#time_start,concept_id,mean_allsiteprop) 
+    distinct() %>%
+    rename(prop=mean_allsiteprop) %>%
+    mutate(site='all site average') %>%
+    mutate(text_smooth=paste0("Site: ", site,
+                              "\n","Proportion: ",prop),
+           text_raw=paste0("Site: ", site,
+                           "\n","Proportion: ",prop))
+
+  dat_to_plot <-
+    filt_op %>%
+    mutate(text_smooth=paste0("Site: ", site,
+                              "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean),
+           text_raw=paste0("Site: ", site,
+                           "\n","Site Proportion: ",prop,
+                           "\n","Site Smoothed Proportion: ",site_loess,
+                           "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean))
+
+  p <- dat_to_plot %>%
+    ggplot(aes(y = prop, x = time_start, color = site, group = site, text = text_smooth)) +
+    geom_line(data=allsites, linewidth=1.1) +
+    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5, formula = y ~ x) +
+    scale_color_ssdqa() +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    labs(y = 'Proportion (Loess)',
+         x = 'Time',
+         title = paste0('Smoothed Proportion Across Time'))
+
+  q <- dat_to_plot %>%
+    ggplot(aes(y = prop, x = time_start, color = site,
+               group=site, text=text_raw)) +
+    scale_color_ssdqa() +
+    geom_line(data=allsites,linewidth=1.1) +
+    geom_line(linewidth=0.2) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    labs(x = 'Time',
+         y = 'Proportion',
+         title = paste0('Proportion Across Time'))
+
+  t <- dat_to_plot %>%
+    distinct(site, dist_eucl_mean, site_loess) %>%
+    group_by(site, dist_eucl_mean) %>%
+    summarise(mean_site_loess = mean(site_loess)) %>%
+    ggplot(aes(x = site, y = dist_eucl_mean, fill = mean_site_loess)) +
+    geom_col() +
+    geom_text(aes(label = dist_eucl_mean), vjust = 2, size = 3,
+              show.legend = FALSE) +
+    coord_radial(r_axis_inside = FALSE, rotate_angle = TRUE) +
+    guides(theta = guide_axis_theta(angle = 0)) +
+    theme_minimal() +
+    scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
+    theme(legend.position = 'bottom',
+          legend.text = element_text(angle = 45, vjust = 0.9, hjust = 1),
+          axis.text.x = element_text(face = 'bold')) +
+    labs(fill = 'Avg. Proportion \n(Loess)',
+         y ='Euclidean Distance',
+         x = '',
+         title = paste0('Euclidean Distance'))
+
+  plotly_p <- ggplotly(p,tooltip="text")
+  plotly_q <- ggplotly(q,tooltip="text")
+
+  output <- list(plotly_p,
+                 plotly_q,
+                 t)
+
+  return(output)
 }

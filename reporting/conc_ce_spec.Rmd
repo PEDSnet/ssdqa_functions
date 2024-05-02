@@ -25,18 +25,21 @@ tryCatch(source('../site/run.R'),
 # Set to "local" to read data from ../results, or another value to read from db
 data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
 
+require(tidyverse)
 require(tidyr)
 require(knitr)
 require(kableExtra)
 require(stringr)
 require(tibble)
 require(ggplot2)
+require(timetk)
 
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 jspa_output_ss_nt<-results_tbl('cnc_sp_ss_nt')%>%collect()
 jspa_output_ms_nt<-results_tbl('cnc_sp_ms_nt')%>%collect()
-jspa_output_ss_at<-results_tbl('cnc_sp_ss_at')%>%collect()
+jspa_output_ss_at_yr<-results_tbl('cnc_sp_ss_at')%>%collect()
 jspa_output_ms_at<-results_tbl('cnc_sp_ms_at')%>%collect()
+jspa_output_ss_at_month<-results_tbl('cnc_sp_ss_at_month')%>%collect()
 
 concept_names_grouped <- read.csv('../results/specialty_concept_names_named.csv')
 ```
@@ -103,7 +106,7 @@ Line plot with time on the x axis, proportion of visits with each specialty for 
 ### No stratification
 
 ```{r}
-output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at,
+output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at_yr,
                                          conc_process_names=concept_names_grouped,
                                          multi_or_single_site='single',
                                          anomaly_or_exploratory='exploratory',
@@ -116,7 +119,7 @@ output_ss_expl_at
 ### Stratified by Cluster
 
 ```{r}
-output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at,
+output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at_yr,
                                          conc_process_names=concept_names_grouped,
                                          multi_or_single_site='single',
                                          anomaly_or_exploratory='exploratory',
@@ -150,25 +153,46 @@ output_ss_an
 
 ## Single Site, Anomaly, Over Time (cnc_sp_ss_an_at)
 
-Control chart showing number of visits per specialty across time.
+### Year Increment
 
-Notes:
-  - Lots of plots if do cluster x specialty
-  - Could still do cluster x specialty, but only show them if: 
-      - Above a certain number of visits?
-      - x% of the years are anomolous? (not sure how we'd implement this without doing computation outside of the qi chart code)
+- Top n filters to the total number of visits for that cluster over all time for the given specialty
+    - If multiple specialties are plotted, the top n will be shown for each specialty
+    - If top_n is not specified, all clusters are plotted
+- User must filter specialty names: can be one or many
+    - Caution against too many, as the plot will become cluttered
 
-```{r fig.width=10, fig.height=10}
-output_ss_an_at <- conc_output_gen(conc_process_output=jspa_output_ss_at,
+```{r}
+output_ss_an_at <- conc_output_gen(conc_process_output=jspa_output_ss_at_yr,
                                 conc_process_names=concept_names_grouped,
                                 multi_or_single_site='single',
                                 anomaly_or_exploratory='anomaly',
                                 time_dimension=TRUE,
-                                facet_vars=c('codeset_name'),
-                                color_var='specialty_name')
-output_ss_an_at
+                                facet_vars=c('specialty_name'),
+                                specialty_filter=c("Rheumatology"),
+                                top_n=2)
+output_ss_an_at[[1]]
+
+output_ss_an_at[[2]]
 ```
 
+### Month increment
+
+  - One specialty at a time
+  - Specialty must have at least one period
+  - Top n clusters for the specialty can be specified
+  
+```{r}
+output_ss_an_at_month <- conc_output_gen(conc_process_output=jspa_output_ss_at_month,
+                                conc_process_names=concept_names_grouped,
+                                multi_or_single_site='single',
+                                anomaly_or_exploratory='anomaly',
+                                time_dimension=TRUE,
+                                facet_vars=c('specialty_name'),
+                                specialty_filter="Rheumatology",
+                                top_n=2)
+output_ss_an_at_month[[1]]
+output_ss_an_at_month[[2]]
+```
 
 ## Multi Site, Exploratory, No Time (cnc_sp_ms_exp_nt)
 
@@ -233,11 +257,15 @@ output_ms_an_nt
 
 ##  Multi-Site, Anomaly, Across Time (cnc_sp_ms_an_at)
 
-Heatmap with time on the x axis, site on the y axis, and colors indicating the number of MAD from the median for the specialty for the year:
+This check displays the Euclidean distance between two time series: the smoothed (Loess) proportion of a user-selected specialty for a given site and the all-site average proportion for each time point.
 
-  - MAD is computed for each specialty for each year, and each site is compared to the median for that specialty for the given year
-  
-Note: We could give the option to limit to only show "top n", but would need to figure out what that means in this context: specialties where there is the largest n_mad in one of the years, regardless of the year? something else?
+Three graphs are output:
+
+  - a line graph displaying the smoothed proportion of visits with the given specialty at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+  - a line graph displaying the raw (not smoothed) proportion of visits with the given specialty at each site over time
+  - a circular bar graph displaying the Euclidean distance from the all-site mean where the fill represents the average Loess proportion over time
+
+### Rheumatology
 
 ```{r}
 output_ms_an_ot <- conc_output_gen(conc_process_output=jspa_output_ms_at,
@@ -245,7 +273,26 @@ output_ms_an_ot <- conc_output_gen(conc_process_output=jspa_output_ms_at,
                                    multi_or_single_site='multi',
                                    anomaly_or_exploratory='anomaly',
                                    time_dimension=TRUE,
-                                   facet_vars=c('codeset_name'))
+                                   facet_vars=c('codeset_name'),
+                                   specialty_filter=c("Rheumatology"))
 
-output_ms_an_ot
+output_ms_an_ot[[1]]
+output_ms_an_ot[[2]]
+output_ms_an_ot[[3]]
+```
+
+### General Pediatrics
+
+```{r}
+output_ms_an_ot <- conc_output_gen(conc_process_output=jspa_output_ms_at,
+                                   conc_process_names=concept_names_grouped,
+                                   multi_or_single_site='multi',
+                                   anomaly_or_exploratory='anomaly',
+                                   time_dimension=TRUE,
+                                   facet_vars=c('codeset_name'),
+                                   specialty_filter=c("General Pediatrics"))
+
+output_ms_an_ot[[1]]
+output_ms_an_ot[[2]]
+output_ms_an_ot[[3]]
 ```
