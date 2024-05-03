@@ -1,7 +1,7 @@
 .run <- function(){
   
   #' Get site name
-  config('qry_site', 'chop')
+  site_nm <- config('qry_site')
   
   #' Step 0: All patients with a visit between 2009-01-01 to 2023-12-31.
   
@@ -10,7 +10,8 @@
   
   init_sum(num_pts = distinct_ct(step0, id_col = 'patid'),
            step_number = 0,
-           attrition_step = 'All patients with a visit between 2009-01-01 to 2023-12-31')
+           attrition_step = 'All patients with a visit between 2009-01-01 to 2023-12-31',
+           site = site_nm)
   
   #' Step 1: Patients with at least 5 outpatient visits between 2009-01-01 to 2023-12-31
   
@@ -22,7 +23,8 @@
   
   append_sum(num_pts = distinct_ct(step1, id_col = 'patid'),
              step_number = 1,
-             attrition_step = 'Patients with at least 5 outpatient visits between 2009-01-01 to 2023-12-31')
+             attrition_step = 'Patients with at least 5 outpatient visits between 2009-01-01 to 2023-12-31',
+             site = site_nm)
   
   #' Step 2: Patients with at least 5 outpatient visits between 2009-01-01 to 2023-12-31, 
   #' where time between first and last visit is at least two years
@@ -40,7 +42,8 @@
   
   append_sum(num_pts = distinct_ct(step2, id_col = 'patid'),
              step_number = 2,
-             attrition_step = 'Patients with at least 5 outpatient visits between 2009-01-01 to 2023-12-31, where time between first and last visit is at least two years')
+             attrition_step = 'Patients with at least 5 outpatient visits between 2009-01-01 to 2023-12-31, where time between first and last visit is at least two years',
+             site = site_nm)
   
   #' Step 3: Patients diagnosed with any Type II diabetes code.
   
@@ -52,7 +55,8 @@
   
   append_sum(num_pts = distinct_ct(step3, id_col = 'patid'),
              step_number = 3,
-             attrition_step = 'Patients diagnosed with any Type II diabetes code')
+             attrition_step = 'Patients diagnosed with any Type II diabetes code',
+             site = site_nm)
   
   #' Step 4: Patients at least 8 years old at time of first Type II diabetes code
   
@@ -61,9 +65,13 @@
     filter(dx_date == min(dx_date),
            age_at_dx >= 8) %>% ungroup()
   
+    ## Get index dates for cohort -- date of first T2D diagnosis
+    index_dates <- step4 %>% select(patid, dx_date) %>% distinct() %>% rename('start_date' = dx_date)
+  
   append_sum(num_pts = distinct_ct(step4, id_col = 'patid'),
              step_number = 4,
-             attrition_step = 'Patients at least 8 years old at time of first Type II diabetes code')
+             attrition_step = 'Patients at least 8 years old at time of first Type II diabetes code',
+             site = site_nm)
   
   #' Step 5: Patients with at least two Type II diabetes codes.
   
@@ -77,7 +85,8 @@
   
   append_sum(num_pts = distinct_ct(step5, id_col = 'patid'),
              step_number = 5,
-             attrition_step = 'Patients with at least two Type II diabetes codes')
+             attrition_step = 'Patients with at least two Type II diabetes codes',
+             site = site_nm)
   
   #' Step 6: Patients with an Hba1c lab in the record.
   
@@ -87,7 +96,8 @@
   
   append_sum(num_pts = distinct_ct(step6, id_col = 'patid'),
              step_number = 6,
-             attrition_step = 'Patients with an Hba1c lab in the record')
+             attrition_step = 'Patients with an Hba1c lab in the record',
+             site = site_nm)
   
   #' Step 7: Patients with an Hba1c lab with valid results.
   
@@ -96,18 +106,21 @@
   
   append_sum(num_pts = distinct_ct(step7, id_col = 'patid'),
              step_number = 7,
-             attrition_step = 'Patients with an Hba1c lab with valid results')
+             attrition_step = 'Patients with an Hba1c lab with valid results',
+             site = site_nm)
   
   #' Step 8: Patients with an Hba1c lab >= 6.5%
   
   step8 <- step7 %>%
     filter(result_num >= 6.5)
   
-  primary_cohort <- step8 %>% distinct(patid)
+  primary_cohort <- step8 %>% distinct(patid) %>%
+    left_join(index_dates) %>% mutate(site = site_nm)
   
   append_sum(num_pts = distinct_ct(step8, id_col = 'patid'),
              step_number = 8,
-             attrition_step = 'Patients with an Hba1c lab >= 6.5%')
+             attrition_step = 'Patients with an Hba1c lab >= 6.5%',
+             site = site_nm)
   
   ## END PRIMARY COHORT ##
   
@@ -122,7 +135,8 @@
   
   append_sum(num_pts = distinct_ct(step9, id_col = 'patid'),
              step_number = 9,
-             attrition_step = 'Patients with at least two Hba1c labs >= 6.5%')
+             attrition_step = 'Patients with at least two Hba1c labs >= 6.5%',
+             site = site_nm)
   
   #' Step 10: Patients with an outpatient prescription for antidiabetic drug
   
@@ -130,11 +144,12 @@
     inner_join(select(step9, patid)) %>%
     inner_join(select(cdm_tbl('encounter'), encounterid, enc_type)) %>%
     filter(enc_type %in% c('AV', 'TH')) %>%
-    inner_join(load_codeset('metformin'), by = c('rxnorm_cui' = 'concept_code'))
+    inner_join(load_codeset('rx_diabetes'), by = c('rxnorm_cui' = 'concept_code'))
   
   append_sum(num_pts = distinct_ct(step10, id_col = 'patid'),
              step_number = 10,
-             attrition_step = 'Patients with an outpatient prescription for antidiabetic drug')
+             attrition_step = 'Patients with an outpatient prescription for antidiabetic drug',
+             site = site_nm)
   
   output_sum(file = TRUE,
              name = paste0(config('qry_site'), '_diabetes_attrition'))
