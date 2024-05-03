@@ -33,6 +33,9 @@ require(stringr)
 require(tibble)
 require(ggplot2)
 require(timetk)
+library(qicharts2)
+library(gt)
+library(ggiraph)
 
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 jspa_output_ss_nt<-results_tbl('cnc_sp_ss_nt')%>%collect()
@@ -249,7 +252,8 @@ output_ms_an_nt <- conc_output_gen(conc_process_output=jspa_output_ms_nt,
                                    facet_vars=c('codeset_name'),
                                    color_var='site',
                                    n_mad=3L,
-                                   alt=TRUE)
+                                   alt=TRUE,
+                                   p_value=0.9)
 
 
 output_ms_an_nt

@@ -175,7 +175,8 @@ conc_output_gen <- function(conc_process_output,
                             top_n=nrow(conc_process_output),
                             n_mad=3L,
                             alt=FALSE,
-                            specialty_filter){
+                            specialty_filter,
+                            p_value=0.9){
   message('Preparing data for visualization')
   if('cluster'%in%facet_vars&'visit_type'%in%facet_vars){
     stop("Can only stratify by visit_type or cluster, not both")
@@ -226,17 +227,28 @@ conc_output_gen <- function(conc_process_output,
                                       var_col='prop')
     }else{
       gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site']
-      message('Computing median and distance to median')
-      conc_output_pp <- compute_dist_median_conc(tbl=conc_output_pp,
-                                                 grp_vars=gp_vars_no_site,
-                                                 var_col='prop',
-                                                 num_mad=n_mad)
-
-      message('Flagging the anomalies')
-      # only select the specialties where at least one site is an anomaly
-      conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
-                                      facet_vars=facet_vars,
-                                      distinct_vars=c('codeset_name', 'specialty_name'))
+      conc_output_pp <- compute_dist_anomalies(df_tbl = conc_output_pp,
+                                            grp_vars = gp_vars_no_site, 
+                                            var_col = 'prop') 
+      
+      conc_output_pp <- detect_outliers(df_tbl = conc_output_pp,
+                                       tail_input = 'both',
+                                       p_input = p_value,
+                                       column_analysis = 'prop',
+                                       column_variable = 'specialty_name')
+      # 
+      # 
+      # message('Computing median and distance to median')
+      # conc_output_pp <- compute_dist_median_conc(tbl=conc_output_pp,
+      #                                            grp_vars=gp_vars_no_site,
+      #                                            var_col='prop',
+      #                                            num_mad=n_mad)
+      # 
+      # message('Flagging the anomalies')
+      # # only select the specialties where at least one site is an anomaly
+      # conc_output_pp <- flag_anomaly(tbl=conc_output_pp,
+      #                                 facet_vars=facet_vars,
+      #                                 distinct_vars=c('codeset_name', 'specialty_name'))
     }
 
 
@@ -305,7 +317,7 @@ conc_output_gen <- function(conc_process_output,
       
       conc_output_plot<-plot_cnc_sp_ss_an_at(process_output=conc_output_pp,
                                              filt_list=list(specialty_name=specialty_filter),
-                                             ct_col='n',
+                                             ct_col='prop',
                                              id_col='cluster',
                                              denom_col='total',
                                              name_col='specialty_name',
@@ -346,7 +358,8 @@ conc_output_gen <- function(conc_process_output,
                                                
     }else{
       # not over time
-      conc_output_plot <- plot_cnc_sp_ms_an_nt(data_tbl=conc_output_pp)
+      conc_output_plot <- cnc_sp_ms_anom_nt(process_output=conc_output_pp,
+                                            title="Specialty")
     }
     
   }

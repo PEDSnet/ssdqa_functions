@@ -433,7 +433,7 @@ plot_cnc_sp_ss_an_at_old<-function(data_tbl){
 plot_cnc_sp_ss_an_at <- function(process_output,
                            # filtered_var='ibd',
                            # filter_concept=81893,
-                           filt_list,
+                           filt_list=NULL,
                            ct_col,
                            denom_col,
                            id_col,
@@ -442,19 +442,19 @@ plot_cnc_sp_ss_an_at <- function(process_output,
                            plot_title_text){
   
   time_inc <- process_output %>% filter(!is.na(time_increment)) %>% distinct(time_increment) %>% pull()
-  
-  # applying all defined filters
-  for(i in 1:length(filt_list)){
-    var_name<-names(filt_list[i])
-    var_value<-filt_list[[i]]
-    
-    if(exists('c_added')){
-      c_added<-c_added%>%filter(!!sym(var_name)%in%var_value)
-    }else{
-      # first time around, construct new df
-      c_added<-process_output%>%filter(!!sym(var_name)%in%var_value)
-    }
-  }
+  if(!is.null(filt_list)){
+    # applying all defined filters
+    for(i in 1:length(filt_list)){
+      var_name<-names(filt_list[i])
+      var_value<-filt_list[[i]]
+      
+      if(exists('c_added')){
+        c_added<-c_added%>%filter(!!sym(var_name)%in%var_value)
+      }else{
+        # first time around, construct new df
+        c_added<-process_output%>%filter(!!sym(var_name)%in%var_value)
+      }
+    }}else(c_added<-process_output)
   
   
   if(time_inc == 'year'){
@@ -648,4 +648,38 @@ plot_cnc_sp_ms_an_at <- function(process_output,
                  t)
 
   return(output)
+}
+
+cnc_sp_ms_anom_nt<-function(process_output,
+                            title,
+                         text_wrapping_char = 60){
+  
+  cli::cli_div(theme = list(span.code = list(color = 'blue')))
+
+  
+  dat_to_plot <- process_output %>%
+    mutate(text=paste("Specialty: ",specialty_name,
+                      "\nSite: ",site,
+                      "\nProportion: ",round(prop,2),
+                      "\nMean proportion:",round(mean_val,2),
+                      "\nMedian proportion: ",round(median_val,2),
+                      "\nMAD: ", round(mad_val,2)))
+
+  
+  plt<-ggplot(dat_to_plot %>% filter(anomaly_yn != 'no outlier in group'),
+              aes(x=site, y=specialty_name, text=text, color=prop))+
+    geom_point_interactive(aes(size=mad_val,shape=anomaly_yn, tooltip = text))+
+    scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
+    scale_shape_manual(values=c(20,8))+
+    scale_y_discrete(labels = function(x) str_wrap(x, width = text_wrapping_char)) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle=60)) +
+    labs(y = "Specialty",
+         size="",
+         title=paste0('Anomalous Variables per ', title, ' by Site')) +
+    guides(color = guide_colorbar(title = 'Proportion'),
+           shape = guide_legend(title = 'Anomaly'),
+           size = 'none')
+  
+  girafe(ggobj = plt)
 }
