@@ -1,0 +1,217 @@
+---
+title: "Cohort Attrition Output Library"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(patchwork)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+combo_attrition <- combine_attritions()
+
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+```
+
+## General Information
+
+For each of the following check outputs, some of the same customization options apply across the board. Firstly, the user can select which step in the attrition should be considered the "start" for comparison purposes. 
+
+Secondly, there are FOUR columns that could be used to generate the graph. This is selected by the user at the time they would like to build the plot. These columns are:
+
+- `num_pts` -- the raw count of patients meeting the requirements for each step
+- `prop_retained_start` -- the proportion of patients retained at each step compared to the user-selected starting step
+- `prop_retained_prior` -- the proportion of patients retained at each step compared to the prior step
+- `prop_diff_prior` -- the proportion difference between each step and the step prior
+
+Finally, for both of the exploratory output types, a log scale can be implemented along the y-axis to improve visibility if the values are especially large.
+
+For each output option, versions of the attrition starting at step 0 and step 3 are shown to demonstrate why it may be helpful to examine the attrition using different starting points.
+
+## Single Site, Exploratory, No Time (Step 0 Start)
+```{r ss_exp_nt0}
+
+tbl <- ca_process(attrition_tbl = combo_attrition %>% filter(site == 'colorado'),
+                  multi_or_single_site = 'single',
+                  anomaly_or_exploratory = 'exploratory',
+                  start_step_num = 0)
+
+g1 <- ca_ss_exp_nt(process_output = tbl,
+                   log_scale = TRUE,
+                   output = 'prop_retained_start')
+
+g2 <- ca_ss_exp_nt(process_output = tbl,
+                   log_scale = FALSE,
+                   output = 'prop_retained_start')
+
+g1[[1]]
+
+g2[[1]]
+
+g1[[2]]
+
+
+```
+
+## Single Site, Exploratory, No Time (Step 3 Start)
+```{r ss_exp_nt3}
+
+tbl <- ca_process(attrition_tbl = combo_attrition %>% filter(site == 'colorado'),
+                  multi_or_single_site = 'single',
+                  anomaly_or_exploratory = 'exploratory',
+                  start_step_num = 3)
+
+g1 <- ca_ss_exp_nt(process_output = tbl,
+                   log_scale = TRUE,
+                   output = 'prop_retained_start')
+
+g2 <- ca_ss_exp_nt(process_output = tbl,
+                   log_scale = FALSE,
+                   output = 'prop_retained_start')
+
+g1[[1]]
+
+g2[[1]]
+
+g1[[2]]
+
+
+```
+
+## Multi Site, Exploratory, No Time (Step 0 Start)
+```{r ms_exp_nt0}
+
+tbl <- ca_process(attrition_tbl = combo_attrition,
+                  multi_or_single_site = 'multi',
+                  anomaly_or_exploratory = 'exploratory',
+                  start_step_num = 0)
+
+g1 <- ca_ms_exp_nt(process_output = tbl,
+                   log_scale = TRUE,
+                   output = 'prop_retained_start')
+
+g2 <- ca_ms_exp_nt(process_output = tbl,
+                   log_scale = FALSE,
+                   output = 'prop_retained_start')
+
+g1[[1]]
+
+g2[[1]]
+
+g1[[2]]
+
+
+```
+
+## Multi Site, Exploratory, No Time (Step 3 Start)
+```{r ms_exp_nt3}
+
+tbl <- ca_process(attrition_tbl = combo_attrition,
+                  multi_or_single_site = 'multi',
+                  anomaly_or_exploratory = 'exploratory',
+                  start_step_num = 3)
+
+g1 <- ca_ms_exp_nt(process_output = tbl,
+                   log_scale = TRUE,
+                   output = 'prop_retained_start')
+
+g2 <- ca_ms_exp_nt(process_output = tbl,
+                   log_scale = FALSE,
+                   output = 'prop_retained_start')
+
+g1[[1]]
+
+g2[[1]]
+
+g1[[2]]
+
+
+```
+
+## Multi Site, Anomaly Detection, No Time (Step 0 Start) -- **2 OPTIONS**
+
+Used num_pts as the value in this version to show more outliers / steps that were eligible for outlier detection.
+
+```{r ms_anom_nt0}
+
+tbl <- ca_process(attrition_tbl = combo_attrition,
+                  multi_or_single_site = 'multi',
+                  anomaly_or_exploratory = 'anomaly',
+                  start_step_num = 0,
+                  var_col = 'num_pts')
+
+g1 <- ca_ms_anom_nt1(process_output = tbl,
+                     output = 'num_pts')
+
+g2 <- ca_ms_anom_nt2(process_output = tbl,
+                     log_scale = FALSE,
+                     output = 'num_pts')
+
+g1
+
+g2[[1]]
+
+g2[[2]]
+
+
+```
+
+## Multi Site, Anomaly Detection, No Time (Step 3 Start) -- **2 OPTIONS**
+```{r ms_anom_nt3}
+
+tbl <- ca_process(attrition_tbl = combo_attrition,
+                  multi_or_single_site = 'multi',
+                  anomaly_or_exploratory = 'anomaly',
+                  start_step_num = 3,
+                  var_col = 'prop_retained_start')
+
+g1 <- ca_ms_anom_nt1(process_output = tbl,
+                     output = 'prop_retained_start')
+
+g2 <- ca_ms_anom_nt2(process_output = tbl,
+                     log_scale = FALSE,
+                     output = 'prop_retained_start')
+
+g1
+
+g2[[1]]
+
+g2[[2]]
+
+
+```
