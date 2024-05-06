@@ -50,6 +50,18 @@ compute_attrition_diff <- function(attrition_tbl,
 }
 
 
+#' Combine attritions from multiple sites
+#' 
+#' This function reads in CSV files with a naming structure of site_file_suffix.csv and
+#' combines them into a master file with data from all provided sites
+#'
+#' @param site_list list of all sites for which there are attrition files
+#' @param file_directory the directory holding all of the attrition files
+#' @param file_suffix the suffix of the attrition files
+#'
+#' @return a combined dataframe with attrition information from all of the sites
+#'         provided in site_list
+#'
 combine_attritions <- function(site_list = c('seattle', 'colorado', 'chop', 'cchmc'),
                                file_directory = paste0(base_dir, '/results/'),
                                file_suffix = '_diabetes_attrition'){
@@ -82,7 +94,11 @@ combine_attritions <- function(site_list = c('seattle', 'colorado', 'chop', 'cch
 #'                  to the y axis
 #' @param output the column that should be used as the y-axis:
 #'               
-#'               options are: num_pts, percent_retained_prior, percent_retained_start
+#'               options are: 
+#'               `num_pts` (raw patient count), 
+#'               `prop_retained_start` (proportion patients retained from starting step),
+#'               `prop_retained_prior` (proportion patients retained from prior step),
+#'               `prop_diff_prior` (proportion difference between each step and the prior step)
 #'
 #' @return a line graph with the output value for each step and an accompanying 
 #'         table with the full descriptions of each step
@@ -99,17 +115,21 @@ ca_ss_exp_nt <- function(process_output,
     title = 'Proportion Retained from Start'
   }else if(output == 'prop_retained_prior'){
     title = 'Proportion Retained from Prior Step'
-  }else{cli::cli_abort("Please select a valid output option: {.code num_pts} or {.code percent_step0}")}
+  }else if(output == 'prop_diff_prior'){
+    title = 'Proportion Difference from Prior Step'
+  }else{cli::cli_abort("Please select a valid output option: {.code num_pts}, {.code prop_retained_start}, {.code prop_retained_prior}, 
+                       or {.code prop_diff_prior}")}
   
   min_step <- process_output %>% filter(step_number == min(step_number)) %>% pull(step_number)
   max_step <- process_output %>% filter(step_number == max(step_number)) %>% pull(step_number)
     
     grph <- ggplot(process_output %>% mutate(text = paste0('Step: ', attrition_step,
-                                                           '\nCount: ', num_pts)), 
+                                                           '\nPatient Count: ', formatC(num_pts, format = 'd', big.mark = ','),
+                                                           '\n',output, ': ', round(!!sym(output), 4))), 
                    aes(y = !!sym(output), x = step_number)) +
       geom_line(color = 'gray') +
       geom_point_interactive(aes(color = as.character(step_number), tooltip = text), show.legend = FALSE) +
-      scale_y_continuous(transform = 'log2') +
+      #scale_y_continuous(transform = 'log2') +
       scale_x_continuous(breaks = seq(min_step, max_step, 1)) +
       labs(y = title,
            x = 'Step') +
@@ -140,6 +160,22 @@ ca_ss_exp_nt <- function(process_output,
 
 
 
+#' Cohort Attrition Multi Site Exploratory No Time
+#'
+#' @param process_output output from compute_attrition_diff
+#' @param log_scale logical to determine whether a log transform should be applied
+#'                  to the y axis
+#' @param output the column that should be used as the y-axis:
+#'               
+#'               options are: 
+#'               `num_pts` (raw patient count), 
+#'               `prop_retained_start` (proportion patients retained from starting step),
+#'               `prop_retained_prior` (proportion patients retained from prior step),
+#'               `prop_diff_prior` (proportion difference between each step and the prior step)
+#'
+#' @return a line graph with the output value for each step and an accompanying 
+#'         table with the full descriptions of each step
+#'         
 ca_ms_exp_nt <- function(process_output,
                          log_scale = FALSE,
                          output = 'num_pts'){
@@ -152,7 +188,10 @@ ca_ms_exp_nt <- function(process_output,
     title = 'Proportion Retained from Start'
   }else if(output == 'prop_retained_prior'){
     title = 'Proportion Retained from Prior Step'
-  }else{cli::cli_abort("Please select a valid output option: {.code num_pts} or {.code percent_step0}")}
+  }else if(output == 'prop_diff_prior'){
+    title = 'Proportion Difference from Prior Step'
+  }else{cli::cli_abort("Please select a valid output option: {.code num_pts}, {.code prop_retained_start}, {.code prop_retained_prior}, 
+                       or {.code prop_diff_prior}")}
   
   min_step <- process_output %>% filter(step_number == min(step_number)) %>% pull(step_number) %>% unique()
   max_step <- process_output %>% filter(step_number == max(step_number)) %>% pull(step_number) %>% unique()
@@ -168,7 +207,8 @@ ca_ms_exp_nt <- function(process_output,
     
   grph <- ggplot(process_output %>% mutate(text = paste0('Site: ', site,
                                                          '\nStep: ', attrition_step,
-                                                         '\nCount: ', num_pts)), 
+                                                         '\nPatient Count: ', formatC(num_pts, format = 'd', big.mark = ','),
+                                                         '\n',output,': ', round(!!sym(output), 4))), 
                  aes(y = !!sym(output), x = step_number, color = site, group = site)) +
     geom_line() +
     geom_line(data = allsite_med, linewidth = 1.1) +
@@ -205,6 +245,22 @@ ca_ms_exp_nt <- function(process_output,
 
 
 
+#' Cohort Attrition Multi Site Anomaly No Time (option 1)
+#'
+#' @param process_output output from compute_attrition_diff
+#' @param output the column that should be used as the y-axis:
+#'               
+#'               options are: 
+#'               `num_pts` (raw patient count), 
+#'               `prop_retained_start` (proportion patients retained from starting step),
+#'               `prop_retained_prior` (proportion patients retained from prior step),
+#'               `prop_diff_prior` (proportion difference between each step and the prior step)
+#'
+#' @return a dot plot indicating anomalous sites based on the user selected output value
+#' 
+#'         anomalies are indicated by STARS, the color of each dot represents the raw output value,
+#'         and the size of each dot represents the mean output value per attrition step
+#' 
 ca_ms_anom_nt1 <-function(process_output,
                           output){
   
@@ -216,27 +272,25 @@ ca_ms_anom_nt1 <-function(process_output,
     title = 'Proportion Retained from Start'
   }else if(output == 'prop_retained_prior'){
     title = 'Proportion Retained from Prior Step'
-  }else{cli::cli_abort("Please select a valid output option: {.code num_pts} or {.code percent_step0}")}
+  }else if(output == 'prop_diff_prior'){
+    title = 'Proportion Difference from Prior Step'
+  }else{cli::cli_abort("Please select a valid output option: {.code num_pts}, {.code prop_retained_start}, {.code prop_retained_prior}, 
+                       or {.code prop_diff_prior}")}
   
   min_step <- process_output %>% filter(step_number == min(step_number)) %>% pull(step_number) %>% unique()
   max_step <- process_output %>% filter(step_number == max(step_number)) %>% pull(step_number) %>% unique()
   
-  comparison_col = output
-  
   dat_to_plot <- process_output %>%
     mutate(text=paste("Step: ",attrition_step,
                       "\nSite: ",site,
-                      "\nValue: ",round(!!sym(comparison_col),2),
-                      "\nMean proportion:",round(mean_val,2),
+                      "\n",output,": ",round(!!sym(output),4),
+                      "\nMean: ",round(mean_val,2),
                       '\nSD: ', round(sd_val,2),
-                      "\nMedian proportion: ",round(median_val,2),
+                      "\nMedian: ",round(median_val,2),
                       "\nMAD: ", round(mad_val,2)))
   
-  
-  #mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
-  
   plt<-ggplot(dat_to_plot %>% filter(anomaly_yn != 'no outlier in group'),
-              aes(x=site, y=step_number, text=text, color=!!sym(comparison_col)))+
+              aes(x=site, y=step_number, text=text, color=!!sym(output)))+
     geom_point_interactive(aes(size=mean_val,shape=anomaly_yn, tooltip = text))+
     geom_point_interactive(data = dat_to_plot %>% filter(anomaly_yn == 'not outlier'), 
                            aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
@@ -257,6 +311,24 @@ ca_ms_anom_nt1 <-function(process_output,
 }
 
 
+#' Cohort Attrition Multi Site Anomaly No Time (option 2)
+#'
+#' @param process_output output from compute_attrition_diff
+#' @param log_scale logical to determine whether a log transform should be applied
+#'                  to the y axis
+#' @param output the column that should be used as the y-axis:
+#'               
+#'               options are: 
+#'               `num_pts` (raw patient count), 
+#'               `prop_retained_start` (proportion patients retained from starting step),
+#'               `prop_retained_prior` (proportion patients retained from prior step),
+#'               `prop_diff_prior` (proportion difference between each step and the prior step)
+#'
+#' @return a line graph with the output value for each step and an accompanying 
+#'         table with the full descriptions of each step
+#'         
+#'         anomalous values are indicated with a STAR
+#'         
 ca_ms_anom_nt2 <- function(process_output,
                            log_scale = FALSE,
                            output = 'num_pts'){
@@ -269,15 +341,22 @@ ca_ms_anom_nt2 <- function(process_output,
     title = 'Proportion Retained from Start'
   }else if(output == 'prop_retained_prior'){
     title = 'Proportion Retained from Prior Step'
-  }else{cli::cli_abort("Please select a valid output option: {.code num_pts} or {.code percent_step0}")}
+  }else if(output == 'prop_diff_prior'){
+    title = 'Proportion Difference from Prior Step'
+  }else{cli::cli_abort("Please select a valid output option: {.code num_pts}, {.code prop_retained_start}, {.code prop_retained_prior}, 
+                       or {.code prop_diff_prior}")}
   
   min_step <- process_output %>% filter(step_number == min(step_number)) %>% pull(step_number) %>% unique()
   max_step <- process_output %>% filter(step_number == max(step_number)) %>% pull(step_number) %>% unique()
   
     
-  grph <- ggplot(process_output %>% mutate(text = paste0('Site: ', site,
-                                                         '\nStep: ', attrition_step,
-                                                         '\nValue: ', !!sym(output))) %>%
+  grph <- ggplot(process_output %>% mutate(text = paste0(text=paste("Step: ",attrition_step,
+                                                                    "\nSite: ",site,
+                                                                    "\n",output,": ",round(!!sym(output),4),
+                                                                    "\nMean: ",round(mean_val,2),
+                                                                    '\nSD: ', round(sd_val,2),
+                                                                    "\nMedian: ",round(median_val,2),
+                                                                    "\nMAD: ", round(mad_val,2)))) %>%
                    filter(anomaly_yn != 'no outlier in group'), 
                  aes(y = !!sym(output), x = step_number, color = site, group = site)) +
     geom_line() +

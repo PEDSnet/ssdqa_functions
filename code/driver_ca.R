@@ -102,7 +102,7 @@
   #' Step 7: Patients with an Hba1c lab with valid results.
   
   step7 <- step6 %>%
-    filter(!is.na(result_num) & ! (result_num < 0 & result_num > 100))
+    filter(!is.na(result_num) & ! (result_num < 0 & result_num > 100)) ## using this range just bc it is a %, may need to change
   
   append_sum(num_pts = distinct_ct(step7, id_col = 'patid'),
              step_number = 7,
