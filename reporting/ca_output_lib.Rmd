@@ -81,9 +81,13 @@ g2 <- ca_ss_exp_nt(process_output = tbl,
 
 g1[[1]]
 
+g1[[2]]
+
 g2[[1]]
 
-g1[[2]]
+g2[[2]]
+
+g1[[3]]
 
 
 ```
@@ -106,9 +110,13 @@ g2 <- ca_ss_exp_nt(process_output = tbl,
 
 g1[[1]]
 
+g1[[2]]
+
 g2[[1]]
 
-g1[[2]]
+g2[[2]]
+
+g1[[3]]
 
 
 ```

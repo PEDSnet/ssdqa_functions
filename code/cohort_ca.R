@@ -140,6 +140,29 @@ ca_ss_exp_nt <- function(process_output,
     if(!log_scale){grph <- grph + ggtitle(paste0(title, ' per Attrition Step'))}
     
     grph_int <- girafe(ggobj = grph)
+    
+    ## Trying tornado plot
+    
+    process_output <- process_output %>% mutate(step_number = as.character(step_number))
+    
+    lvls <- stringr::str_sort(unique(process_output$step_number), numeric = TRUE, decreasing = TRUE)
+    process_output$step_number <- factor(process_output$step_number, levels = lvls)
+    
+    tornado <- ggplot(process_output %>% mutate(text = paste0('Step: ', attrition_step,
+                                                              '\nPatient Count: ', formatC(num_pts, format = 'd', big.mark = ','),
+                                                              '\n',output, ': ', round(!!sym(output), 4))), 
+                      aes(x = !!sym(output), y = step_number, fill = step_number)) +
+      geom_col_interactive(aes(tooltip = text)) +
+      scale_fill_ssdqa() +
+      #scale_y_reverse(breaks = seq(min_step, max_step, 1)) +
+      labs(x = title,
+           y = 'Step') +
+      theme_minimal()
+    
+    if(log_scale){tornado <- tornado + scale_x_continuous(transform = 'log') + ggtitle(paste0(title, ' per Attrition Step (Log)'))}
+    if(!log_scale){tornado <- tornado + ggtitle(paste0(title, ' per Attrition Step'))}
+    
+    tornado_int <- girafe(ggobj = tornado)
   
   tbl <- process_output %>%
     distinct(step_number, attrition_step) %>%
@@ -151,6 +174,7 @@ ca_ss_exp_nt <- function(process_output,
     tab_header('Attrition Step Reference')
   
   output <- list(grph_int,
+                 tornado_int,
                  tbl)
   
   
@@ -296,7 +320,8 @@ ca_ms_anom_nt1 <-function(process_output,
                            aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
     scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
     scale_shape_manual(values=c(19,8))+
-    scale_y_continuous(breaks = seq(min_step, max_step, 1)) +
+    #scale_y_continuous(breaks = seq(min_step, max_step, 1)) +
+    scale_y_reverse(breaks = seq(min_step, max_step, 1)) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle=60)) +
     labs(y = "Variable",
