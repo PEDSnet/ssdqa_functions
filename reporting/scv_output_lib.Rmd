@@ -7,6 +7,9 @@ output:
     toc: yes
     toc_collapsed: yes
     toc_float: yes
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, 
+  output_file = paste0('scv_output_lib_', format(Sys.time(), '%Y%m%d'), '.html') )}) 
 ---
 
 ```{r setup, include=FALSE}
