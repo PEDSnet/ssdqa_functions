@@ -35,6 +35,7 @@
 #'                     Then supply this csv file as the age_groups argument (i.e. read.csv('path/to/age_group_definitions.csv'))
 #'                     
 #'                     If you would not like to stratify by age group, leave the argument as NULL
+#' @param p_value the p value to be used as a threshold in the multi-site anomaly detection analysis
 #' @param time a logical that tells the function whether you would like to look at the output over time
 #' @param time_span when time = TRUE, this argument defines the start and end dates for the time period of interest. should be
 #'                  formatted as c(start date, end date) in yyyy-mm-dd date format
@@ -187,14 +188,10 @@ evp_process <- function(cohort,
 #' @param output_function the name of the output function that should be used provided in the `parameter_summary` csv 
 #'                        file that is output to the provided results folder after running the `evp_process` function 
 #' @param output_level the type of counts the output should summarise -- either `patient` or `row`
-#' @param filter_variable for `evp_ms_anom_at`, the single variable that should be displayed in the output; can be
-#'                        any of the variables listed in the `evp_process` output
+#' @param filter_variable for @ms_anom_at, @ms_exp_at, and @ss_anom_at, the single variable that should be displayed in the output; 
+#'                        can be any of the variables listed in the `evp_process` output
 #' @param facet the variables by which you would like to facet the graph. available and/or recommended options for
 #'              faceting variables are provided in the `parameter_summary` csv file
-#' @param kmeans_centers the number of centers that should be included in a K-means analysis; defaults to 2
-#'                       only relevant where output_function = `evp_ms_anom_nt`
-#' @param mad_dev the number of MAD away from the median that should be considered an outlier; defaults to 2
-#'                only relevant where output_function = `evp_ms_anom_at`
 #'
 #' @return a graph to visualize the results from `evp_process` based on the parameters provided
 #' 
@@ -202,9 +199,7 @@ evp_output <- function(process_output,
                        output_function,
                        output_level,
                        filter_variable,
-                       facet = NULL,
-                       kmeans_centers = 2,
-                       mad_dev = 2){
+                       facet = NULL){
   
   if(output_function == 'evp_ss_exp_nt'){
     

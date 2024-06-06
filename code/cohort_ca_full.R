@@ -63,3 +63,45 @@ ca_process <- function(attrition_tbl,
     output_tbl(file = TRUE)
   
 }
+
+
+#' Cohort Attrition Output
+#'
+#' @param process_output the output of the `ca_process` function
+#' @param output_function the name of the output function that should be used provided in the `parameter_summary` csv 
+#'                        file that is output to the provided results folder after running the `ca_process` function 
+#' @param log_scale a logical indicating whether the results should be shown in a log scale
+#' @param var_col the column of the output variable of interest. options are:
+#'                `num_pts` -- the raw count of patients meeting the requirements for each step
+#'                `prop_retained_start` -- the proportion of patients retained at each step compared to the user-selected starting step
+#'                `prop_retained_prior` -- the proportion of patients retained at each step compared to the prior step
+#'                `prop_diff_prior` -- the proportion difference between each step and the step prior
+#'
+#' @return for ss_exp_nt & ms_exp_nt, a line graph displaying the var_col of interest at each
+#'         attrition step is returned, along with a table with the descriptors for each step
+#'         
+#'         for ms_anom_nt, a dot plot is returned where anomalous values are shown as stars.
+#'         the size of the dot represents the mean value, while the color represents the value
+#'         of the output column
+#' 
+ca_output <- function(process_output,
+                      output_function,
+                      log_scale = FALSE,
+                      var_col = 'num_pts'){
+  
+  if(output_function == 'ca_ss_exp_nt'){
+    ca_output <- ca_ss_exp_nt(process_output = process_output,
+                              log_scale = log_scale,
+                              output = var_col)
+  }else if(output_function == 'ca_ms_exp_nt'){
+    ca_output <- ca_ms_exp_nt(process_output = process_output,
+                              log_scale = log_scale,
+                              output = var_col)
+  }else if(output_function == 'ca_ms_anom_nt'){
+    ca_output <- ca_ms_anom_nt1(process_output = process_output,
+                                output = var_col)
+  }else(cli::cli_abort('Please enter a valid output_function for this check'))
+  
+  return(ca_output)
+  
+}

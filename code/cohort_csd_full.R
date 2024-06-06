@@ -29,7 +29,16 @@
 #' @param num_concept_2 when `mult_or_single_site` = `single` and `anomaly_or_exploratory` = `anomaly`,
 #'                             this argument is an integer and requires a minimum number of times that 
 #'                             the *second* concept appears in the dataset
-#' @param age_groups N/A for this check?
+#' @param p_value the p value to be used as a threshold in the multi-site anomaly detection analysis
+#' @param age_groups If you would like to stratify the results by age group, fill out the provided `age_group_definitions.csv` file
+#'                     with the following information:
+#'                     - @min_age: the minimum age for the group (i.e. 10)
+#'                     - @max_age: the maximum age for the group (i.e. 20)
+#'                     - @group: a string label for the group (i.e. 10-20, Young Adult, etc.)
+#'                     
+#'                     Then supply this csv file as the age_groups argument (i.e. read.csv('path/to/age_group_definitions.csv'))
+#'                     
+#'                     If you would not like to stratify by age group, leave the argument as NULL
 #' @param time logical to determine whether to output the check across time
 #' @param time_span when `time = TRUE`, a vector of two dates for the observation period of the study
 #' @param time_period when time = TRUE, this argument defines the distance between dates within the specified time period. defaults
@@ -48,10 +57,7 @@
 #' 
 csd_process <- function(cohort = results_tbl('jspa_cohort'),
                         domain_tbl=read_codeset('scv_domains', 'cccc'),
-                        concept_set = read_codeset('csd_codesets','iccccc'), #%>% 
-                          #filter(variable %in% c('ibd', 'spondyloarthritis', 'systemic_jia', 'uveitis', 'general_jia')),
-                        # dplyr::union(load_codeset('jia_codes','iccccc'),
-                        # load_codeset('jia_codes_icd','iccccc')) 
+                        concept_set = read_codeset('csd_codesets','iccccc'), 
                         multi_or_single_site = 'single',
                         anomaly_or_exploratory='exploratory',
                         num_concept_combined = FALSE,
@@ -187,22 +193,30 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
 }
 
 
-#' full output function (needs some updating)
+#' CSD Output
 #'
 #' @param process_output the output from `csd_process`
-#' @param num_codes an integer to represent the top number of codes to include in the mappings for the exploratory analyses;
-#'                  will pick the codes based on the highest count of the most commonly appearing variables; 
-#' @param num_mappings an integer to represent the top number of mappings for a given variable in the exploratory analyses
+#' @param output_function the name of the output function that should be used provided in the `parameter_summary` csv 
+#'                        file that is output to the provided results folder after running the `csd_process` function
+#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
+#'                  the provided codes. if not NULL, concept names will be available in either a reference
+#'                  table or in a hover tooltip 
+#' @param num_variables an integer to represent the top number of variables to include for the exploratory analyses;
+#'                      will pick based on the most commonly appearing variables; 
+#' @param num_mappings an integer to represent the top number of mappings for a given variable in the exploratory analyses;
+#'                     will pick based on the highest count of the most commonly appearing variables;
 #' @param filtered_var for both `single- and multi- site anomaly tests without time measurements` and 
 #'                     `single- and multi- site exploratory tests with time measurements`, the variables
 #'                     to focus on
-#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
-#'                  the provided codes. if not NULL, concept names will be available in either a reference
-#'                  table or in a hover tooltip
-#' @param save_as_png 
-#' @param file_path 
+#' @param filter_concept for @ss_anom_at, @ms_exp_at, and @ms_anom_at, the specific code that should
+#'                       be the focus of the analysis
 #' @param facet variables to facet by; defaults to NULL
-#' @return
+#' @param text_wrapping_char an integer to limit the length of text on an axis before wrapping is enforced;
+#'                           used in @ms_anom_nt
+#' @param output_value the column in `process_output` that should be used in the visualization
+#'                     relevant for @ss_exp_at, @ms_anom_nt, and @ms_exp_at
+#' 
+#' @return 
 #' 
 csd_output <- function(process_output=process_output,
                        output_function,
@@ -213,11 +227,7 @@ csd_output <- function(process_output=process_output,
                        filter_concept = 81893,
                        facet=NULL,
                        text_wrapping_char = 80,
-                       comparison_col = 'prop_concept',
-                       grouped_vars = c('variable', 'concept_id'),
-                       output_value = 'prop_concept',
-                       save_as_png = FALSE,
-                       file_path = NULL){
+                       output_value = 'prop_concept'){
   
   ## Get concept names from vocabulary table
   if(output_function != 'csd_ss_anom_nt'){
@@ -258,8 +268,7 @@ csd_output <- function(process_output=process_output,
                                    #vocab_tbl=vocab_tbl,
                                    text_wrapping_char=text_wrapping_char,
                                    filtered_var=filtered_var,
-                                   comparison_col=comparison_col,
-                                   grouped_vars=grouped_vars)
+                                   comparison_col=output_value)
   }else if(output_function == 'csd_ms_exp_at'){
     csd_output <- csd_ms_exp_at(process_output = process_output,
                                 filtered_var = filtered_var,

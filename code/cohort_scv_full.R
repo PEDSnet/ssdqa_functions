@@ -9,8 +9,6 @@
 #'                       - @start_date
 #'                       - @end_date
 #'                       - @site
-#' @param site_list A list of sites for which you would like to examine clinical facts. Can be one site 
-#'                  (single-site) or multiple (multi-site) 
 #' @param concept_set for analyses where time = FALSE, a csv file with the source or cdm codes of interest for the analysis.
 #'                    should contain at least a `concept_id` column
 #'                    
@@ -28,6 +26,7 @@
 #' @param multi_or_single_site Option to run the function on a single vs multiple sites
 #'                               - @single - run the function for a single site
 #'                               - @multi - run the function for multiple sites
+#' @param p_value the p value to be used as a threshold in the multi-site anomaly detection analysis
 #' @param anomaly_or_exploratory Option to conduct an exploratory or anomaly detection analysis. Exploratory analyses give a high
 #'                               level summary of the data to examine the fact representation within the cohort. Anomaly detection
 #'                               analyses are specialized to identify outliers within the cohort.
@@ -240,13 +239,6 @@ scv_process <- function(cohort,
 #' @param num_mappings the number of top mappings that should be displayed for each code of code_type
 #' 
 #'                     used for `ss_exp_nt`
-#' @param rel_to_median for output types that use a median, an option to select whether values `greater`
-#'                      or `less` than the median should be displayed. both options will also display
-#'                      values equal to the median
-#'                      
-#'                      used for `ms_anom_nt` and `ss_anom_nt`
-#' @param mad_dev for `ms_anom_at`, the median absolute deviation that should be used as a threshold to
-#'                identify anomalous/unstable mappings
 #' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
 #'                  the provided codes. if not NULL, concept names will be available in either a reference
 #'                  table or in a hover tooltip
@@ -259,13 +251,11 @@ scv_process <- function(cohort,
 scv_output <- function(process_output,
                        output_function,
                        code_type,
-                       facet,
+                       facet = NULL,
                        filter_concept = NULL,
                        filter_mapped = NULL,
                        num_codes = 10,
                        num_mappings = 25,
-                       rel_to_median = 'greater',
-                       mad_dev = 2,
                        vocab_tbl = vocabulary_tbl('concept')){
   
   if(output_function != 'scv_ss_anom_at'){

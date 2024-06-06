@@ -26,6 +26,7 @@
 #' @param multi_or_single_site - Option to run the function on a single vs multiple sites
 #'                               - @single - run the function for a single site
 #'                               - @multi - run the function for multiple sites
+#' @param p_value the p value to be used as a threshold in the multi-site anomaly detection analysis
 #' @param time - a logical that tells the function whether you would like to look at the output over time
 #' @param time_span - when time = TRUE, this argument defines the start and end dates for the time period of interest. should be
 #'                    formatted as c(start date, end date) in yyyy-mm-dd date format.
@@ -256,39 +257,24 @@ pf_process <- function(cohort = cohort,
 #'                 configuration are provided in the `parameter_summary` csv file
 #' @param facet - the variables by which you would like to facet the graph. available and/or recommended options for
 #'                faceting variables are provided in the `parameter_summary` csv file
-#' @param color - option to automatically generate a color palette or manually create one for both domains and sites
-#'                       - @auto: this option will automatically create one color palette each for the distinct domains
-#'                                and sites available in the *pf_process* table
-#'                       - @manual: choose this option to create your own custom color palette. to do this, fill out
-#'                                  the provided *domain_color_config* and *site_color_config* csv files with the name
-#'                                  of the domain/site as it appears in the *pf_process* table and a corresponding hex
-#'                                  code for the color assignment
 #' @param time_span - the length of time that should be displayed for relevant over-time graphs. this time period should
 #'                    either be the same as or a subset of the time period used in the `pf_process` function
 #' @param date_breaks_str - only for single-site, exploratory, over time; a string that informs the program how the
 #'                          time period should be divided (i.e. '1 year', '3 months', etc). Defaults to 1 year.
-#' @param kmeans_clusters - the number of clusters that should be used in the kmeans cluster graph; defaults to 2
-#' 
-#'                          if the function outputs an error, try adjusting this number as a first step for troubleshooting.
-#'                          the kmeans functionality will not work if there are not enough groups in the data to satisfy the 
-#'                          provided number of clusters.
 #' @param domain_filter for `pf_ms_anom_at` only, the single domain to which the graph should be filtered for displaying
 #'                      AUC values
 #' @param visit_filter for `pf_ms_anom_at` only, the single visit type to which the graph should be filtered for displaying
 #'                     AUC values
 #'
 #' @return "raw" output that can be called within the R environment to generate the graph in the Viewer window
-#' @return if save_as_png = TRUE, a png file with the graphical output
 #' 
 
 pf_output <- function(process_output,
                       output_function,
                       output,
                       facet = NULL,
-                      #color = 'auto',
                       time_span = c('2012-01-01', '2023-01-01'),
                       date_breaks_str = '1 year',
-                      #kmeans_clusters = 2,
                       domain_filter = 'conditions_all',
                       visit_filter = 'outpatient'){
   
@@ -333,6 +319,5 @@ pf_output <- function(process_output,
                               date_breaks_str = date_breaks_str)
   }else(cli::cli_abort('Please enter a valid output_function for this check type.'))
   
-  ## Return "raw" output in place of or in addition to .png files
   return(pf_output)
 }

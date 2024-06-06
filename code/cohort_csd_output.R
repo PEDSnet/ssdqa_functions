@@ -522,17 +522,7 @@ csd_ms_anom_nt<-function(process_output,
                         #vocab_tbl,
                         text_wrapping_char=80,
                         filtered_var='ibd',
-                        comparison_col='prop_concept',
-                        grouped_vars=c('variable','concept_id')){
-  
-  grouped_vars <- grouped_vars %>% append('variable') %>% append('concept_id') %>% unique()
-  
-  # mean_tbl <- 
-  #   compute_dist_mean_median(tbl=process_output,
-  #                            grp_vars = grouped_vars,
-  #                            var_col = comparison_col,
-  #                            num_sd=2,
-  #                            num_mad=2)
+                        comparison_col='prop_concept'){
   
   cname_samp <- process_output %>% head(1) %>% select(concept_name) %>% pull()
   
