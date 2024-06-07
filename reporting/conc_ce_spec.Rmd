@@ -62,7 +62,6 @@ output_ss_expl <- conc_output_gen(conc_process_output=jspa_output_ss_nt,
                                   anomaly_or_exploratory='exploratory',
                                   time_dimension=FALSE,
                                   facet_vars=c('codeset_name'),
-                                  color_var='specialty_name',
                                   top_n = 10L)
 output_ss_expl
 ```
@@ -81,7 +80,6 @@ output_ss_expl_vis <- conc_output_gen(conc_process_output=jspa_output_edopip,
                                       anomaly_or_exploratory='exploratory',
                                       time_dimension=FALSE,
                                       facet_vars=c('codeset_name', 'visit_type'),
-                                      color_var='specialty_name',
                                       top_n=5L)
 output_ss_expl_vis
 ```
@@ -97,7 +95,6 @@ output_ss_expl_clus <- conc_output_gen(conc_process_output=jspa_output_ss_nt,
                                        anomaly_or_exploratory='exploratory',
                                        time_dimension=FALSE,
                                        facet_vars=c('codeset_name', 'cluster'),
-                                       color_var='specialty_name',
                                        top_n=5L)
 output_ss_expl_clus
 ```
@@ -114,8 +111,7 @@ output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at_yr,
                                          multi_or_single_site='single',
                                          anomaly_or_exploratory='exploratory',
                                          time_dimension=TRUE,
-                                         facet_vars=c('codeset_name'),
-                                         color_var='specialty_name')
+                                         facet_vars=c('codeset_name'))
 output_ss_expl_at
 ```
 
@@ -127,8 +123,7 @@ output_ss_expl_at <- conc_output_gen(conc_process_output=jspa_output_ss_at_yr,
                                          multi_or_single_site='single',
                                          anomaly_or_exploratory='exploratory',
                                          time_dimension=TRUE,
-                                         facet_vars=c('codeset_name', 'cluster'),
-                                         color_var='specialty_name')
+                                         facet_vars=c('codeset_name', 'cluster'))
 output_ss_expl_at
 ```
 
@@ -149,7 +144,6 @@ output_ss_an <- conc_output_gen(conc_process_output=jspa_output_ss_nt,
                                 anomaly_or_exploratory='anomaly',
                                 time_dimension=FALSE,
                                 facet_vars=c('codeset_name'),
-                                color_var='specialty_name',
                                 n_mad=3)
 output_ss_an
 ```
@@ -207,8 +201,7 @@ output_ms_exp_nt <- conc_output_gen(conc_process_output=jspa_output_ms_nt,
                                               multi_or_single_site='multi',
                                               anomaly_or_exploratory='exploratory',
                                               time_dimension=FALSE,
-                                              facet_vars=c('codeset_name'),
-                                              color_var='site')
+                                              facet_vars=c('codeset_name'))
 output_ms_exp_nt
 ```
 
@@ -225,7 +218,6 @@ output_ms_exp_ot <- conc_output_gen(conc_process_output=jspa_output_ms_at,
                                     anomaly_or_exploratory='exploratory',
                                     time_dimension=TRUE,
                                     facet_vars=c('codeset_name'),
-                                    color_var='site',
                                     top_n=6L)
 output_ms_exp_ot
 ```
@@ -235,11 +227,11 @@ output_ms_exp_ot
 Dot plot with site on one axis and specialty on the other: 
 
   - The median proportion of visits with each specialty across sites is computed, and each site's proportion of visits with that specialty is compared against the median using n_mad = (absolute distance to the median)/(median absolute distance from the median)
-  - Anomalous (more than +/- the specified MAD) specialties are stars, non-anomalous specialties are points
+  - Anomalous sites are stars, non-anomalous specialties are points
   - Size is based on number of MAD from median
   - Color is based on proportion of visits with the given specialty
-  - Specialties are only shown if there is at least one site with an anomalous proportion
-  - Sites without any visits to the specialty do not have a point
+
+
   
 
 ```{r}
@@ -250,9 +242,6 @@ output_ms_an_nt <- conc_output_gen(conc_process_output=jspa_output_ms_nt,
                                    anomaly_or_exploratory='anomaly',
                                    time_dimension=FALSE,
                                    facet_vars=c('codeset_name'),
-                                   color_var='site',
-                                   n_mad=3L,
-                                   alt=TRUE,
                                    p_value=0.9)
 
 

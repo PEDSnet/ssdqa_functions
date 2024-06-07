@@ -1,3 +1,4 @@
+#' * Single Site, Exploratory, No Time*
 #' Function to produce output for clinical event concordance with specialty 
 #'      for single site, exploratory, not over time
 #'      
@@ -156,6 +157,7 @@ flag_anomaly<- function(tbl,
   # return(anomaly_all)
 }
 
+#' *Multi-Site, Exploratory, No Time*
 #' Function to produce output for clinical event concordance with specialty 
 #'      for multi site, exploratory, not over time
 #'      
@@ -182,6 +184,7 @@ plot_cnc_sp_ms_exp_nt <- function(data_tbl,
   
 }
 
+#' *Single Site, Exploratory, Across Time*
 #' Function to produce output for clinical event concordance with specialty 
 #'      for single site, exploratory, across time
 #'      
@@ -258,6 +261,7 @@ insert_top_n_indicator<-function(dat,
                                      TRUE~TRUE))
 }
 
+#' * Multi-Site, Exploratory, Across Time*
 #' Function to produce output for clinical event concordance with specialty
 #'      for multi site, exploratory, across time
 
@@ -396,20 +400,6 @@ plot_cnc_sp_ss_an_nt<- function(data_tbl){
   ggplotly(plt, tooltip="text")
   
 }
-
-#' Function to produce output for clinical event concordance with specialty
-#'      for single site, anomaly, across time
-#' @param data_tbl table which must contain the cols: time_start | n | specialty_name
-#' @return control chart with time on x axis, number of visits on y axis, faceted by specialty
-plot_cnc_sp_ss_an_at_old<-function(data_tbl){
-  qic(data=data_tbl, x=time_start, y = n, chart='pp', facets=~specialty_name, #can also do cluster~specialty_name
-      scales='free_y',
-      x.angle=45,
-      title="Control Chart: Specialty Concordance for Clusters Over Time",
-      show.grid = TRUE,
-      xlab='Time', n=total)
-}
-
 
 #' *Single Site, Anomaly, Across Time*
 #' 
@@ -650,6 +640,11 @@ plot_cnc_sp_ms_an_at <- function(process_output,
   return(output)
 }
 
+#' *Multi-Site, Anomaly, No Time*
+#' @param process_output the output from the cnc_sp check, summarized to be used in the multi site anomaly detection check
+#' @param title text containing the title for the plot
+#' @param text_wrapping_char the number of characters for the specialty names to be displayed on the plot
+#' @return a dot plot with site on the x axis, specialty on the y axis, with size of dots indicating the MAD value, color indicating proportion of visits with the given specialty at the site, and shape indicating whether or not the combination is an anomaly
 cnc_sp_ms_anom_nt<-function(process_output,
                             title,
                          text_wrapping_char = 60){
