@@ -1,0 +1,110 @@
+
+
+pes_ss_exp_nt <- function(process_output){
+  
+  
+  expand_cts <- process_output %>%
+    uncount(pt_ct)
+  
+  median_days <- median(expand_cts$num_days)
+  
+  hstgrm <- ggplot(expand_cts, aes(x = num_days, fill = num_days, group = num_days)) +
+    geom_histogram() +
+    geom_vline(xintercept = median_days,
+               linetype = 'dotted') +
+    theme_minimal() +
+    theme(legend.position = 'none') +
+    scale_fill_ssdqa(discrete = FALSE) +
+    labs(x = 'Days Between Events',
+         title = 'Distribution of Time Between Events')
+  
+  thrs_cutoffs <- expand_cts %>%
+    mutate(user_thrs = ifelse(abs(num_days) <= user_cutoff, 1, 0),
+           thirty_thrs = ifelse(abs(num_days) <= 30, 1, 0),
+           sixty_thrs = ifelse(abs(num_days) <= 60, 1, 0),
+           ninety_thrs = ifelse(abs(num_days) <= 90, 1, 0),
+           year_thrs = ifelse(abs(num_days) <= 365, 1, 0)) %>%
+    pivot_longer(cols = c('user_thrs', 'thirty_thrs', 'sixty_thrs', 
+                          'ninety_thrs', 'year_thrs')) %>%
+    group_by(site, user_cutoff, total_pts, name) %>%
+    summarise(n_pts_thrs = sum(value)) %>%
+    mutate(prop_pts_thrs = round(n_pts_thrs / total_pts, 3))
+  
+  bgrph <- thrs_cutoffs %>%
+    mutate(label = case_when(name == 'thirty_thrs' ~ '30 days',
+                             name == 'sixty_thrs' ~ '60 days',
+                             name == 'ninety_thrs' ~ '90 days',
+                             name == 'year_thrs' ~ '1 year',
+                             name == 'user_thrs' ~ paste0('User Threshold \n', 
+                                                          user_cutoff, ' days'))) %>%
+    ggplot(aes(x = label, y = prop_pts_thrs, fill = label)) +
+    geom_col() +
+    theme_minimal() +
+    theme(legend.position = 'none') +
+    scale_fill_ssdqa() +
+    labs(x = 'Threshold',
+         y = 'Proportion Patients',
+         title = 'Proportion of Patients where Events \nOccur within Threshold Window')
+    
+  otpt <- list(hstgrm,
+               bgrph)
+  
+  return(otpt)
+  
+}
+
+
+pes_ms_exp_nt <- function(process_output){
+  
+  
+  expand_cts <- process_output %>%
+    uncount(pt_ct)
+  
+  # median_days <- median(expand_cts$num_days)
+  # 
+  # hstgrm <- ggplot(expand_cts, aes(x = num_days, fill = num_days, group = num_days)) +
+  #   geom_histogram() +
+  #   geom_vline(xintercept = median_days,
+  #              linetype = 'dotted') +
+  #   theme_minimal() +
+  #   theme(legend.position = 'none') +
+  #   scale_fill_ssdqa(discrete = FALSE) +
+  #   labs(x = 'Days Between Events',
+  #        title = 'Distribution of Time Between Events')
+  
+  thrs_cutoffs <- expand_cts %>%
+    mutate(user_thrs = ifelse(abs(num_days) <= user_cutoff, 1, 0),
+           thirty_thrs = ifelse(abs(num_days) <= 30, 1, 0),
+           sixty_thrs = ifelse(abs(num_days) <= 60, 1, 0),
+           ninety_thrs = ifelse(abs(num_days) <= 90, 1, 0),
+           year_thrs = ifelse(abs(num_days) <= 365, 1, 0)) %>%
+    pivot_longer(cols = c('user_thrs', 'thirty_thrs', 'sixty_thrs', 
+                          'ninety_thrs', 'year_thrs')) %>%
+    group_by(site, user_cutoff, total_pts, name) %>%
+    summarise(n_pts_thrs = sum(value)) %>%
+    mutate(prop_pts_thrs = round(n_pts_thrs / total_pts, 3)) %>%
+    group_by(name) %>%
+    mutate(median_prop = median(prop_pts_thrs))
+  
+  bgrph <- thrs_cutoffs %>%
+    mutate(label = case_when(name == 'thirty_thrs' ~ '30 days',
+                             name == 'sixty_thrs' ~ '60 days',
+                             name == 'ninety_thrs' ~ '90 days',
+                             name == 'year_thrs' ~ '1 year',
+                             name == 'user_thrs' ~ paste0('User Threshold \n', 
+                                                          user_cutoff, ' days'))) %>%
+    ggplot(aes(y = site, x = prop_pts_thrs, fill = label)) +
+    geom_col() +
+    facet_wrap(~label) +
+    geom_vline(mapping = aes(xintercept = median_prop),
+               linetype = 'dotted') +
+    theme_minimal() +
+    theme(legend.position = 'none') +
+    scale_fill_ssdqa() +
+    labs(x = 'Site',
+         y = 'Proportion Patients',
+         title = 'Proportion of Patients where Events \nOccur within Threshold Window')
+  
+  return(bgrph)
+  
+}
