@@ -52,13 +52,15 @@ compute_fot <- function(cohort,
     baseline_end_date <- ceiling_date(target, time_period) - 1
     
     cohort_narrowed <- cohort %>% 
-      mutate(start_date = as_date(baseline_start_date),
-             end_date = as_date(baseline_end_date))
+      filter(start_date <= baseline_end_date)
+    # mutate(start_date = as_date(baseline_start_date),
+    #        end_date = as_date(baseline_end_date))
     
     
     cohort_narrow_prepped <- cohort_narrowed %>%
       filter(!! sym(site_col) %in% site_list_v) %>% 
-      mutate(time_start=start_date,
+      mutate(time_start=baseline_start_date,
+             time_end=baseline_end_date,
              time_increment=time_period)
     
     output <- check_func(dat = cohort_narrow_prepped)

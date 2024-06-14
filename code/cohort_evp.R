@@ -46,10 +46,18 @@ compute_evp <- function(cohort,
     
     join_cols <- set_names('concept_id', evp_list[[i]][[3]])
     
-    fact_pts <- domain_tbl %>%
-      inner_join(load_codeset(evp_list[[i]][[5]]), by = join_cols) %>%
-      summarise(variable_pt_ct = n_distinct(person_id),
-                variable_row_ct = n()) %>% collect()
+    if(is.na(evp_list[[i]][[6]])){
+      fact_pts <- domain_tbl %>%
+        inner_join(load_codeset(evp_list[[i]][[5]]), by = join_cols) %>%
+        summarise(variable_pt_ct = n_distinct(patid),
+                  variable_row_ct = n()) %>% collect()
+    }else{
+      fact_pts <- domain_tbl %>%
+        inner_join(load_codeset(evp_list[[i]][[5]]), by = join_cols) %>%
+        filter(!! rlang::parse_expr(evp_list[[i]][[6]])) %>%
+        summarise(variable_pt_ct = n_distinct(patid),
+                  variable_row_ct = n()) %>% collect()
+    }
     
     final_tbl <- total_pts %>%
       left_join(fact_pts) %>%
