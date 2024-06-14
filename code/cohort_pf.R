@@ -74,7 +74,8 @@ compute_pf <- function(cohort,
 #' so person facts are computed
 #' @param grouped_list a vector to group input by. Defaults to `person_id`,
 #' `start_date`, `end_date`, `fu`, `site`
-#' @param domain_tbl the config CSV file
+#' @param domain_tbl a CSV file with configuration information about each
+#'                   domain of interest
 #' 
 #' @return the column `person_id`, for the specified visit type, 
 #' the number of facts for the person - each fact corresponds to the 
@@ -156,9 +157,13 @@ compute_pf_for_fot <- function(cohort, pf_input_tbl,
 
 #' combine PF output into one table per study
 #'
+#' @param pf_tbl the table output by `compute_pf` or `compute_pf_for_fot`
 #' @param study_abbr string that corresponds with the study/studies of interest
 #' @param visit_type_list the types of visits in the PF output; defaults to:
 #'                        inpatient, outpatient, other_visit, all
+#' @param domain_list a CSV file with configuration information about each
+#'                    domain of interest
+#' @param time a logical indicating whether the analysis was conducted over time
 #'
 #' @return a list of dataframes that contain all sites and all domains for each study
 #'         listed in `study_abbr`. the resulting dataframes will also have an
@@ -223,95 +228,5 @@ combine_study_facts <- function(pf_tbl,
   final_list_reduce <- reduce(.x=final_list,
                               .f=dplyr::union)
   final_list_reduce
-  
-}
-
-
-## Get results_tbl
-
-get_results <- function(tbl_name) {
-  
-  rslt <- results_tbl(tbl_name) %>% collect()
-  
-}
-
-
-#' output a list of tables to the database 
-#' 
-#' @param output_list list of tables to output
-#' @param append logical to determine if you want to append if the table exists
-#' 
-#' @return tables output to the database; if 
-#' table already exists, it will be appended
-#' 
-
-output_list_to_db <- function(output_list,
-                              append=FALSE) {
-  
-  
-  if(append) {
-    
-    for(i in 1:length(output_list)) {
-      
-      output_tbl_append(data=output_list[[i]],
-                        name=names(output_list[i]))
-      
-    }
-    
-  } else {
-    
-    for(i in 1:length(output_list)) {
-      
-      output_tbl(data=output_list[[i]],
-                 name=names(output_list[i]))
-      
-    }
-    
-  }
-  
-}
-
-#' output table to database if it does not exist, or
-#' append it to an existing table with the same name if it does
-#' 
-#' @param data the data to output
-#' @param name the name of the table to output 
-#' 
-#' Parameters are the same as `output_tbl`
-#' 
-#' @return The table as it exists on the databse, with the new data
-#' appended, if the table already existts.
-#' 
-
-output_tbl_append <- function(data, name = NA, local = FALSE,
-                              file = ifelse(config('execution_mode') !=
-                                              'development', TRUE, FALSE),
-                              db = ifelse(config('execution_mode') !=
-                                            'distribution', TRUE, FALSE),
-                              results_tag = TRUE, ...) {
-  
-  if (is.na(name)) name <- quo_name(enquo(data))
-  
-  if(db_exists_table(config('db_src'),intermed_name(name,temporary=FALSE))) {
-    
-    tmp <- results_tbl(name) %>% collect_new 
-    new_tbl <- 
-      dplyr::union(tmp,
-                   data %>% collect())
-    output_tbl(data=new_tbl,
-               name=name,
-               local=local,
-               file=file,
-               db=db,
-               results_tag = TRUE, ...)
-  } else {
-    output_tbl(data=data,
-               name=name,
-               local=local,
-               file=file,
-               db=db,
-               results_tag = TRUE, ...)
-  }
-  
   
 }

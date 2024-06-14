@@ -87,7 +87,7 @@ combine_attritions <- function(site_list = c('seattle', 'colorado', 'chop', 'cch
 }
 
 
-#' Cohort Attrition Single Site Exploratory No Time
+#' Cohort Attrition *Single Site Exploratory No Time*
 #'
 #' @param process_output output from compute_attrition_diff
 #' @param log_scale logical to determine whether a log transform should be applied
@@ -122,47 +122,47 @@ ca_ss_exp_nt <- function(process_output,
   
   min_step <- process_output %>% filter(step_number == min(step_number)) %>% pull(step_number)
   max_step <- process_output %>% filter(step_number == max(step_number)) %>% pull(step_number)
-    
-    grph <- ggplot(process_output %>% mutate(text = paste0('Step: ', attrition_step,
-                                                           '\nPatient Count: ', formatC(num_pts, format = 'd', big.mark = ','),
-                                                           '\n',output, ': ', round(!!sym(output), 4))), 
-                   aes(y = !!sym(output), x = step_number)) +
-      geom_line(color = 'gray') +
-      geom_point_interactive(aes(color = as.character(step_number), tooltip = text), show.legend = FALSE) +
-      #scale_y_continuous(transform = 'log2') +
-      scale_x_continuous(breaks = seq(min_step, max_step, 1)) +
-      labs(y = title,
-           x = 'Step') +
-      theme_minimal() +
-      scale_color_ssdqa()
-    
-    if(log_scale){grph <- grph + scale_y_continuous(transform = 'log') + ggtitle(paste0(title, ' per Attrition Step (Log)'))}
-    if(!log_scale){grph <- grph + ggtitle(paste0(title, ' per Attrition Step'))}
-    
-    grph_int <- girafe(ggobj = grph)
-    
-    ## Trying tornado plot
-    
-    process_output <- process_output %>% mutate(step_number = as.character(step_number))
-    
-    lvls <- stringr::str_sort(unique(process_output$step_number), numeric = TRUE, decreasing = TRUE)
-    process_output$step_number <- factor(process_output$step_number, levels = lvls)
-    
-    tornado <- ggplot(process_output %>% mutate(text = paste0('Step: ', attrition_step,
-                                                              '\nPatient Count: ', formatC(num_pts, format = 'd', big.mark = ','),
-                                                              '\n',output, ': ', round(!!sym(output), 4))), 
-                      aes(x = !!sym(output), y = step_number, fill = step_number)) +
-      geom_col_interactive(aes(tooltip = text)) +
-      scale_fill_ssdqa() +
-      #scale_y_reverse(breaks = seq(min_step, max_step, 1)) +
-      labs(x = title,
-           y = 'Step') +
-      theme_minimal()
-    
-    if(log_scale){tornado <- tornado + scale_x_continuous(transform = 'log') + ggtitle(paste0(title, ' per Attrition Step (Log)'))}
-    if(!log_scale){tornado <- tornado + ggtitle(paste0(title, ' per Attrition Step'))}
-    
-    tornado_int <- girafe(ggobj = tornado)
+  
+  grph <- ggplot(process_output %>% mutate(text = paste0('Step: ', attrition_step,
+                                                         '\nPatient Count: ', formatC(num_pts, format = 'd', big.mark = ','),
+                                                         '\n',output, ': ', round(!!sym(output), 4))), 
+                 aes(y = !!sym(output), x = step_number)) +
+    geom_line(color = 'gray') +
+    geom_point_interactive(aes(color = as.character(step_number), tooltip = text), show.legend = FALSE) +
+    #scale_y_continuous(transform = 'log2') +
+    scale_x_continuous(breaks = seq(min_step, max_step, 1)) +
+    labs(y = title,
+         x = 'Step') +
+    theme_minimal() +
+    scale_color_ssdqa()
+  
+  if(log_scale){grph <- grph + scale_y_continuous(transform = 'log') + ggtitle(paste0(title, ' per Attrition Step (Log)'))}
+  if(!log_scale){grph <- grph + ggtitle(paste0(title, ' per Attrition Step'))}
+  
+  grph_int <- girafe(ggobj = grph)
+  
+  # ## Trying tornado plot
+  # 
+  # process_output <- process_output %>% mutate(step_number = as.character(step_number))
+  # 
+  # lvls <- stringr::str_sort(unique(process_output$step_number), numeric = TRUE, decreasing = TRUE)
+  # process_output$step_number <- factor(process_output$step_number, levels = lvls)
+  # 
+  # tornado <- ggplot(process_output %>% mutate(text = paste0('Step: ', attrition_step,
+  #                                                           '\nPatient Count: ', formatC(num_pts, format = 'd', big.mark = ','),
+  #                                                           '\n',output, ': ', round(!!sym(output), 4))), 
+  #                   aes(x = !!sym(output), y = step_number, fill = step_number)) +
+  #   geom_col_interactive(aes(tooltip = text)) +
+  #   scale_fill_ssdqa() +
+  #   #scale_y_reverse(breaks = seq(min_step, max_step, 1)) +
+  #   labs(x = title,
+  #        y = 'Step') +
+  #   theme_minimal()
+  # 
+  # if(log_scale){tornado <- tornado + scale_x_continuous(transform = 'log') + ggtitle(paste0(title, ' per Attrition Step (Log)'))}
+  # if(!log_scale){tornado <- tornado + ggtitle(paste0(title, ' per Attrition Step'))}
+  # 
+  # tornado_int <- girafe(ggobj = tornado)
   
   tbl <- process_output %>%
     distinct(step_number, attrition_step) %>%
@@ -174,7 +174,6 @@ ca_ss_exp_nt <- function(process_output,
     tab_header('Attrition Step Reference')
   
   output <- list(grph_int,
-                 tornado_int,
                  tbl)
   
   
@@ -184,7 +183,7 @@ ca_ss_exp_nt <- function(process_output,
 
 
 
-#' Cohort Attrition Multi Site Exploratory No Time
+#' Cohort Attrition *Multi Site Exploratory No Time*
 #'
 #' @param process_output output from compute_attrition_diff
 #' @param log_scale logical to determine whether a log transform should be applied
@@ -228,7 +227,7 @@ ca_ms_exp_nt <- function(process_output,
               text = paste0('Site: ', site,
                             '\nMedian Value: ', allsite_median)) %>%
     rename(!!output := allsite_median)
-    
+  
   grph <- ggplot(process_output %>% mutate(text = paste0('Site: ', site,
                                                          '\nStep: ', attrition_step,
                                                          '\nPatient Count: ', formatC(num_pts, format = 'd', big.mark = ','),
@@ -248,7 +247,7 @@ ca_ms_exp_nt <- function(process_output,
   if(!log_scale){grph <- grph + ggtitle(paste0(title, ' per Attrition Step'))}
   
   grph_int <- girafe(ggobj = grph)
-    
+  
   
   tbl <- process_output %>%
     distinct(step_number, attrition_step) %>%
@@ -269,7 +268,7 @@ ca_ms_exp_nt <- function(process_output,
 
 
 
-#' Cohort Attrition Multi Site Anomaly No Time (option 1)
+#' Cohort Attrition *Multi Site Anomaly No Time* (option 1)
 #'
 #' @param process_output output from compute_attrition_diff
 #' @param output the column that should be used as the y-axis:
@@ -336,7 +335,7 @@ ca_ms_anom_nt1 <-function(process_output,
 }
 
 
-#' Cohort Attrition Multi Site Anomaly No Time (option 2)
+#' Cohort Attrition *Multi Site Anomaly No Time* (option 2)
 #'
 #' @param process_output output from compute_attrition_diff
 #' @param log_scale logical to determine whether a log transform should be applied
@@ -374,7 +373,7 @@ ca_ms_anom_nt2 <- function(process_output,
   min_step <- process_output %>% filter(step_number == min(step_number)) %>% pull(step_number) %>% unique()
   max_step <- process_output %>% filter(step_number == max(step_number)) %>% pull(step_number) %>% unique()
   
-    
+  
   grph <- ggplot(process_output %>% mutate(text = paste0(text=paste("Step: ",attrition_step,
                                                                     "\nSite: ",site,
                                                                     "\n",output,": ",round(!!sym(output),4),
@@ -398,9 +397,9 @@ ca_ms_anom_nt2 <- function(process_output,
   
   if(log_scale){grph <- grph + scale_y_continuous(transform = 'log') + ggtitle(paste0(title, ' per Attrition Step (Log)'))}
   if(!log_scale){grph <- grph + ggtitle(paste0(title, ' per Attrition Step'))}
-    
+  
   grph_int <- girafe(ggobj = grph)
-    
+  
   
   tbl <- process_output %>%
     distinct(step_number, attrition_step) %>%

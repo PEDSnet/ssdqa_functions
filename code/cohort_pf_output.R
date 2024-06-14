@@ -1,27 +1,20 @@
 
-#### NEED TO GO BACK AND REFINE DOCUMENTATION ####
-
-
 #' **Single Site, Anomaly, Over Time**
 #' 
-#' This chart will produce output for each domain. The data frame 
-#' that is listed as a parameter of the function should minimally contain a single 
-#' output for each domain. User can facet by site, age category, 
-#' or other stratifications. Multiple graphs can also be produced (e.g., 
-#' one graph faceting by site, or creating separate output for each site)
 #' 
-#' @param data_tbl output from previous function; 
-#' requires input for one site; can create multiple graphs
-#' for different grouped variables
-#' 
-#' @param output desired output - have 2 options:
-#' 1) `median_fact_ct`: the median number of facts for each domain during the specified time period
-#' 2) `sum_fact_ct`: the sum of facts for each domain during the specified time period
-#' 
+#' @param data_tbl output from `pf_process` function
 #' @param facet variables to facet (e.g., `domain`); vector of strings
-
+#' @param visit_filter the single visit type of focus for the output
+#' @param domain_filter the single domain of focus for the output
+#' 
+#' @return if analysis was executed by year or greater, a P Prime control chart
+#'         is returned with outliers marked with orange dots
+#'         
+#'         if analysis was executed by month or smaller, an STL regression is 
+#'         conducted and outliers are marked with red dots. the graphs representing
+#'         the data removed in the regression are also returned
+#'
 pf_ss_anom_at <- function(data_tbl,
-                          output,
                           facet,
                           visit_filter,
                           domain_filter){
@@ -89,17 +82,17 @@ pf_ss_anom_at <- function(data_tbl,
 #' or other stratifications. Multiple graphs can also be produced (e.g., 
 #' one graph faceting by site, or creating separate output for each site)
 #' 
-#' @param data_tbl output from previous function; 
-#' requires input for one site; can create multiple graphs
-#' for different grouped variables
-#' 
+#' @param data_tbl output from `pf_process` function
 #' @param output desired output - have 2 options:
 #' 1) `median_fact_ct`: the median number of facts for each domain during the specified time period
 #' 2) `sum_fact_ct`: the sum of facts for each domain during the specified time period
-#' 
 #' @param facet variables to facet (e.g., `domain`); vector of strings
-#' 
-#' @param date_breaks_str string to denote how time should be broken up in the chart (e.g. year, month)
+#' @param date_breaks_str string to denote how time should be broken up in 
+#'                        the chart
+#'                        
+#' @return a dot and line chart displaying the output variable of interest per
+#'         domain across the user specified time period
+#'         
 
 pf_ss_exp_at <- function(data_tbl,
                          output,
@@ -139,14 +132,19 @@ pf_ss_exp_at <- function(data_tbl,
 #' 
 #' Proportion of patients with fact & Euclidean distance summary
 #' 
-#' @param process_output output from previous function; 
-#' requires input for multiple sites; can create multiple graphs
-#' for different grouped variables
-#' 
+#' @param process_output output of `pf_process` function
 #' @param domain_filter one of the user provided domains in the process_output table to be used
 #'                      to filter down the output
 #' @param visit_filter one of the user provided visit types in the process_output table to be used
-#'                     to filter down the output                    
+#'                     to filter down the output
+#'                     
+#' @return three graphs:
+#'    1) line graph that shows the smoothed proportion of a 
+#'    domain across time computation with the Euclidean distance associated with each line
+#'    2) line graph that shows the raw proportion of a 
+#'    domain across time computation with the Euclidean distance associated with each line
+#'    3) a bar graph with the Euclidean distance value for each site, with the average
+#'    proportion as the fill                     
 #' 
 pf_ms_anom_at <- function(process_output,
                           domain_filter,
@@ -237,24 +235,23 @@ pf_ms_anom_at <- function(process_output,
 #' output for each site & domain combination. User can facet by visit type, age category, 
 #' or other stratifications. Multiple graphs can also be produced with varying facets.
 #' 
-#' @param data_tbl output from previous function; 
-#' requires input for multiple sites; can create multiple graphs
-#' for different grouped variables
-#' 
+#' @param data_tbl output from `pf_process` function
 #' @param output desired output - have 2 options:
 #' 1) `median_fact_ct`: the median number of facts for each domain during the specified time period
 #' 2) `sum_fact_ct`: the sum of facts for each domain during the specified time period
-#' 
 #' @param facet variables to facet (e.g., `domain`); vector of strings
-#' 
 #' @param time_span the desired time span to be examined in the output; can be the same as the 
 #'                  previous function or can be changed to a subset of the time_span from the
 #'                  previous function
-
+#'                  
+#' @return line graph representing the output variable of interest across time
+#'         for each of the sites of interest; each site is a line in the user
+#'         specified facets
+#' 
 pf_ms_exp_at <- function(data_tbl,
                          time_span,
                          output,
-                         facet){
+                         facet = NULL){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
@@ -295,15 +292,17 @@ pf_ms_exp_at <- function(data_tbl,
 #' @param data_tbl output from previous function; 
 #' requires input for one site; can create multiple graphs
 #' for different grouped variables
-#' 
 #' @param output desired output - have 4 options:
 #' 1) `outlier_fact`: the number of facts overall (i.e. not grouped by site) that fall 2 SD away from the mean
 #' 2) `prop_outlier_fact`: the proportion of facts overall that fall 2 SD away from the mean
 #' 3) `outlier_site_fact`: the number of facts per site that fall 2 SD away from the mean
 #' 4) `prop_outlier_site_fact`: the proportion of facts per site that fall 2 SD away from the mean
-#' 
 #' @param facet variables to facet (e.g., `domain`); vector of strings
-
+#' 
+#' @return a bar graph displaying the output value of interest, which represents
+#'         patients falling +/- 2 standard deviations away from the mean facts
+#'         per follow-up for a given domain
+#' 
 pf_ss_anom_nt <- function(data_tbl,
                           output,
                           facet=c('domain')){
@@ -356,17 +355,18 @@ pf_ss_anom_nt <- function(data_tbl,
 #' @param data_tbl output from previous function; 
 #' requires input for one site; can create multiple graphs
 #' for different grouped variables
-#' 
 #' @param output desired output - have 2 options:
 #' 1) `median_site_with0s`: specific site median, including patients with no evidence of patient fact
 #' (e.g., if domain = labs, includes in the median all patients with and without any labs)
 #' 2) `median_site_without0s`: specific site median, not including patients without evidence of patient fact
 #' (e.g., if domain = labs, only includes median for patients with evidence of a lab)
-#' 
 #' @param facet variables to facet (e.g., `domain`); vector of strings
 #' 
 #' 
-
+#' @return a bar graph displaying the median facts per follow-up for each domain
+#'         and visit_type
+#' 
+#' 
 pf_ss_exp_nt <- function(data_tbl,
                          output,
                          facet=c('domain')) {
@@ -406,45 +406,21 @@ pf_ss_exp_nt <- function(data_tbl,
 
 #' **Multi-Site, Anomaly Detection, No Time**
 #' 
-#' This chart will produce a cluster analysis based on each site & domain. The data frame 
-#' that is listed as a parameter of the function should minimally contain a single 
-#' output for each domain and site combination. User can facet by visit type, age category, 
-#' or other stratifications. Multiple graphs can also be produced with varying facets.
 #' 
-#' @param data_tbl output from previous function; 
-#' requires input for multiple sites; can create multiple graphs
-#' for different grouped variables
-#' 
-#' @param output desired output - have 2 options:
-#' 1) `median_site_with0s`: specific site median, including patients with no evidence of patient fact
-#' (e.g., if domain = labs, includes in the median all patients with and without any labs)
-#' 2) `median_site_without0s`: specific site median, not including patients without evidence of patient fact
-#' (e.g., if domain = labs, only includes median for patients with evidence of a lab)
-#' 
+#' @param data_tbl output from `pf_process` function
 #' @param facet variables to facet (e.g., `domain`); vector of strings
+#' @param visit_filter the single visit_type of interest to be used in the analysis
 #' 
-#' 
-
+#' @return a dot plot where the shape of the dot represents whether the point is
+#'         anomalous, the color of the dot represents the proportion of patients
+#'         for a given domain, and the size of the dot represents the mean proportion
+#'         across all sites
+#'        
 pf_ms_anom_nt <- function(data_tbl,
-                          #output,
                           facet = NULL,
-                          #kmeans_clusters,
                           visit_filter = 'inpatient'){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
-  
-  # if(output=='median_site_with0s'){
-  #   pass <- TRUE
-  # }else if(output=='median_site_without0s'){
-  #   pass <- TRUE
-  # }else(cli::cli_abort('Please select a valid output: {.code median_site_with0s} or {.code median_site_without0s}'))
-  
-  # output_prep <- prep_kmeans(dat = data_tbl, 
-  #                            output = output,
-  #                            facet_vars = facet)
-  # 
-  # output <- produce_kmeans_output(kmeans_list = output_prep,
-  #                                 centers = kmeans_clusters)
   
   comparison_col <- 'prop_pt_fact'
   
@@ -492,17 +468,17 @@ pf_ms_anom_nt <- function(data_tbl,
 #' output for each domain and site combination. User can facet by visit type, age category, 
 #' or other stratifications. Multiple graphs can also be produced with varying facets.
 #' 
-#' @param data_tbl output from previous function; 
-#' requires input for multiple sites; can create multiple graphs
-#' for different grouped variables
+#' @param data_tbl output from `pf_process` function
 #' 
 #' @param output desired output - have 2 options:
 #' 1) `median_site_with0s`: specific site median, including patients with no evidence of patient fact
 #' (e.g., if domain = labs, includes in the median all patients with and without any labs)
 #' 2) `median_site_without0s`: specific site median, not including patients without evidence of patient fact
 #' (e.g., if domain = labs, only includes median for patients with evidence of a lab)
-#' 
 #' @param facet variables to facet (e.g., `domain`); vector of strings
+#' 
+#' @return a dot plot displaying the median facts per follow up for each domain
+#'         compared to the all-site median (star icon)
 #' 
 
 pf_ms_exp_nt <- function(data_tbl,

@@ -13,7 +13,7 @@
 compute_mappings_per_code <- function(tbl,
                                       col,
                                       denom,
-                                      facet){
+                                      facet = NULL){
   
   mappings_total <- tbl %>%
     group_by(!!sym(col)) %>%
@@ -46,8 +46,6 @@ compute_mappings_per_code <- function(tbl,
 #' 
 #'                  should match the code_type provided when running `scv_process`
 #' @param facet the variables by which you would like to facet the graph
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
 #' @param num_codes the number of top codes of code_type that should be displayed in the graph
 #' @param num_mappings the number of top mappings that should be displayed for each code
 #' 
@@ -60,7 +58,7 @@ compute_mappings_per_code <- function(tbl,
 #' 
 scv_ss_exp_nt <- function(process_output,
                           code_type,
-                          facet,
+                          facet = NULL,
                           num_codes = 10,
                           num_mappings = 10){
   
@@ -159,8 +157,6 @@ scv_ss_exp_nt <- function(process_output,
 #' 
 #'                  should match the code_type provided when running `scv_process`
 #' @param facet the variables by which you would like to facet the graph
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
 #' @param num_codes the number of top codes of code_type that should be displayed in the graph
 #' 
 #' @return a searchable and filterable table with mappings, proportion of representation, and
@@ -170,7 +166,7 @@ scv_ss_exp_nt <- function(process_output,
 #' 
 scv_ms_exp_nt <- function(process_output,
                           code_type,
-                          facet,
+                          facet = NULL,
                           num_codes = 10){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
@@ -229,25 +225,22 @@ scv_ms_exp_nt <- function(process_output,
 #' 
 #' *Single Site, Anomaly, No Time*
 #' 
-#' 
-#' 
 #' @param process_output dataframe output by `scv_process`
 #' @param code_type type of code to be used in analysis -- either `source` or `cdm`
 #' 
 #'                  should match the code_type provided when running `scv_process`
 #' @param facet the variables by which you would like to facet the graph
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
-#' @param rel_to_median option to select whether values `greater` or `less` than the median are 
-#'                      displayed. both will also display values equal to the median
+#' @param num_codes the number of top codes of code_type that should be displayed in the graph
+#' @param num_mappings the number of top mappings that should be displayed for each code
 #'                      
-#' @return a bar graph with codes with a number of mappings either greater or less than the overall
-#'         median number of mappings (based on `rel_to_median`). median is shown as a solid line while
-#'         Q1 and Q3 are shown as dotted lines
+#' @return a dot plot where the shape of the dot represents whether the point is
+#'         anomalous, the color of the dot represents the proportion of usage
+#'         for a cdm/source concept pair, and the size of the dot represents the 
+#'         mean proportion for the code type along the x axis
 #'
 scv_ss_anom_nt <- function(process_output,
                            code_type,
-                           facet,
+                           facet = NULL,
                            num_codes = 10,
                            num_mappings = 15){
   
@@ -341,30 +334,26 @@ scv_ss_anom_nt <- function(process_output,
   
 }
 
-#' 
+
 #' *Multi-Site, Anomaly, No Time*
 #' 
-#' 
-#' shows the number of MAD away from the TOTAL median for each code and site 
-#' (i.e. not the MAD away from site specific median)
 #' 
 #' @param process_output dataframe output by `scv_process`
 #' @param code_type type of code to be used in analysis -- either `source` or `cdm`
 #' 
 #'                  should match the code_type provided when running `scv_process`
 #' @param facet the variables by which you would like to facet the graph
-#' @param rel_to_median option to select whether values `greater` or `less` than the median are 
-#'                      displayed. both will also display values equal to the median
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
+#' @param filter_concept the code_type concept_id of interest for which to display its mappings
+#' @param num_mappings an integer indicating the number of top mappings that should be displayed
 #' 
-#' @return a heat map with one facet per site and additional facet variables. codes with a number
-#'         of mappings greater or less than the overall median (based on `rel_to_median`) are displayed,
-#'         with fill representing the number of MAD the code falls away from the overall median
+#' @return a dot plot where the shape of the dot represents whether the point is
+#'         anomalous, the color of the dot represents the proportion of representation
+#'         of a filter_concept/mapping concept pair, and the size of the dot 
+#'         represents the mean proportion across all sites
 #' 
 scv_ms_anom_nt <- function(process_output,
                            code_type,
-                           facet,
+                           facet = NULL,
                            filter_concept,
                            num_mappings = 20){
   
@@ -439,46 +428,6 @@ scv_ms_anom_nt <- function(process_output,
   
   girafe(ggobj = plt)
   
-  # mappings_per_code <- compute_mappings_per_code(tbl = process_output,
-  #                                                col = col,
-  #                                                denom = denom,
-  #                                                facet = facet)
-  # 
-  # 
-  # if(rel_to_median == 'greater'){
-  #   tbl_filt <- mappings_per_code %>%
-  #     filter(n_mappings >= median)
-  # }else if(rel_to_median == 'less'){
-  #   tbl_filt <- mappings_per_code %>%
-  #     filter(n_mappings <= median)
-  # }else(cli::cli_abort('Invalid selection for rel_to_median: please select {.code greater} or {.code less}'))
-  #   
-  # info <- process_output %>% distinct(!!sym(col), !!sym(denom), concept_name)
-  # 
-  #   tb <- tbl_filt %>%
-  #     left_join(info) %>%
-  #     mutate(denom_fmt = format(!!sym(denom), big.mark = ','),
-  #            n_mad = round(n_mad, 4),
-  #            tooltip = paste0('Concept Name: ', concept_name, '\nAll-Site Median: ', median, 
-  #                             '\nMAD from Median: ', n_mad, 
-  #                             '\nTotal Concept Mappings: ', n_mappings, 
-  #                             '\nTotal Concept Rows: ', denom_fmt))
-  #   
-  #   plot <- tb %>%
-  #     ggplot(aes(y = as.character(!!sym(col)), x = site, fill = n_mad)) +
-  #     geom_tile_interactive(aes(tooltip = tooltip)) +
-  #     facet_wrap((facet), scales = 'free', ncol = 1) +
-  #     #scale_fill_gradientn(colors = viridis::turbo(10))
-  #     scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
-  #     theme_minimal() +
-  #     labs(title = 'MAD from Median Number of Mappings per Code',
-  #          y = col) +
-  #     theme(axis.text.x = element_blank())
-  #   
-  #   girafe(ggobj = plot,
-  #          width = 10,
-  #          height = 10)
-  
 }
 
 
@@ -486,15 +435,14 @@ scv_ms_anom_nt <- function(process_output,
 #' 
 #' Facets by main code (cdm or source) by default, with each line representing
 #' a mapping code. using plotly so the legend is interactive and codes can be isolated
-#' 
-#' 
+
 #' @param process_output dataframe output by `scv_process`
 #' @param code_type type of code to be used in analysis -- either `source` or `cdm`
 #' 
 #'                  should match the code_type provided when running `scv_process`
+#' @param num_mappings integer indicating the number of top mappings per code to be
+#'                     displayed in the output
 #' @param facet the variables by which you would like to facet the graph
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
 #' 
 #' @return a line graph with one facet per code displaying the proportion of mapped codes
 #'         across the user selected time period
@@ -504,7 +452,7 @@ scv_ms_anom_nt <- function(process_output,
 scv_ss_exp_at <- function(process_output,
                           code_type,
                           num_mappings = 10,
-                          facet){
+                          facet = NULL){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
@@ -574,9 +522,10 @@ scv_ss_exp_at <- function(process_output,
 #' @param code_type type of code to be used in analysis -- either `source` or `cdm`
 #' 
 #'                  should match the code_type provided when running `scv_process`
+#' @param filter_concept the code_type concept of interest for which mappings should be shown
+#' @param num_mappings an integer indicating the top number of mappings for filter_concept
+#'                     that should be displayed
 #' @param facet the variables by which you would like to facet the graph
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
 #' 
 #' @return a line graph with one facet per code displaying the proportion of mapped codes
 #'         across the user selected time period
@@ -587,7 +536,7 @@ scv_ms_exp_at <- function(process_output,
                           code_type,
                           filter_concept,
                           num_mappings = 10,
-                          facet){
+                          facet = NULL){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
@@ -652,95 +601,26 @@ scv_ms_exp_at <- function(process_output,
   
 }
 
-#' compute multisite MAD
-#' 
-#' some small edits to make it more compatible with SCV -- need to return
-#' to this to make it more generalizable across functions
-#'
-#' @param multisite_tbl a tbl with all sites and a `grp_check` column, as well as a `month_end`, 
-#'                      `distance`, `site` columns; output from the `check_fot_multisite` function
-#' @param facet_var list of variables by which the user would like to facet the output;
-#'                  should match the facets used in `check_fot_multisite`
-#' @param mad_dev an integer to define the deviation that should be used to compute the upper and lower MAD limits
-#' 
-#' @return dataframe that includes statistics relating to the number of outliers / anomalous measures are present
-#'         in the data based on deviation from the MAD
-produce_multisite_mad_scv <- function(multisite_tbl,
-                                      code_type,
-                                      facet_var = NULL,
-                                      mad_dev) {
-  
-  cli::cli_div(theme = list(span.code = list(color = 'blue')))
-  
-  
-  if(code_type == 'source'){
-    concept_col <- 'source_concept_id'
-  }else if(code_type == 'cdm'){
-    concept_col <- 'concept_id'
-  }else{cli::cli_abort('Please select a valid code type: {.code source} or {.code cdm}')}
-  
-  
-  if(is.null(facet_var)){
-    grp1 <- c('start_date', 'centroid', 'source_concept_id', 'concept_id') 
-    grp2 <- c('site', concept_col)
-  }else{
-    grp1 <- c('start_date', 'centroid', 'source_concept_id', 'concept_id', facet_var) %>% unique()
-    grp2 <- c('site', concept_col, facet_var) %>% unique()
-  }
-  
-  mad_computation <- 
-    multisite_tbl %>% 
-    group_by(!!!syms(grp1)) %>% 
-    summarise(mad_pt=mad(check, center=centroid)) %>% 
-    ungroup() %>% 
-    mutate(lower_mad = mad_pt - (abs(mad_pt*mad_dev)),
-           upper_mad = mad_pt + (abs(mad_pt*mad_dev)))
-  
-  full_tbl_outliers <- 
-    multisite_tbl %>% ungroup() %>% 
-    inner_join(mad_computation) %>% 
-    mutate(
-      outlier=case_when((distance < lower_mad) | (distance > upper_mad) ~ 1,
-                        TRUE ~ 0)
-    ) %>% filter(! site=='all')
-  
-  sites_grp_outliers <- 
-    full_tbl_outliers %>% 
-    group_by(!!!syms(grp2)) %>% 
-    filter(outlier==1) %>% 
-    summarise(grp_outlier_num=n()) %>%  ungroup() 
-  
-  sites_grp_ct_total <- 
-    full_tbl_outliers %>% 
-    group_by(!!!syms(grp2)) %>% 
-    summarise(grp_total_num=n()) %>% ungroup()
-  
-  sites_grp_total <- 
-    sites_grp_ct_total %>% 
-    left_join(sites_grp_outliers) %>% 
-    mutate(grp_outlier_prop = round(grp_outlier_num/grp_total_num,2))
-  
-  sites_total <- 
-    sites_grp_total %>% ungroup() %>% 
-    group_by(site) %>% 
-    mutate(site_total_num=sum(grp_total_num, na.rm = TRUE),
-           site_total_outlier=sum(grp_outlier_num, na.rm = TRUE)) %>% 
-    mutate(site_outlier_prop=round(site_total_outlier/site_total_num,2)) 
-  
-}
-
 #' **Multi-Site Across Time Anomaly**
-#' Produces graphs showing AUCs
+#' Produces graphs showing Euclidean Distanctes
 #' 
-#' @param process_output_graph output from `evp_process`
-#' @param filter_variable the variable that should be used to generate output
-#' @return two graphs:
-#'    1) line graph that shows the proportion of a 
-#'    code across time computation with the AUC associated with each line
-#'    2) bar graph with each site on the x-axis, and the y-axis the AUC value, 
-#'    with a dotted line showing the all-site average
+#' @param process_output output from `evp_process`
+#' @param code_type type of code to be used in analysis -- either `source` or `cdm`
 #' 
-#' THIS GRAPH SHOWS ONLY ONE MAPPED CONCEPT AT A TIME!
+#'                  should match the code_type provided when running `scv_process`
+#' @param filter_concept the code_type concept of interest to be displayed in the output
+#' @param filter_mapped the mapped concept of interest to be displayed in the output
+#' 
+#' 
+#' @return three graphs:
+#'    1) line graph that shows the smoothed proportion of a 
+#'    concept pair across time computation with the Euclidean distance associated with each line
+#'    2) line graph that shows the raw proportion of a 
+#'    concept pair across time computation with the Euclidean distance associated with each line
+#'    3) a bar graph with the Euclidean distance value for each site, with the average
+#'    proportion as the fill
+#' 
+#' THIS GRAPH SHOWS ONLY ONE VARIABLE AT A TIME!
 #' 
 
 scv_ms_anom_at <- function(process_output,
@@ -843,20 +723,25 @@ scv_ms_anom_at <- function(process_output,
 #' 
 #' Control chart looking at number of mappings over time
 #' 
-#' 
 #' @param process_output dataframe output by `scv_process`
 #' @param code_type type of code to be used in analysis -- either `source` or `cdm`
 #' 
 #'                  should match the code_type provided when running `scv_process`
+#' @param filter_concept the code_type concept of interest to be displayed in the output
 #' @param facet the variables by which you would like to facet the graph
 #' 
-#' @return a C control chart that highlights points in time where the number of mappings for
-#'         a particular code are anomalous; outlying points are highlighted red
+#' @return if analysis was executed by year or greater, a C control chart
+#'         showing the number of mappings for filter_concept
+#'         is returned with outliers marked with orange dots
+#'         
+#'         if analysis was executed by month or smaller, an STL regression is 
+#'         conducted and outliers are marked with red dots. the graphs representing
+#'         the data removed in the regression are also returned
 #' 
 scv_ss_anom_at <- function(process_output,
                            code_type,
                            filter_concept,
-                           facet){
+                           facet = NULL){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   

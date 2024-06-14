@@ -8,18 +8,14 @@
 #'                  will pick the codes based on the highest count of the most commonly appearing variables; 
 #' @param num_mappings an integer to represent the top number of mappings for a given variable in the exploratory analyses
 #' @param facet variables to facet by; defaults to NULL
-#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
-#'                  the provided codes. if not NULL, concept names will be available in either a reference
-#'                  table or in a hover tooltip
 #' 
 #' @return a list with two elements: 
-#'        1) heatmap for to `n` concepts (`num_codes`)  and `x` variables (`num_mappings`), with proportion for each concept. 
-#'        If `vocab_tbl` is not NULL, then will the name of the concept when hovering; 
+#'        1) heatmap for to `n` concepts (`num_codes`)  and `x` variables (`num_mappings`), 
+#'        with proportion for each concept. 
 #'        2) a table with each mapping and the total variable count
 #' 
 csd_ss_exp_nt <- function(process_output,
                           facet = NULL,
-                          #vocab_tbl = vocabulary_tbl('concept'),
                           num_codes = 10,
                           num_mappings = 10){
   
@@ -108,11 +104,7 @@ csd_ss_exp_nt <- function(process_output,
 #'         mean jaccard score for the variable, and concepts will show.
 #' 
 csd_ss_anom_nt <- function(process_output,
-                          #facet,
-                          #num_concept_combined = FALSE,
                           vocab_tbl = vocabulary_tbl('concept'),
-                          #num_codes = 10,
-                          #num_mappings = 10,
                           filtered_var = 'general_jia'){
   
   ## Check for limit
@@ -180,19 +172,18 @@ csd_ss_anom_nt <- function(process_output,
 #' 
 #' Control chart looking at number of mappings over time
 #' 
-#' using the CHOP-developed package called `rocqi` 
 #' 
 #' @param process_output dataframe output by `csd_process`
-#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
-#'                  the provided codes. if not NULL, concept names will be available in either a reference
-#'                  table or in a hover tooltip
 #' @param filtered_var the variable to perform the anomaly detection for
+#' @param filter_concept the concept_id of interest for the analysis
 #' @param facet the variables by which you would like to facet the graph; defaults to NULL
-#' @param top_mapping_n integer value for the number of concepts to show mappings across time for;
-#'                      graph will be faceted by concept
 #' 
-#' @return a C control chart that highlights points in time where the number of mappings for
-#'         a particular code are anomalous; outlying points are highlighted red
+#' @return if analysis was executed by year or greater, a P Prime control chart
+#'         is returned with outliers marked with orange dots
+#'         
+#'         if analysis was executed by month or smaller, an STL regression is 
+#'         conducted and outliers are marked with red dots. the graphs representing
+#'         the data removed in the regression are also returned
 #' 
 csd_ss_anom_at <- function(process_output,
                            filtered_var='ibd',
@@ -271,18 +262,15 @@ csd_ss_anom_at <- function(process_output,
 
 #' *Single Site, Exploratory, Across Time*
 #' 
-#' Facets by main code (cdm or source) by default, with each line representing
-#' a mapping code. using plotly so the legend is interactive and codes can be isolated
-#' 
-#' 
 #' @param process_output dataframe output by `csd_process`
-#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
-#'                  the provided codes. if not NULL, concept names will be available in either a reference
-#'                  table or in a hover tooltip
 #' @param filtered_var the variable to perform the anomaly detection for
-#' @param facet the variables by which you would like to facet the graph; defaults to NULL
+#' @param num_mappings an integer indicating the number of top codes for the
+#'                     filtered_var of interest that should be displayed
+#' @param facet the variables by which you would like to facet the graph; 
+#'              defaults to NULL
+#' @param output_value the numerical column in the data that should be displayed
 #' 
-#' @return a line graph with one facet per code displaying the proportion of mapped codes
+#' @return a line graph with one facet per variable displaying the proportion of mapped codes
 #'         across the user selected time period
 #' @return a reference table with total counts of each code across the entire user selected
 #'         time period
@@ -360,19 +348,16 @@ csd_ss_exp_at <- function(process_output,
 
 #' *Multi Site, Exploratory, Across Time*
 #' 
-#' Facets by main code (cdm or source) by default, with each line representing
-#' a mapping code. using plotly so the legend is interactive and codes can be isolated
-#' 
-#' 
 #' @param process_output dataframe output by `csd_process`
-#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
-#'                  the provided codes. if not NULL, concept names will be available in either a reference
-#'                  table or in a hover tooltip
-#' @param filtered_var the variable to perform the anomaly detection for
-#' @param facet the variables by which you would like to facet the graph; defaults to NULL
+#' @param filtered_var the variable(s) to perform the anomaly detection for
+#' @param filtered_concept the concept_id(s) of interest for the analysis
+#' @param output_value the numerical column in the data that should be displayed
+#'                     in the output
+#' @param facet the variables by which you would like to facet the graph; 
+#'              defaults to NULL
 #' 
-#' @return a line graph with one facet per code displaying the proportion of mapped codes
-#'         across the user selected time period
+#' @return a line graph with one facet per code displaying the proportion of usage for
+#'         each site
 #' @return a reference table with total counts of each code across the entire user selected
 #'         time period
 #' 
@@ -380,8 +365,6 @@ csd_ms_exp_at <- function(process_output,
                              facet=NULL,
                              filtered_var = c('ibd','spondyloarthritis'),
                              filtered_concept = c(81893),
-                             #multi_or_single_site = 'multi',
-                             #vocab_tbl = vocabulary_tbl('concept'),
                              output_value='prop_concept'){
   
   output_value <- output_value
@@ -438,20 +421,17 @@ csd_ms_exp_at <- function(process_output,
 #' *Multi Site, Exploratory, No Time*
 #' 
 #' @param process_output dataframe output by `csd_process`
-#' @param vocab_tbl OPTIONAL: the location of an external vocabulary table containing concept names for
-#'                  the provided codes. if not NULL, concept names will be available in either a reference
-#'                  table or in a hover tooltip
-#' @param facet the variables by which you would like to facet the graph
-#' @param num_codes the number of top codes of code_type that should be displayed in the graph
+#' @param facet the variables by which you would like to facet the graph;
+#'              defaults to NULL
+#' @param num_codes the number of top codes per variable that should be 
+#'                  displayed in the table
 #' 
 #' @return a searchable and filterable table with mappings, proportion of representation, and
 #'         denominator counts for the number of codes selected
 #'         in @num_codes
-#'         concept name will be included if @vocab_tbl is not NULL
 #' 
 csd_ms_exp_nt <- function(process_output,
                           facet,
-                          #vocab_tbl = vocabulary_tbl('concept'),
                           num_codes = 10){
   
   # picking columns / titles 
@@ -505,8 +485,6 @@ csd_ms_exp_nt <- function(process_output,
 #' *Multi-Site Anomaly No Time*
 #' 
 #' @param process_output output from `csd_process`
-#' @param vocab_tbl if desired, the destination of an external vocabulary table to pull in
-#'                  concept names
 #' @param text_wrapping_char the number of characters for the `concept_name` or `concept_id` to 
 #'                           display on heatmap; limited to 80
 #' @param filtered_var the variable to perform the analysis on from the data frame; column name
@@ -515,11 +493,14 @@ csd_ms_exp_nt <- function(process_output,
 #'                       in `csd` check, it is the `prop_concept`
 #' @param grouped_vars a vector containing the variables to group by to compute the mean across the sites;
 #'                     in `csd` check, defaulted to c(`variable`, `concept_id`)
-#'                  
+#'                     
+#' @return a dot plot where the shape of the dot represents whether the point is
+#'         anomalous, the color of the dot represents the proportion of usage for
+#'         a given code, and the size of the dot represents the mean code
+#'         usage across all sites
 #'                  
 
 csd_ms_anom_nt<-function(process_output,
-                        #vocab_tbl,
                         text_wrapping_char=80,
                         filtered_var='ibd',
                         comparison_col='prop_concept'){
@@ -566,15 +547,15 @@ csd_ms_anom_nt<-function(process_output,
 }
 
 #' **Multi-Site Across Time Anomaly**
-#' Produces graphs showing AUCs
 #' 
-#' @param process_output_graph output from `csd_process`
+#' @param process_output output from `csd_process`
 #' @param filter_concept the concept_id that should be used for the output
-#' @return two graphs:
-#'    1) line graph that shows the proportion of a 
-#'    code across time computation with the AUC associated with each line
-#'    2) bar graph with each site on the x-axis, and the y-axis the AUC value, 
-#'    with a dotted line showing the all-site average
+#' @return three graphs:
+#'    1) Loess smoothed line graph that shows the proportion of a code across time 
+#'    with the Euclidean Distance associated with each line
+#'    2) same as (1) but displaying the raw, unsmoothed proportion
+#'    3) a radial bar graph displaying the Euclidean Distance value for each
+#'    site, where the color is the average proportion across time
 #' 
 #' THIS GRAPH SHOWS ONLY ONE CONCEPT AT A TIME!
 #' 

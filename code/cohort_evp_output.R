@@ -11,7 +11,7 @@
 #' 
 evp_ss_exp_nt <- function(process_output,
                           output_level,
-                          facet){
+                          facet = NULL){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
@@ -56,7 +56,7 @@ evp_ss_exp_nt <- function(process_output,
 
 evp_ms_exp_nt <- function(process_output,
                           output_level,
-                          facet){
+                          facet = NULL){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
@@ -96,7 +96,7 @@ evp_ms_exp_nt <- function(process_output,
 #'         mean jaccard score for the variable, and variables will show.
 #' 
 evp_ss_anom_nt <- function(process_output,
-                           facet){
+                           facet = NULL){
   
   var_ct <- process_output %>%
     select(concept1, concept2) %>% 
@@ -142,41 +142,14 @@ evp_ss_anom_nt <- function(process_output,
 #' 
 #' @param process_output the output provided by the `evp_process` function
 #' @param output_level the level of output to be displayed: `patient` or `row`
-#' @param kmeans_centers the number of centers that should be used in the k-means computations
-#'                       defaults to `2`
-#' @param facet columns the user would like to facet by
+#' @param text_wrapping_char integer value indicating the point at which axis
+#'                           label text should begin to wrap
 #'
-#' @return one cluster graph per facet grouping with sites comprising the cluster elements
-#'         if facet = NULL, one cluster graph will be output
-#' 
-# evp_ms_anom_nt <- function(process_output,
-#                            output_level,
-#                            kmeans_centers = 2, 
-#                            facet){
-#   
-#   cli::cli_div(theme = list(span.code = list(color = 'blue')))
-#   
-#   if(output_level == 'row'){
-#     prop <- 'prop_row_variable'
-#     title <- 'Rows'
-#   }else if(output_level == 'patient'){
-#     prop <- 'prop_pt_variable'
-#     title <- 'Patients'
-#   }else(cli::cli_abort('Please choose an acceptable output level: {.code patient} or {.code row}'))
-#   
-#   process_output_prep <- process_output %>%
-#     mutate(domain = variable)
-#   
-#   kmeans_prep <- prep_kmeans(dat = process_output_prep,
-#                              output = prop,
-#                              facet_vars = facet)
-#   
-#   kmeans_output <- produce_kmeans_output(kmeans_list = kmeans_prep,
-#                                          centers = kmeans_centers)
-#   
-#   return(kmeans_output)
-# }
-
+#' @return a dot plot where the shape of the dot represents whether the point is
+#'         anomalous, the color of the dot represents the proportion of rows/patients
+#'         for a given variable, and the size of the dot represents the mean proportion
+#'        across all sites
+#'         
 evp_ms_anom_nt<-function(process_output,
                          output_level,
                          text_wrapping_char = 60){
@@ -238,7 +211,7 @@ evp_ms_anom_nt<-function(process_output,
 #' 
 evp_ss_exp_at <- function(process_output,
                           output_level,
-                          facet){
+                          facet = NULL){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
@@ -271,6 +244,7 @@ evp_ss_exp_at <- function(process_output,
 #' 
 #' @param process_output the output provided by the `evp_process` function
 #' @param output_level the level of output to be displayed: `patient` or `row`
+#' @param filter_variable the single variable the output should display
 #' @param facet columns the user would like to facet by
 #'
 #' @return a line graph displaying the proportion of patients/rows for each variable
@@ -280,7 +254,7 @@ evp_ss_exp_at <- function(process_output,
 evp_ms_exp_at <- function(process_output,
                           output_level,
                           filter_variable,
-                          facet){
+                          facet = NULL){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
@@ -320,16 +294,20 @@ evp_ms_exp_at <- function(process_output,
 #' 
 #' @param process_output the output provided by the `evp_process` function
 #' @param output_level the level of output to be displayed: `patient` or `row`
+#' @param filter_variable the single variable the output should display
 #' @param facet columns the user would like to facet by
 #'
-#' @return a control chart displaying the proportion of patients/rows over the user
-#'         specified time period; any orange dots along the line indicate an 
-#'         anomalous data point
+#' @return if analysis was executed by year or greater, a P Prime control chart
+#'         is returned with outliers marked with orange dots
+#'         
+#'         if analysis was executed by month or smaller, an STL regression is 
+#'         conducted and outliers are marked with red dots. the graphs representing
+#'         the data removed in the regression are also returned
 #'         
 evp_ss_anom_at <- function(process_output,
                            output_level,
                            filter_variable,
-                           facet){
+                           facet = NULL){
   
   cli::cli_div(theme = list(span.code = list(color = 'blue')))
   
@@ -404,12 +382,13 @@ evp_ss_anom_at <- function(process_output,
 #' Produces graphs showing Euclidean Distanctes
 #' 
 #' @param process_output output from `evp_process`
+#' @param output_level the level of output that should be shown (`person` or `row`)
 #' @param filter_variable the variable that should be used to generate output
-#' @return two graphs:
+#' @return three graphs:
 #'    1) line graph that shows the smoothed proportion of a 
-#'    code across time computation with the Euclidean distance associated with each line
+#'    variable across time computation with the Euclidean distance associated with each line
 #'    2) line graph that shows the raw proportion of a 
-#'    code across time computation with the Euclidean distance associated with each line
+#'    variable across time computation with the Euclidean distance associated with each line
 #'    3) a bar graph with the Euclidean distance value for each site, with the average
 #'    proportion as the fill
 #' 
