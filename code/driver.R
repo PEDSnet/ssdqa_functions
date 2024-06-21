@@ -41,7 +41,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
 
   ## Single Site, Exploratory, No Time
   ss_exp_nt <- pf_process(cohort = cohort,
-                          site_list = c('colorado', 'chop', 'stanford'),
                           time = FALSE,
                           multi_or_single_site = 'single',
                           collapse_sites = FALSE,
@@ -55,7 +54,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   
   ## Single Site, Anomaly, No Time
   ss_anom_nt <- pf_process(cohort = cohort,
-                           site_list = c('colorado', 'chop', 'stanford'),
                           time = FALSE,
                           multi_or_single_site = 'single',
                           collapse_sites = FALSE,
@@ -69,7 +67,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   
   ## Single Site, Exploratory, Across Time
   ss_exp_at <- pf_process(cohort = cohort,
-                          site_list = c('colorado', 'chop', 'stanford'),
                           time = TRUE,
                           multi_or_single_site = 'single',
                           collapse_sites = FALSE,
@@ -83,7 +80,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   
   ## Single Site, Anomaly, Across Time
   ss_anom_at <- pf_process(cohort = cohort,
-                           site_list = c('colorado', 'chop', 'stanford'),
                            time = TRUE,
                            multi_or_single_site = 'single',
                            collapse_sites = FALSE,
@@ -97,8 +93,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   
   ## Multi-Site, Exploratory, No Time
   ms_exp_nt <- pf_process(cohort = cohort,
-                          site_list = c('colorado', 'chop', 'stanford',
-                                        'nemours', 'seattle'),
                           time = FALSE,
                           multi_or_single_site = 'multi',
                           collapse_sites = TRUE,
@@ -112,8 +106,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   
   ## Multi-Site, Anomaly, No Time
   ms_anom_nt <- pf_process(cohort = cohort,
-                           site_list = c('colorado', 'chop', 'stanford',
-                                         'nemours', 'seattle'),
                            time = FALSE,
                            multi_or_single_site = 'multi',
                            collapse_sites = TRUE,
@@ -129,8 +121,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   
   ## Multi-Site, Exploratory, Across Time
   ms_exp_at <- pf_process(cohort = cohort,
-                          site_list = c('colorado', 'chop', 'stanford',
-                                        'nemours', 'seattle'),
                           time = TRUE,
                           multi_or_single_site = 'multi',
                           collapse_sites = TRUE,
@@ -144,8 +134,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   
   ## Multi-Site, Anomaly, Across Time
   ms_anom_at <- pf_process(cohort = cohort,
-                           site_list = c('colorado', 'chop', 'stanford',
-                                         'nemours', 'seattle'),
                            time = TRUE,
                            multi_or_single_site = 'multi',
                            collapse_sites = TRUE,
@@ -159,7 +147,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   
   ## Single Site, Age Group Stratification
   ss_age <- pf_process(cohort = cohort,
-                       site_list = c('colorado', 'chop', 'stanford'),
                           time = FALSE,
                           multi_or_single_site = 'single',
                           collapse_sites = FALSE,
@@ -174,8 +161,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   
   ## Multi-Site, Age Group Stratification
   ms_age <- pf_process(cohort = cohort,
-                       site_list = c('colorado', 'chop', 'stanford',
-                                     'nemours', 'seattle'),
                        time = FALSE,
                        multi_or_single_site = 'multi',
                        collapse_sites = TRUE,
@@ -190,7 +175,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   
   ## Single Site, Chronic Disease Stratification
   ss_cancer <- pf_process(cohort = cohort,
-                          site_list = c('colorado', 'chop', 'stanford'),
                        time = FALSE,
                        multi_or_single_site = 'single',
                        collapse_sites = FALSE,
@@ -204,7 +188,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   }
   
   ss_cardiac <- pf_process(cohort = cohort,
-                           site_list = c('colorado', 'chop', 'stanford'),
                           time = FALSE,
                           multi_or_single_site = 'single',
                           collapse_sites = FALSE,
@@ -219,8 +202,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   
   ## Multi-Site, Chronic Disease Stratification
   ms_cancer <- pf_process(cohort = cohort,
-                          site_list = c('colorado', 'chop', 'stanford',
-                                        'nemours', 'seattle'),
                           time = FALSE,
                           multi_or_single_site = 'multi',
                           collapse_sites = TRUE,
@@ -234,8 +215,6 @@ config_append('extra_packages', c('lubridate','tidyr','ggplot2','RColorBrewer',
   }
   
   ms_cardiac <- pf_process(cohort = cohort,
-                           site_list = c('colorado', 'chop', 'stanford',
-                                         'nemours', 'seattle'),
                            time = FALSE,
                            multi_or_single_site = 'multi',
                            collapse_sites = TRUE,

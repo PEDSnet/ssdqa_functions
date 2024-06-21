@@ -1,0 +1,47 @@
+concept_id,concept_code,concept_name,vocabulary_id,category,cluster
+4030579,129564003,Ankylosing spondylarthritis and eye lesions,SNOMED,jia,spondyloarthritis
+40320828,156619005,Ankylosing spondylitis,SNOMED,jia,spondyloarthritis
+4052955,16065006,Ankylosis of sacroiliac joint,SNOMED,jia,spondyloarthritis
+4060449,162930007,On examination - ankylosing spondylitis chest deformity,SNOMED,jia,spondyloarthritis
+37109063,16400000000000000,Arthritis of facet joint of lumbar spine,SNOMED,jia,spondyloarthritis
+75035,201726005,Arthropathy associated with non-infective gastrointestinal disorder,SNOMED,jia,spondyloarthritis
+4116439,201764007,Rheumatoid arthritis of cervical spine,SNOMED,jia,spondyloarthritis
+40400227,201802002,Juvenile ankylosing spondylitis,SNOMED,jia,spondyloarthritis
+133295,202649003,Inflammatory spondylopathy,SNOMED,jia,spondyloarthritis
+4068379,202652006,Inflammatory spondylopathy associated with another disorder,SNOMED,jia,spondyloarthritis
+4000963,202816005,Thoracic spine ankylosis,SNOMED,jia,spondyloarthritis
+4001455,202817001,Thoracolumbar ankylosis,SNOMED,jia,spondyloarthritis
+4083681,239805001,Juvenile ankylosing spondylitis,SNOMED,jia,spondyloarthritis
+4079735,239806000,Juvenile spondyloarthropathy,SNOMED,jia,spondyloarthritis
+4035614,239810002,Ankylosing spondylitis with organ / system involvement,SNOMED,jia,spondyloarthritis
+4035741,239811003,Ankylosing spondylitis with multisystem involvement,SNOMED,jia,spondyloarthritis
+4184086,298156003,Spinal effusion,SNOMED,jia,spondyloarthritis
+4181891,298158002,Thoracic facet joint effusion,SNOMED,jia,spondyloarthritis
+40536564,357182002,Spondyloarthritis,SNOMED,jia,spondyloarthritis
+4277533,36655007,Complete ankylosis of the spine,SNOMED,jia,spondyloarthritis
+4153359,371082009,Arthritis of spine,SNOMED,jia,spondyloarthritis
+4180877,428460002,Arthropathy of thoracic facet joint,SNOMED,jia,spondyloarthritis
+4178926,428671008,Arthropathy of lumbar facet joint,SNOMED,jia,spondyloarthritis
+4180129,429350001,Arthropathy of spinal facet joint,SNOMED,jia,spondyloarthritis
+4180469,429555005,Sacral arthritis,SNOMED,jia,spondyloarthritis
+40479848,444556003,Seronegative arthritis of joint of spine,SNOMED,jia,spondyloarthritis
+4187244,47049007,Ankylosis of spine,SNOMED,jia,spondyloarthritis
+4208390,55146009,Inflammation of sacroiliac joint,SNOMED,jia,spondyloarthritis
+44783242,699302001,Lumbar arthritis,SNOMED,jia,spondyloarthritis
+37017494,713777005,Non-radiographic axial spondyloarthritis,SNOMED,jia,spondyloarthritis
+36714940,720363008,Arthritis of lumbosacral spine,SNOMED,jia,spondyloarthritis
+36715561,721272009,Infection causing spondyloarthritis,SNOMED,jia,spondyloarthritis
+36716891,723116002,Axial spondyloarthritis,SNOMED,jia,spondyloarthritis
+37110375,724606001,Peripheral spondyloarthritis,SNOMED,jia,spondyloarthritis
+36683391,781206002,Rheumatoid arthritis of joint of spine,SNOMED,jia,spondyloarthritis
+36716984,79700000000000,Arthropathy of spinal facet joint co-occurrent and due to effusion,SNOMED,jia,spondyloarthritis
+4223530,84172003,Spondylitis,SNOMED,jia,spondyloarthritis
+46273406,85600000000000,Undifferentiated spondyloarthropathy,SNOMED,jia,spondyloarthritis
+4338669,87823004,Ankylosis of lumbosacral joint,SNOMED,jia,spondyloarthritis
+45771123,920000000000000,Axial spondyloarthritis,SNOMED,jia,spondyloarthritis
+437082,9631008,Ankylosing spondylitis,SNOMED,jia,spondyloarthritis
+4066596,202654007,Spondylitis NOS,SNOMED,jia,spondyloarthritis
+4163267,4163267,Undifferentiated spondylitis,SNOMED,jia,spondyloarthritis
+4253902,410801005,Juvenile idiopathic arthritis, enthesitis related arthritis,SNOMED,jia,spondyloarthritis
+761120,15600000000000000,Bilateral inflammation of sacroiliac joint,SNOMED,jia,spondyloarthritis
+37117081,16000000000000000,Bilateral arthritis of sacroiliac joint,SNOMED,jia,spondyloarthritis

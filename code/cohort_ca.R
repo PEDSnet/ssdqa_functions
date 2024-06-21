@@ -62,7 +62,7 @@ compute_attrition_diff <- function(attrition_tbl,
 #' @return a combined dataframe with attrition information from all of the sites
 #'         provided in site_list
 #'
-combine_attritions <- function(site_list = c('seattle', 'colorado', 'chop', 'cchmc'),
+combine_attritions <- function(site_list,
                                file_directory = paste0(base_dir, '/results/'),
                                file_suffix = '_diabetes_attrition'){
   

@@ -28,9 +28,7 @@ compute_fot <- function(cohort,
                         reduce_id = 'visit_type',
                         time_period='year',
                         time_span= c('2012-01-01','2022-12-31'),
-                        site_list=list('stanford',
-                                       'colorado',
-                                       'chop')
+                        site_list
 ) {
   
   site_list_v <- unlist(site_list)
@@ -585,8 +583,7 @@ loop_through_visits <- function(cohort_tbl,
                                 #time=FALSE,
                                 visit_type_tbl=read_codeset('pf_visit_types','ic'),
                                 visit_tbl=cdm_tbl('visit_occurrence'),
-                                site_list=list('stanford',
-                                                'colorado'),
+                                site_list,
                                 visit_list=c('inpatient','outpatient'),
                                 grouped_list=c('person_id','start_date','end_date',
                                                 'fu','site'),

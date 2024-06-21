@@ -1,0 +1,10 @@
+concept_id,concept_code,concept_name,vocabulary_id,category,cluster
+75622,201799006,Monarticular juvenile rheumatoid arthritis,SNOMED,jia,oligoarticular_jia
+40400234,201809006,Pauciarticular onset juvenile chronic arthritis,SNOMED,jia,oligoarticular_jia
+4079732,239797009,Early onset pauciarticular chronic arthritis,SNOMED,jia,oligoarticular_jia
+4083557,239798004,Late onset pauciarticular chronic arthritis,SNOMED,jia,oligoarticular_jia
+4132811,410798004,Juvenile idiopathic arthritis, oligoarthritis,SNOMED,jia,oligoarticular_jia
+4132812,410799007,Juvenile idiopathic arthritis, persistent oligoarthritis,SNOMED,jia,oligoarticular_jia
+4261027,410800006,Juvenile idiopathic arthritis, extended oligoarthritis,SNOMED,jia,oligoarticular_jia
+72705,74391003,Pauciarticular juvenile rheumatoid arthritis,SNOMED,jia,oligoarticular_jia
+40643351,83793004,Monoarticular juvenile rheumatoid arthritis,SNOMED,jia,oligoarticular_jia

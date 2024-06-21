@@ -1,0 +1,7 @@
+concept_id,concept_code,concept_name,vocabulary_id,category,cluster
+40288195,123246003,Still's disease,SNOMED,jia,systemic_jia
+40320315,156483006,Juvenile rheumatoid arthritis &/or Still's disease,SNOMED,jia,systemic_jia
+4116447,201796004,Systemic onset juvenile chronic arthritis,SNOMED,jia,systemic_jia
+40353562,268052008,Juvenile rheumatoid arthritis &/or Still's disease,SNOMED,jia,systemic_jia
+40369380,287984007,Still's disease - juvenile rheumatoid arthritis,SNOMED,jia,systemic_jia
+4261026,410794002,Still's disease with juvenile onset and/or adult onset,SNOMED,jia,systemic_jia

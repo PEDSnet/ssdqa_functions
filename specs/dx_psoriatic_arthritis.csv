@@ -1,0 +1,12 @@
+concept_id,concept_code,concept_name,vocabulary_id,category,cluster
+46274123,10600000000000000,Psoriatic arthritis mutilans,SNOMED,jia,psoriatic_arthritis
+40319772,156370009,Psoriatic arthritis,SNOMED,jia,psoriatic_arthritis
+4064048,200956002,Psoriatic arthritis with spine involvement,SNOMED,jia,psoriatic_arthritis
+40396349,200957006,Psoriatic arthritis with distal interphalangeal joint involvement,SNOMED,jia,psoriatic_arthritis
+40396350,200958001,Psoriatic arthritis - destructive type,SNOMED,jia,psoriatic_arthritis
+40400229,201804001,Juvenile psoriatic arthritis with psoriasis,SNOMED,jia,psoriatic_arthritis
+4079733,239802003,Juvenile psoriatic arthritis,SNOMED,jia,psoriatic_arthritis
+4079734,239803008,Juvenile psoriatic arthritis with psoriasis,SNOMED,jia,psoriatic_arthritis
+4083680,239804002,Juvenile psoriatic arthritis without psoriasis,SNOMED,jia,psoriatic_arthritis
+4083682,239812005,Psoriatic arthritis with distal interphalangeal joint involvement,SNOMED,jia,psoriatic_arthritis
+81931,33339001,Psoriasis with arthropathy,SNOMED,jia,psoriatic_arthritis

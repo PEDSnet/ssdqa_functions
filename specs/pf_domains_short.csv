@@ -1,4 +1,5 @@
-﻿domain,default_tbl,field_name,field_filter
-conditions_all,condition_occurrence,,
-anthropometrics,measurement_anthro,,
-labs,measurement_labs,,
+domain,default_tbl,field_name,field_filter
+conditions,condition_occurrence,,
+conditions_ip,condition_occurrence,condition_type_concept_id,"2000000094, 2000000093, 2000000092,2000000098, 2000000099, 2000000010"
+meds_rx,drug_exposure,drug_type_concept_id,38000177
+procedures,procedure_occurrence,,

@@ -45,7 +45,7 @@ prettify_kable <- function(data) {
     column_spec(1, bold = T, border_right = T)
 }
 
-combo_attrition <- combine_attritions(site_list = c('chop', 'cchmc', 'seattle', 'colorado', 'texas'))
+combo_attrition <- combine_attritions(site_list = c())
 
 opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 

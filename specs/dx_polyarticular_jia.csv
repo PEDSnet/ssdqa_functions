@@ -1,0 +1,18 @@
+concept_id,concept_code,concept_name,vocabulary_id,category,cluster
+40320314,156482001,Felty's syndrome,SNOMED,jia,polyarticular_jia
+42535150,16000000000000000,Acute polyarticular juvenile idiopathic arthritis,SNOMED,jia,polyarticular_jia
+42535177,16000000000000000,Polyarticular juvenile idiopathic arthritis,SNOMED,jia,polyarticular_jia
+72714,1961000,Chronic polyarticular juvenile rheumatoid arthritis,SNOMED,jia,polyarticular_jia
+40400221,201798003,Polyarticular juvenile rheumatoid arthritis,SNOMED,jia,polyarticular_jia
+40400228,201803007,Polyarticular onset juvenile chronic arthritis,SNOMED,jia,polyarticular_jia
+4035612,239799007,Early onset polyarticular juvenile chronic arthritis,SNOMED,jia,polyarticular_jia
+4083558,239800006,Late onset polyarticular juvenile chronic arthritis,SNOMED,jia,polyarticular_jia
+75897,36186002,Polyarthropathy,SNOMED,jia,polyarticular_jia
+4132809,410796000,Juvenile seropositive polyarthritis,SNOMED,jia,polyarticular_jia
+4132810,410797009,Juvenile seronegative polyarthritis,SNOMED,jia,polyarticular_jia
+74125,417373000,Inflammatory polyarthropathy,SNOMED,jia,polyarticular_jia
+40483795,445479007,Polyarticular juvenile rheumatoid arthritis,SNOMED,jia,polyarticular_jia
+81097,57160007,Felty's syndrome,SNOMED,jia,polyarticular_jia
+40630616,7441009,Polyarticular juvenile arthritis,SNOMED,jia,polyarticular_jia
+75621,75822003,Acute polyarticular juvenile rheumatoid arthritis,SNOMED,jia,polyarticular_jia
+40644064,86119004,Polyarticular juvenile rheumatoid arthritis,SNOMED,jia,polyarticular_jia

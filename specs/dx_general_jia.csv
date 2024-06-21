@@ -1,0 +1,114 @@
+concept_id,concept_code,concept_name,vocabulary_id,category,cluster
+37209321,15700000000000000,Bilateral rheumatoid arthritis of feet,SNOMED,jia,general_jia
+37209323,15700000000000000,Bilateral rheumatoid arthritis of hands,SNOMED,jia,general_jia
+37209322,15700000000000000,Bilateral rheumatoid arthritis of knees,SNOMED,jia,general_jia
+4257971,410793008,Chronic arthritis of juvenile onset,SNOMED,jia,general_jia
+4114444,201791009,Flare of rheumatoid arthritis,SNOMED,jia,general_jia
+4331942,431403001,Human leukocyte antigen B27 negative arthropathy,SNOMED,jia,general_jia
+4079731,239796000,Juvenile chronic arthritis,SNOMED,jia,general_jia
+4259507,410502007,Juvenile idiopathic arthritis,SNOMED,jia,general_jia
+4257972,410802003,Juvenile idiopathic arthritis, undifferentiated arthritis,SNOMED,jia,general_jia
+4253901,410795001,Juvenile rheumatoid arthritis,SNOMED,jia,general_jia
+40400233,201808003,Juvenile rheumatoid arthritis,SNOMED,jia,general_jia
+40439641,239801005,Juvenile rheumatoid arthritis,SNOMED,jia,general_jia
+4115054,201800005,Juvenile rheumatoid arthritis NOS,SNOMED,jia,general_jia
+37209479,16000000000000000,Juvenile rheumatoid arthritis of bilateral knees,SNOMED,jia,general_jia
+37204148,16200000000000000,Juvenile rheumatoid arthritis of left knee,SNOMED,jia,general_jia
+37204149,16200000000000000,Juvenile rheumatoid arthritis of right knee,SNOMED,jia,general_jia
+4116448,201801009,Other juvenile arthritis,SNOMED,jia,general_jia
+80809,69896004,Rheumatoid arthritis,SNOMED,jia,general_jia
+40320302,156471009,Rheumatoid arthritis,SNOMED,jia,general_jia
+40400183,201763001,Rheumatoid arthritis and other inflammatory polyarthropathies,SNOMED,jia,general_jia
+4146248,267887009,Rheumatoid arthritis and other inflammatory polyarthropathies,SNOMED,jia,general_jia
+4117687,287008006,Rheumatoid arthritis - ankle and/or foot,SNOMED,jia,general_jia
+40320310,156479006,Rheumatoid arthritis - ankle/foot,SNOMED,jia,general_jia
+40320307,156476004,Rheumatoid arthritis - hand joint,SNOMED,jia,general_jia
+4115161,287007001,Rheumatoid arthritis - hand joint,SNOMED,jia,general_jia
+37117421,143000000000000,Rheumatoid arthritis in remission,SNOMED,jia,general_jia
+40400212,201790005,Rheumatoid arthritis - multiple joint,SNOMED,jia,general_jia
+40320303,156472002,Rheumatoid arthritis - multiple joint,SNOMED,jia,general_jia
+4117688,287010008,Rheumatoid arthritis NOS,SNOMED,jia,general_jia
+40320313,156481008,Rheumatoid arthritis NOS,SNOMED,jia,general_jia
+4116149,201768005,Rheumatoid arthritis of acromioclavicular joint,SNOMED,jia,general_jia
+4116445,201779000,Rheumatoid arthritis of ankle,SNOMED,jia,general_jia
+36687005,15700000000000000,Rheumatoid arthritis of bilateral ankles,SNOMED,jia,general_jia
+36687002,15700000000000000,Rheumatoid arthritis of bilateral elbows,SNOMED,jia,general_jia
+36687003,15700000000000000,Rheumatoid arthritis of bilateral hips,SNOMED,jia,general_jia
+36686999,15700000000000000,Rheumatoid arthritis of bilateral temporomandibular joints,SNOMED,jia,general_jia
+36687006,15700000000000000,Rheumatoid arthritis of bilateral wrists,SNOMED,jia,general_jia
+4114440,201774005,Rheumatoid arthritis of distal interphalangeal joint of finger,SNOMED,jia,general_jia
+4115050,201770001,Rheumatoid arthritis of distal radioulnar joint,SNOMED,jia,general_jia
+4116440,201769002,Rheumatoid arthritis of elbow,SNOMED,jia,general_jia
+40320305,156474001,Rheumatoid arthritis of elbow,SNOMED,jia,general_jia
+4114441,201783000,Rheumatoid arthritis of first metatarsophalangeal joint,SNOMED,jia,general_jia
+4179378,429192004,Rheumatoid arthritis of foot,SNOMED,jia,general_jia
+40320308,156477008,Rheumatoid arthritis of hip,SNOMED,jia,general_jia
+4116150,201775006,Rheumatoid arthritis of hip,SNOMED,jia,general_jia
+4114442,201785007,Rheumatoid arthritis of interphalangeal joint of toe,SNOMED,jia,general_jia
+40320309,156478003,Rheumatoid arthritis of knee,SNOMED,jia,general_jia
+4116151,201777003,Rheumatoid arthritis of knee,SNOMED,jia,general_jia
+36685017,1070000000000000,Rheumatoid arthritis of left ankle,SNOMED,jia,general_jia
+36685018,1070000000000000,Rheumatoid arthritis of left elbow,SNOMED,jia,general_jia
+36685019,1070000000000000,Rheumatoid arthritis of left foot,SNOMED,jia,general_jia
+42534834,1070000000000000,Rheumatoid arthritis of left hand,SNOMED,jia,general_jia
+42534835,1070000000000000,Rheumatoid arthritis of left hip,SNOMED,jia,general_jia
+37108590,1070000000000000,Rheumatoid arthritis of left knee,SNOMED,jia,general_jia
+35609009,1070000000000000,Rheumatoid arthritis of left shoulder,SNOMED,jia,general_jia
+36687001,15700000000000000,Rheumatoid arthritis of left temporomandibular joint,SNOMED,jia,general_jia
+36685020,1070000000000000,Rheumatoid arthritis of left wrist,SNOMED,jia,general_jia
+4116153,201784006,Rheumatoid arthritis of lesser metatarsophalangeal joint,SNOMED,jia,general_jia
+4116442,201772009,Rheumatoid arthritis of metacarpophalangeal joint,SNOMED,jia,general_jia
+4117686,287006005,Rheumatoid arthritis of multiple joints,SNOMED,jia,general_jia
+4115052,201782005,Rheumatoid arthritis of other tarsal joint,SNOMED,jia,general_jia
+4116443,201773004,Rheumatoid arthritis of proximal interphalangeal joint of finger,SNOMED,jia,general_jia
+36685021,1070000000000000,Rheumatoid arthritis of right ankle,SNOMED,jia,general_jia
+36685022,1070000000000000,Rheumatoid arthritis of right elbow,SNOMED,jia,general_jia
+36685023,1070000000000000,Rheumatoid arthritis of right foot,SNOMED,jia,general_jia
+42534836,1070000000000000,Rheumatoid arthritis of right hand,SNOMED,jia,general_jia
+42534837,1070000000000000,Rheumatoid arthritis of right hip,SNOMED,jia,general_jia
+37108591,1070000000000000,Rheumatoid arthritis of right knee,SNOMED,jia,general_jia
+35609010,1070000000000000,Rheumatoid arthritis of right shoulder,SNOMED,jia,general_jia
+36687000,15700000000000000,Rheumatoid arthritis of right temporomandibular joint,SNOMED,jia,general_jia
+36685024,1070000000000000,Rheumatoid arthritis of right wrist,SNOMED,jia,general_jia
+4116444,201776007,Rheumatoid arthritis of sacroiliac joint,SNOMED,jia,general_jia
+4114439,201766009,Rheumatoid arthritis of shoulder,SNOMED,jia,general_jia
+40320304,156473007,Rheumatoid arthritis of shoulder,SNOMED,jia,general_jia
+4116148,201767000,Rheumatoid arthritis of sternoclavicular joint,SNOMED,jia,general_jia
+4116446,201780002,Rheumatoid arthritis of subtalar joint,SNOMED,jia,general_jia
+4116152,201781003,Rheumatoid arthritis of talonavicular joint,SNOMED,jia,general_jia
+4179536,427770001,Rheumatoid arthritis of temporomandibular joint,SNOMED,jia,general_jia
+4115051,201778008,Rheumatoid arthritis of tibiofibular joint,SNOMED,jia,general_jia
+40320306,156475000,Rheumatoid arthritis of wrist,SNOMED,jia,general_jia
+4116441,201771002,Rheumatoid arthritis of wrist,SNOMED,jia,general_jia
+4115162,287009003,Rheumatoid arthritis - other joint,SNOMED,jia,general_jia
+40320311,156480009,Rheumatoid arthritis - other joint,SNOMED,jia,general_jia
+42536657,735600005,Rheumatoid arthritis without erosion,SNOMED,jia,general_jia
+36684997,460000000000000,Rheumatoid factor positive rheumatoid arthritis,SNOMED,jia,general_jia
+36684998,460000000000000,Rheumatoid factor positive rheumatoid arthritis of the shoulder,SNOMED,jia,general_jia
+40537623,359173000,Seronegative arthritis,SNOMED,jia,general_jia
+40320317,156485004,Seronegative arthritis,SNOMED,jia,general_jia
+40400240,201814005,Seronegative arthritis,SNOMED,jia,general_jia
+4163270,399112009,Seronegative arthritis,SNOMED,jia,general_jia
+40400209,201787004,Seronegative rheumatoid arthritis,SNOMED,jia,general_jia
+4083556,239792003,Seronegative rheumatoid arthritis,SNOMED,jia,general_jia
+37209328,15700000000000000,Seronegative rheumatoid arthritis of bilateral hands,SNOMED,jia,general_jia
+37207808,319000000000000,Seronegative rheumatoid arthritis of left hand,SNOMED,jia,general_jia
+37207809,319000000000000,Seronegative rheumatoid arthritis of multiple sites,SNOMED,jia,general_jia
+37207810,319000000000000,Seronegative rheumatoid arthritis of right hand,SNOMED,jia,general_jia
+4147418,308143008,Seropositive erosive rheumatoid arthritis,SNOMED,jia,general_jia
+40400235,201810001,Seropositive errosive rheumatoid arthritis,SNOMED,jia,general_jia
+4035611,239791005,Seropositive rheumatoid arthritis,SNOMED,jia,general_jia
+37209329,15700000000000000,Seropositive rheumatoid arthritis of bilateral hands,SNOMED,jia,general_jia
+37207804,319000000000000,Seropositive rheumatoid arthritis of left hip,SNOMED,jia,general_jia
+37207805,319000000000000,Seropositive rheumatoid arthritis of left knee,SNOMED,jia,general_jia
+37108714,11100000000000000,Seropositive rheumatoid arthritis of multiple joints,SNOMED,jia,general_jia
+37207806,319000000000000,Seropositive rheumatoid arthritis of right hip,SNOMED,jia,general_jia
+37207807,319000000000000,Seropositive rheumatoid arthritis of right knee,SNOMED,jia,general_jia
+4220761,417180005,Undifferentiated inflammatory arthritis,SNOMED,jia,general_jia
+44812844,409000000000000,[X]Other seropositive rheumatoid arthritis,SNOMED,jia,general_jia
+40401308,203730003,[X]Other seropositive rheumatoid arthritis,SNOMED,jia,general_jia
+40401311,203732006,[X]Other specified rheumatoid arthritis,SNOMED,jia,general_jia
+44796948,425000000000000,[X]Other specified rheumatoid arthritis,SNOMED,jia,general_jia
+40401326,203746006,[X]Seropositive rheumatoid arthritis, unspecified,SNOMED,jia,general_jia
+40400237,201811002,[X]Seropositive rheumatoid arthritis, unspecified,SNOMED,jia,general_jia
+44812846,415000000000000,[X]Seropositive rheumatoid arthritis, unspecified,SNOMED,jia,general_jia
