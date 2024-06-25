@@ -1,0 +1,173 @@
+---
+title: "PCORnet Query Fulfillment - Alternative Query Language Pilot"
+subtitle: "Query 3 - Study-Specific Data Quality Modules"
+author: PCORnet Query Fulfillment Center
+title-block-banner: "#D5D5D5"
+title-block-style: default
+title-block-banner-color: "black"
+format:
+  html: 
+    theme: journal
+    embed-resources: true
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    toc-depth: 5
+    code-copy: true
+    code-overflow: wrap
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+```
+
+# Run Time Breakdown
+```{r runtime}
+
+```
+
+# Table 1 Summary
+```{r tbl1_summ}
+
+```
+
+# Data Quality Analyses
+
+## Module: Cohort Attrition
+
+### Single Site, Exploratory, No Time
+```{r ca_ss_exp_nt}
+
+```
+
+### Multi Site, Anomaly Detection, No Time
+```{r ca_ms_anom_nt}
+
+```
+
+## Module: Clinical Events and Specialties
+
+### Single Site, Anomaly Detection, No Time
+```{r cnc_sp_ss_anom_nt}
+
+```
+
+### Multi Site, Exploratory, No Time
+```{r cnc_sp_ms_exp_nt}
+
+```
+
+## Module: Clinical Facts per Patient
+
+### Single Site, Exploratory, Across Time
+```{r pf_ss_exp_at}
+
+```
+
+### Single Site, Anomaly Detection, Across Time
+```{r pf_ss_anom_at}
+
+```
+
+### Multi Site, Exploratory, No Time
+```{r pf_ms_exp_nt}
+
+```
+
+## Module: Expected Variables Present
+
+### Multi Site, Exploratory, No Time
+```{r evp_ms_exp_nt}
+
+```
+
+### Multi Site, Anomaly Detection, Across Time
+```{r evp_ms_anom_at}
+
+```
+
+### Single Site, Anomaly Detection, Across Time
+```{r evp_ss_anom_at}
+
+```
+
+## Module: Concept Set Distribution
+
+### Single Site, Exploratory, No Time
+```{r csd_ss_exp_nt}
+
+```
+
+### Multi Site, Anomaly Detection, No Time
+```{r csd_ms_anom_nt}
+
+```
+
+### Multi Site, Exploratory, Across Time
+```{r csd_ms_exp_at}
+
+```
+
+### Multi Site, Anomaly Detection, Across Time
+```{r csd_ms_anom_at}
+
+```
+
+## Module: Patient Event Sequencing
+
+### Single Site, Exploratory, No Time
+
+#### Application 1: Type 2 Diabetes & CKD Diagnoses
+```{r pes_ss_exp_nt1}
+
+```
+
+#### Application 2: Hba1c > 5.8% & Anti-Diabetic Drug Prescription
+```{r pes_ss_exp_nt2}
+
+```
+
+### Multi Site, Exploratory, No Time
+
+#### Application 1: Type 2 Diabetes & CKD Diagnoses
+```{r pes_ms_exp_nt1}
+
+```
+
+#### Application 2: Hba1c > 5.8% & Anti-Diabetic Drug Prescription
+```{r pes_ms_exp_nt2}
+
+```

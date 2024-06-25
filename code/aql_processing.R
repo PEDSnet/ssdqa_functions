@@ -1,4 +1,5 @@
 
+## CSV Merge Function
 
 merge_csvs <- function(output_directory,
                        name_string){
@@ -23,6 +24,33 @@ merge_csvs <- function(output_directory,
   
 }
 
+## Runtime Computation Function
+
+compute_runtime <- function(merged_attrition_tbl,
+                            merged_runtime_tbl){
+  
+  all_times <- merged_attrition_tbl %>%
+    select(qry_site, stamp) %>%
+    union(select(merged_runtime_tbl, qry_site, stamp))
+  
+  step_runtime <- all_times %>%
+    arrange(site, stamp) %>%
+    group_by(site) %>%
+    mutate(step_runtime = lag(stamp) - stamp)
+  
+  site_runtime <- all_times %>%
+    group_by(site) %>%
+    summarise(start_time = min(stamp),
+              end_time = max(stamp)) %>%
+    mutate(site_runtime = end_time - start_time)
+  
+  final <- list(step_runtime,
+                site_runtime)
+  
+  return(final)
+  
+}
+
 
 ## Cohort Attrition
 
@@ -39,8 +67,26 @@ ca_output_step3 <- ca_process(attrition_tbl = attrition_files,
                               anomaly_or_exploratory = 'exploratory',
                               start_step_num = 3)
 
+## Runtime computation
+
+runtime_files <- merge_csvs(output_directory = paste0(base_dir, '/results/'),
+                            name_string = 'check_runtime_')
+
+runtime_comps <- compute_runtime(merged_attrition_tbl = attrition_files,
+                                 merged_runtime_tbl = runtime_files)
+
+## Table 1s
+
+table1_files <- merge_csvs(output_directory = paste0(base_dir, '/results/'),
+                           name_string = 'demographic_')
+
 ## PF
 
+### Across time
+pf_at_merge <- merge_csvs(output_directory = paste0(base_dir, '/results/'),
+                          name_string = 'pf_ss_exp_at_')
+
+### No time
 pf_nt_merge <- merge_csvs(output_directory = paste0(base_dir, '/results/'),
                           name_string = 'pf_ss_exp_nt_')
 
@@ -90,5 +136,8 @@ csd_ms_nt_anom_final <- detect_outliers(df_tbl = csd_ms_nt_anom_int,
                                         column_variable = 'concept_code')
 
 ## PES
-pes_nt_merge <- merge_csvs(output_directory = paste0(base_dir, '/results/'),
-                           name_string = 'pes_ss_exp_nt_')
+pes_nt1_merge <- merge_csvs(output_directory = paste0(base_dir, '/results/'),
+                            name_string = 'pes_ss_exp_nt1_')
+
+pes_nt2_merge <- merge_csvs(output_directory = paste0(base_dir, '/results/'),
+                            name_string = 'pes_ss_exp_nt2_')
