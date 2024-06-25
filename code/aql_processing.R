@@ -33,19 +33,29 @@ compute_runtime <- function(merged_attrition_tbl,
     select(qry_site, stamp) %>%
     union(select(merged_runtime_tbl, qry_site, stamp))
   
-  step_runtime <- all_times %>%
-    arrange(site, stamp) %>%
-    group_by(site) %>%
-    mutate(step_runtime = lag(stamp) - stamp)
+  step_runtime_attrition <- merged_attrition_tbl %>%
+    select(qry_site, stamp, step_number, attrition_step) %>%
+    arrange(qry_site, desc(stamp)) %>%
+    group_by(qry_site) %>%
+    mutate(step_runtime = stamp - lead(stamp))
+    
+  step_runtime_check <- merged_runtime_tbl %>%
+    select(qry_site, stamp, check, check_app) %>%
+    arrange(qry_site, desc(stamp)) %>%
+    group_by(qry_site) %>%
+    mutate(app_runtime = stamp - lead(stamp)) %>%
+    group_by(qry_site, check) %>%
+    mutate(check_runtime = sum(app_runtime))
   
   site_runtime <- all_times %>%
-    group_by(site) %>%
+    group_by(qry_site) %>%
     summarise(start_time = min(stamp),
               end_time = max(stamp)) %>%
     mutate(site_runtime = end_time - start_time)
   
-  final <- list(step_runtime,
-                site_runtime)
+  final <- list('per_check' = step_runtime_check,
+                'per_attrition' = step_runtime_attrition,
+                'per_site' = site_runtime)
   
   return(final)
   
