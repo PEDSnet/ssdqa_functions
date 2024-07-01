@@ -16,7 +16,7 @@ pes_ss_exp_nt <- function(process_output){
   expand_cts <- process_output %>%
     uncount(pt_ct)
   
-  median_days <- median(expand_cts$num_days)
+  median_days <- median(expand_cts$num_days, na.rm = TRUE)
   
   hstgrm <- ggplot(expand_cts, aes(x = num_days, fill = num_days, group = num_days)) +
     geom_histogram() +
@@ -37,7 +37,7 @@ pes_ss_exp_nt <- function(process_output){
     pivot_longer(cols = c('user_thrs', 'thirty_thrs', 'sixty_thrs', 
                           'ninety_thrs', 'year_thrs')) %>%
     group_by(site, user_cutoff, total_pts, name) %>%
-    summarise(n_pts_thrs = sum(value)) %>%
+    summarise(n_pts_thrs = sum(value, na.rm = TRUE)) %>%
     mutate(prop_pts_thrs = round(n_pts_thrs / total_pts, 3))
   
   bgrph <- thrs_cutoffs %>%
@@ -87,7 +87,7 @@ pes_ms_exp_nt <- function(process_output){
     pivot_longer(cols = c('user_thrs', 'thirty_thrs', 'sixty_thrs', 
                           'ninety_thrs', 'year_thrs')) %>%
     group_by(site, user_cutoff, total_pts, name) %>%
-    summarise(n_pts_thrs = sum(value)) %>%
+    summarise(n_pts_thrs = sum(value, na.rm = TRUE)) %>%
     mutate(prop_pts_thrs = round(n_pts_thrs / total_pts, 3)) %>%
     group_by(name) %>%
     mutate(median_prop = median(prop_pts_thrs))

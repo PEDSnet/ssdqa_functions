@@ -495,10 +495,10 @@ pf_ms_exp_nt <- function(data_tbl,
       comp_var = 'median_all_without0s'
   }else(stop('Please select a valid output: {.code median_site_with0s} or {.code median_site_without0s}'))
   
-  site_deframe <- 
-    data_tbl %>% distinct(site) %>% 
-    inner_join(read_codeset('site_color_config','cc')) %>% 
-    deframe()
+  # site_deframe <- 
+  #   data_tbl %>% distinct(site) %>% 
+  #   inner_join(read_codeset('site_color_config','cc')) %>% 
+  #   deframe()
   
   data_format <- data_tbl %>%
     mutate(n_w_fact = format(n_w_fact, big.mark = ',', scientific = FALSE),

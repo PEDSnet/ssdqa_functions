@@ -303,7 +303,7 @@ pf_output <- function(process_output,
                                visit_filter = visit_filter)
   }else if(output_function == 'pf_ss_anom_at'){
     pf_output <- pf_ss_anom_at(data_tbl = process_output,
-                               output = output,
+                               #output = output,
                                facet = facet,
                                visit_filter = visit_filter,
                                domain_filter = domain_filter)

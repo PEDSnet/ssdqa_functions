@@ -70,7 +70,7 @@ evp_ms_exp_nt <- function(process_output,
   
   process_output %>%
     mutate(colors = ifelse(!!sym(prop) < 0.2 | !!sym(prop) > 0.8, 'group1', 'group2')) %>%
-    ggplot(aes(y = site, x = variable, fill = !!sym(prop))) +
+    ggplot(aes(x = site, y = variable, fill = !!sym(prop))) +
     geom_tile() +
     geom_text(aes(label = !!sym(prop), color = colors), #size = 2, 
               show.legend = FALSE) +
@@ -78,8 +78,8 @@ evp_ms_exp_nt <- function(process_output,
     scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
     theme_minimal() +
     labs(title = paste0('Proportion ', title, ' per Variable & Site'),
-         y = 'Site',
-         x = 'Variable', 
+         x = 'Site',
+         y = 'Variable', 
          fill = paste0('Proportion ', title))
   
 }
