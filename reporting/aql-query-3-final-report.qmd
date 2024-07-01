@@ -33,6 +33,8 @@ require(kableExtra)
 require(stringr)
 require(tibble)
 require(ggplot2)
+require(gt)
+require(countmaskr)
 
 get_results <- function(tbl_name) {
   if (data_source == 'local') {
@@ -57,10 +59,69 @@ opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 # Run Time Breakdown
 ```{r runtime}
 
+runtime_per_site <- read_csv(paste0(base_dir, '/results/runtime_site.csv')) %>% 
+  select(qry_site, site_runtime) %>% 
+  mutate(site_runtime = round(site_runtime, 3),
+         rt_hours = round(site_runtime / 60, 3))
+
+runtime_per_site %>%
+  gt::gt(rowname_col = 'qry_site') %>%
+  cols_label('site_runtime' = 'Site Runtime (Minutes)',
+             'rt_hours' = 'Site Runtime (Hours)') %>%
+  opt_stylize(style = 6, color = 'red') %>%
+  grand_summary_rows(columns = c('site_runtime', 'rt_hours'),
+                     fns = list('Average' ~ mean(.),
+                                'Median' ~ median(.))) %>%
+  tab_header('Query Runtime Summary')
+
+
 ```
 
 # Table 1 Summary
 ```{r tbl1_summ}
+
+t1_merge <- read_csv(paste0(base_dir, '/results/table1.csv')) %>%
+  group_by(category, value) %>%
+  mutate(site = row_number()) %>%
+  group_by(site, label, category) %>%
+  summarise(ct = sum(ct)) %>% ungroup()
+
+t1_masked <- mask_table(t1_merge %>% filter(category != 'average_fu'),
+                        col_groups = list("ct"),
+                        group_by = c('site', 'category'),
+                        percentages = TRUE,
+                        overwrite_columns = FALSE)
+
+t1_fu <- t1_merge %>%
+  filter(category == 'average_fu') %>%
+  rename('ct_masked' = ct) %>%
+  mutate(ct_masked = round(ct_masked, 3),
+         ct_masked = as.character(ct_masked))
+
+t1_pivot <- t1_masked %>%
+  select(site, label, category, ct_masked) %>%
+  ungroup() %>%
+  union(t1_fu) %>%
+  pivot_wider(names_from = site,
+              values_from = ct_masked) %>%
+  mutate(category = case_when(category == 'age_group' ~ 'Age Group',
+                              category == 'race' ~ 'Race',
+                              category == 'ethnicity' ~ 'Ethnicity',
+                              category == 'average_fu' ~ 'Average Follow-Up',
+                              category == 'sex' ~ 'Sex'))
+
+t1_pivot %>%
+  arrange(category, label) %>%
+  gt::gt(groupname_col = 'category',
+         rowname_col = 'label') %>%
+  fmt_number(rows = label != 'fu (years)',
+             decimals = 0) %>%
+  fmt_number(rows = label == 'fu (years)',
+             decimals = 3) %>%
+  sub_missing(missing_text = '') %>%
+  tab_header('Demographic Table 1 Summary') %>%
+  opt_stylize(style = 6, color = 'red')
+
 
 ```
 
@@ -69,12 +130,66 @@ opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ## Module: Cohort Attrition
 
 ### Single Site, Exploratory, No Time
-```{r ca_ss_exp_nt}
+
+#### Beginning at Step 0
+```{r ca_ss_exp_nt0}
+
+## Need to decide how to visualize the single site output
+
+## CONFIGS - log_scale, var_col, what step to start at
+
+s0_ss <- ca_output(process_output = 
+                     read_csv(paste0(base_dir, '/results/ca_ms_exp_nt_step0.csv')) %>% 
+            filter(site == 'C7TCH'),
+          output_function = 'ca_ss_exp_nt',
+          log_scale = FALSE,
+          var_col = 'prop_retained_start')
+
+s0_ss[[1]]
+```
+
+#### Beginning at Step 3
+
+```{r ca_ss_exp_nt3}
+s3_ss <- ca_output(process_output = 
+                     read_csv(paste0(base_dir, '/results/ca_ms_exp_nt_step3.csv')) %>% 
+            filter(site == 'C7TCH'),
+          output_function = 'ca_ss_exp_nt',
+          log_scale = FALSE,
+          var_col = 'prop_retained_start')
+
+s3_ss[[1]]
+s0_ss[[2]]
 
 ```
 
 ### Multi Site, Anomaly Detection, No Time
-```{r ca_ms_anom_nt}
+
+#### Beginning at Step 0
+```{r ca_ms_anom_nt0}
+
+## CONFIGS - var_col, what step to start at
+
+s0_ms <- ca_output(process_output = 
+                     read_csv(paste0(base_dir, '/results/ca_ms_anom_nt_step0.csv')),
+          output_function = 'ca_ms_anom_nt',
+          log_scale = FALSE,
+          var_col = 'prop_retained_start')
+
+s0_ms
+
+```
+
+#### Beginning at Step 3
+
+```{r ca_ms_anom_nt3}
+s3_ms <- ca_output(process_output = 
+                     read_csv(paste0(base_dir, '/results/ca_ms_anom_nt_step3.csv')),
+          output_function = 'ca_ms_anom_nt',
+          log_scale = FALSE,
+          var_col = 'prop_retained_start')
+
+s3_ms
 
 ```
 
@@ -95,15 +210,38 @@ opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ### Single Site, Exploratory, Across Time
 ```{r pf_ss_exp_at}
 
+pf_output(process_output = read_csv(paste0(base_dir, '/results/pf_ss_at.csv')) %>%
+            filter(site == 'C7TCH'),
+          output_function = 'pf_ss_exp_at',
+          facet = 'visit_type',
+          output = 'median_fact_ct',
+          date_breaks_str = '1 year')
+
 ```
 
 ### Single Site, Anomaly Detection, Across Time
 ```{r pf_ss_anom_at}
 
+## CONFIGS - domain & visit filters
+## maybe pick two and patchwork?
+
+pf_output(process_output = read_csv(paste0(base_dir, '/results/pf_ss_at.csv')) %>%
+            filter(site == 'C7TCH'),
+          output_function = 'pf_ss_anom_at',
+          facet = NULL,
+          visit_filter = 'inpatient',
+          domain_filter = 'meds_admin')
+
 ```
 
-### Multi Site, Exploratory, No Time
+### Single Site, Exploratory, No Time
 ```{r pf_ms_exp_nt}
+
+pf_output(process_output = read_csv(paste0(base_dir, '/results/pf_ss_nt.csv')) %>%
+            filter(site == 'C7TCH'),
+          output_function = 'pf_ss_exp_nt',
+          output = 'median_site_without0s',
+          facet = 'visit_type')
 
 ```
 
@@ -112,15 +250,34 @@ opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ### Multi Site, Exploratory, No Time
 ```{r evp_ms_exp_nt}
 
+evp_output(process_output = read_csv(paste0(base_dir, '/results/evp_ms_exp_nt.csv')),
+           output_function = 'evp_ms_exp_nt',
+           output_level = 'patient')
+
 ```
 
 ### Multi Site, Anomaly Detection, Across Time
 ```{r evp_ms_anom_at}
 
+evp_eucl <- evp_output(process_output = read_csv(paste0(base_dir, '/results/evp_ms_anom_at.csv')),
+           output_function = 'evp_ms_anom_at',
+           output_level = 'patient',
+           filter_variable = 'Hba1c greater than 8')
+
+evp_eucl[[1]]
+evp_eucl[[2]]
+evp_eucl[[3]]
+
 ```
 
 ### Single Site, Anomaly Detection, Across Time
 ```{r evp_ss_anom_at}
+
+evp_output(process_output = read_csv(paste0(base_dir, '/results/evp_ss_anom_at.csv')) %>%
+             filter(site == 'C7TCH'),
+           output_function = 'evp_ss_anom_at',
+           output_level = 'patient',
+           filter_variable = 'Elevated Blood Pressure')
 
 ```
 
@@ -129,20 +286,87 @@ opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ### Single Site, Exploratory, No Time
 ```{r csd_ss_exp_nt}
 
+csd_exp_nt <- csd_output(process_output = read_csv(paste0(base_dir, '/results/csd_exp_nt.csv')) %>%
+             filter(site == 'C7TCH'),
+           output_function = 'csd_ss_exp_nt')
+
+csd_exp_nt[[1]]
+csd_exp_nt[[2]]
+
 ```
 
 ### Multi Site, Anomaly Detection, No Time
 ```{r csd_ms_anom_nt}
 
+csd_output(process_output = read_csv(paste0(base_dir, '/results/csd_ms_anom_nt.csv')),
+           output_function = 'csd_ms_anom_nt',
+           filtered_var = 'second_line_rx',
+           concept_col = 'concept_code')
+
 ```
 
 ### Multi Site, Exploratory, Across Time
-```{r csd_ms_exp_at}
+#### Yearly
+```{r csd_ms_exp_at_year}
+
+ms_exp_y <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/results/csd_ms_exp_at_year.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 'second_line_rx',
+           filter_concept = 311041,
+           concept_col = 'concept_code')
+
+ms_exp_y[[1]]
+ms_exp_y[[2]]
+
+```
+
+### Multi Site, Exploratory, Across Time
+#### Quarterly
+```{r csd_ms_exp_at_quarter}
+
+ms_exp_q <- csd_output(process_output = read_csv(paste0(base_dir, '/results/csd_exp_at_qrtr.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 'second_line_rx',
+           filter_concept = 311041,
+           concept_col = 'concept_code')
+
+ms_exp_q[[1]]
+ms_exp_q[[2]]
 
 ```
 
 ### Multi Site, Anomaly Detection, Across Time
-```{r csd_ms_anom_at}
+#### Yearly
+```{r csd_ms_anom_at_year}
+
+csd_eucl <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/results/csd_ms_anom_at_year.csv')),
+           output_function = 'csd_ms_anom_at',
+           filtered_var = 'second_line_rx',
+           filter_concept = 311041,
+           concept_col = 'concept_code')
+
+csd_eucl[[1]]
+csd_eucl[[2]]
+csd_eucl[[3]]
+
+```
+
+### Single Site, Anomaly Detection, Across Time
+#### Quarterly
+```{r csd_ms_anom_at_quarter}
+
+csd_anom <- csd_output(process_output = 
+             read_csv(paste0(base_dir, '/results/csd_ss_anom_at_qrtr.csv')) %>%
+             filter(site == 'C7TCH'),
+             #vocab_tbl = NULL,
+           output_function = 'csd_ss_anom_at',
+           concept_col = 'concept_code',
+           filter_concept = 'E11.9')
+
+csd_anom[[1]]
+csd_anom[[2]]
 
 ```
 
@@ -153,10 +377,24 @@ opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 #### Application 1: Type 2 Diabetes & CKD Diagnoses
 ```{r pes_ss_exp_nt1}
 
+pes_ss1 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/results/pes_exp_nt1.csv')) %>% 
+                filter(site == 'C7TCH'))
+
+pes_ss1[[1]]
+pes_ss1[[2]]
+
 ```
 
 #### Application 2: Hba1c > 5.8% & Anti-Diabetic Drug Prescription
 ```{r pes_ss_exp_nt2}
+
+pes_ss2 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/results/pes_exp_nt2.csv')) %>% 
+                filter(site == 'C7TCH'))
+
+pes_ss2[[1]]
+pes_ss2[[2]]
 
 ```
 
@@ -165,9 +403,19 @@ opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 #### Application 1: Type 2 Diabetes & CKD Diagnoses
 ```{r pes_ms_exp_nt1}
 
+pes_ms1 <- pes_ms_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/results/pes_exp_nt1.csv')))
+
+pes_ms1
+
 ```
 
 #### Application 2: Hba1c > 5.8% & Anti-Diabetic Drug Prescription
 ```{r pes_ms_exp_nt2}
+
+pes_ms2 <- pes_ms_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/results/pes_exp_nt2.csv')))
+
+pes_ms2
 
 ```
