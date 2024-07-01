@@ -16,13 +16,14 @@
 #' 
 csd_ss_exp_nt <- function(process_output,
                           facet = NULL,
+                          concept_col = 'concept_code',
                           num_codes = 10,
                           num_mappings = 10){
   
   # picking columns / titles 
     denom <-  'ct_denom'
     col <- 'variable'
-    map_col <- 'concept_id'
+    map_col <- concept_col
     prop <- 'prop_concept'
     title <- paste0('Top ', num_mappings, ' Concepts For Top ', num_codes, ' Variables')
     
@@ -78,8 +79,8 @@ csd_ss_exp_nt <- function(process_output,
                 width = 10,
                 height = 10)
 
-  ref_tbl <- generate_ref_table(tbl = final %>% mutate(concept_id = as.integer(concept_id)) %>%
-                                  select(-concept_name),
+  ref_tbl <- generate_ref_table(tbl = final, #%>% mutate(concept_id = as.integer(concept_id)) %>%
+                                  #select(-concept_name),
                                 id_col = col,
                                 name_col = col,
                                 denom = denom)
@@ -186,6 +187,7 @@ csd_ss_anom_nt <- function(process_output,
 #'         the data removed in the regression are also returned
 #' 
 csd_ss_anom_at <- function(process_output,
+                           concept_col = 'concept_id',
                            filtered_var='ibd',
                            filter_concept=81893,
                            facet=NULL){
@@ -194,10 +196,10 @@ csd_ss_anom_at <- function(process_output,
   
   if(time_inc == 'year'){
   
-  facet <- facet %>% append('concept_id') %>% unique()
+  facet <- facet %>% append(concept_col) %>% unique()
   
   c_added <- process_output %>% filter(variable == filtered_var,
-                                       concept_id == filter_concept)
+                                       !!sym(concept_col) == filter_concept)
 
   
   c_final <- c_added %>% group_by(!!!syms(facet), time_start, ct_concept) %>%
@@ -225,9 +227,9 @@ csd_ss_anom_at <- function(process_output,
   output_int <- ggplotly(new_pp)
   
   ref_tbl <- generate_ref_table(tbl = c_added %>% filter(variable == filtered_var,
-                                                         concept_id == filter_concept) %>% 
-                                  mutate(concept_id=as.integer(concept_id)),
-                                id_col = 'concept_id',
+                                                         !!sym(concept_col) == filter_concept), #%>% 
+                                  #mutate(concept_id=as.integer(concept_id)),
+                                id_col = !!sym(concept_col),
                                 denom = 'ct_concept',
                                 name_col = 'concept_name',
                                 #vocab_tbl = vocab_tbl,
@@ -238,16 +240,16 @@ csd_ss_anom_at <- function(process_output,
   }else{
     
     concept_nm <- process_output %>% 
-      filter(!is.na(concept_name), concept_id == filter_concept) %>% 
+      filter(!is.na(concept_name), !!sym(concept_col) == filter_concept) %>% 
       distinct(concept_name) %>% pull()
     
     anomalies <- 
-      plot_anomalies(.data=process_output %>% filter(concept_id == filter_concept),
+      plot_anomalies(.data=process_output %>% filter(!!sym(concept_col) == filter_concept),
                      .date_var=time_start) %>% 
       layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
     
     decomp <- 
-      plot_anomalies_decomp(.data=process_output %>% filter(concept_id == filter_concept),
+      plot_anomalies_decomp(.data=process_output %>% filter(!!sym(concept_col) == filter_concept),
                             .date_var=time_start) %>% 
       layout(title = paste0('Anomalies for Code ', filter_concept, ': ', concept_nm))
     
@@ -362,6 +364,7 @@ csd_ss_exp_at <- function(process_output,
 #'         time period
 #' 
 csd_ms_exp_at <- function(process_output,
+                          concept_col = 'concept_id',
                              facet=NULL,
                              filtered_var = c('ibd','spondyloarthritis'),
                              filtered_concept = c(81893),
@@ -380,9 +383,9 @@ csd_ms_exp_at <- function(process_output,
   
   
   dat_to_plot <- process_output %>% filter(variable %in% filtered_var,
-                                           concept_id %in% filtered_concept) %>% 
-    mutate(concept_id_label = paste0(variable, '\n', concept_id)) %>%
-    mutate(text=paste("Concept: ",concept_id,
+                                           !!sym(concept_col) %in% filtered_concept) %>% 
+    mutate(concept_id_label = paste0(variable, '\n', !!sym(concept_col))) %>%
+    mutate(text=paste("Concept: ",!!sym(concept_col),
                       "\nConcept Name: ",concept_name,
                       "\nSite: ",site,
                       "\nValue: ",!!sym(output_value),
@@ -390,15 +393,15 @@ csd_ms_exp_at <- function(process_output,
   
   
   ref_tbl <- generate_ref_table(tbl = dat_to_plot %>% 
-                                  mutate(concept_id=as.integer(concept_id)) %>% 
+                                  #mutate(concept_id=as.integer(concept_id)) %>% 
                                   group_by(site),
-                                id_col = 'concept_id',
+                                id_col = concept_col,
                                 denom = 'ct_concept',
                                 name_col = 'concept_name',
                                 time = TRUE)
   
   p <-dat_to_plot %>% 
-    mutate(concept_id=as.character(concept_id)) %>% 
+    mutate(concept_id=as.character(!!sym(concept_col))) %>% 
     ggplot(aes(y = !!sym(output_value), x = time_start, color = site,
                group=site, text=text)) +
     geom_line() +
@@ -501,6 +504,7 @@ csd_ms_exp_nt <- function(process_output,
 #'                  
 
 csd_ms_anom_nt<-function(process_output,
+                         concept_col = 'concept_id',
                         text_wrapping_char=80,
                         filtered_var='ibd',
                         comparison_col='prop_concept'){
@@ -508,7 +512,7 @@ csd_ms_anom_nt<-function(process_output,
   cname_samp <- process_output %>% head(1) %>% select(concept_name) %>% pull()
   
   if(cname_samp == 'No vocabulary table input'){
-    concept_label <- 'concept_id'
+    concept_label <- concept_col
     }else{concept_label <- 'concept_name'}
   
   comparison_col = comparison_col
@@ -526,7 +530,7 @@ csd_ms_anom_nt<-function(process_output,
   plt <-
     ggplot(dat_to_plot %>% filter(variable == filtered_var,
                                      anomaly_yn != 'no outlier in group'),
-              aes(x=site, y=as.character(concept_id), text=text, color=!!sym(comparison_col)))+
+              aes(x=site, y=as.character(!!sym(concept_col)), text=text, color=!!sym(comparison_col)))+
     geom_point_interactive(aes(size=mean_val,shape=anomaly_yn, tooltip = text))+
     geom_point_interactive(data = dat_to_plot %>% filter(anomaly_yn == 'not outlier'), 
                            aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
@@ -561,13 +565,14 @@ csd_ms_anom_nt<-function(process_output,
 #' 
 
 csd_ms_anom_at <- function(process_output,
-                           filter_concept){
+                           filter_concept,
+                           concept_col = 'concept_id'){
   
-  filt_op <- process_output %>% filter(concept_id == filter_concept)
+  filt_op <- process_output %>% filter(!!sym(concept_col) == filter_concept)
   
   allsites <- 
     filt_op %>% 
-    select(time_start,concept_id,mean_allsiteprop) %>% distinct() %>% 
+    select(time_start,!!sym(concept_col),mean_allsiteprop) %>% distinct() %>% 
     rename(prop_concept=mean_allsiteprop) %>% 
     mutate(site='all site average') %>% 
     mutate(text_smooth=paste0("Site: ", site,
