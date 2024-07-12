@@ -98,8 +98,8 @@ ca_output <- function(process_output,
                               log_scale = log_scale,
                               output = var_col)
   }else if(output_function == 'ca_ms_anom_nt'){
-    ca_output <- ca_ms_anom_nt1(process_output = process_output,
-                                output = var_col)
+    ca_output <- ca_ms_anom_nt(process_output = process_output,
+                               output = var_col)
   }else(cli::cli_abort('Please enter a valid output_function for this check'))
   
   return(ca_output)

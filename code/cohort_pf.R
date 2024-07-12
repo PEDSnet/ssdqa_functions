@@ -204,21 +204,29 @@ combine_study_facts <- function(pf_tbl,
       intersect(possible_cols[[1]],
                 tbl_cols)
     
-    if(!time){
-    mutated_tbl <- 
-      pf_tbl_visittype %>% 
-      pivot_longer(cols=all_of(selected_cols),
-                   names_to='domain',
-                   #names_to='var_name',
-                   values_to='var_val') %>%
-      mutate(var_ever=case_when(!is.na(var_val)~1L,
-                                TRUE~0L)) %>% 
-      mutate(var_val=case_when(is.na(var_val) ~ 0,
-                                TRUE ~ var_val)) %>% 
-       mutate(study=study_abbr,
-              visit_type=visit_type_pulled)
-    } else {mutated_tbl <- pf_tbl_visittype %>% mutate(study=study_abbr,
-                                                 visit_type=visit_type_pulled)}
+    if(length(selected_cols) == 0){
+      
+      mutated_tbl <- NULL
+    
+      }else{
+    
+        if(!time){
+        mutated_tbl <- 
+          pf_tbl_visittype %>% 
+          pivot_longer(cols=all_of(selected_cols),
+                       names_to='domain',
+                       #names_to='var_name',
+                       values_to='var_val') %>%
+          mutate(var_ever=case_when(!is.na(var_val)~1L,
+                                    TRUE~0L)) %>% 
+          mutate(var_val=case_when(is.na(var_val) ~ 0,
+                                    TRUE ~ var_val)) %>% 
+           mutate(study=study_abbr,
+                  visit_type=visit_type_pulled)
+        } else {mutated_tbl <- pf_tbl_visittype %>% mutate(study=study_abbr,
+                                                     visit_type=visit_type_pulled)}
+        
+      }
     
     
     final_list[[i]] <- mutated_tbl

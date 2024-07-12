@@ -5,13 +5,15 @@ merge_csvs <- function(output_directory,
                        name_string){
   
   csv_list <- list.files(output_directory, pattern = paste0('^',name_string),
-                         full.names = TRUE)  #character list all files
+                         full.names = TRUE, recursive = TRUE)  #character list all files
   
   df_list <- list()
   
   for(i in 1:length(csv_list)){
     
     file <- read_csv(csv_list[i])
+    
+    if(grepl('csd', name_string)){file <- file %>% mutate(concept_code = as.character(concept_code))}
     
     if('dmid' %in% names(file)){file <- file %>% rename('site' = dmid)}
     

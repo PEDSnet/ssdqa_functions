@@ -855,7 +855,7 @@ anomalize_ss_anom_at <- function(fot_input_tbl,
 #'  the `analysis_eligible` will indicate whether the group for which the user
 #'  wishes to detect an anomaly for is eligible for analysis.
 #'  
-#'  The following conditions will disquality a group from the anomaly detection analysis:
+#'  The following conditions will disqualify a group from the anomaly detection analysis:
 #'  (1) Sample size < 5 in group
 #'  (2) Mean < 0.02 or Median < 0.01
 #'  (3) Mean value < 0.05 and range <0.01

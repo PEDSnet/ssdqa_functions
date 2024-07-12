@@ -72,11 +72,12 @@ evp_ms_exp_nt <- function(process_output,
     mutate(colors = ifelse(!!sym(prop) < 0.2 | !!sym(prop) > 0.8, 'group1', 'group2')) %>%
     ggplot(aes(x = site, y = variable, fill = !!sym(prop))) +
     geom_tile() +
-    geom_text(aes(label = !!sym(prop), color = colors), #size = 2, 
+    geom_text(aes(label = !!sym(prop), color = colors), #size = 6,
               show.legend = FALSE) +
     scale_color_manual(values = c('white', 'black')) +
     scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
     theme_minimal() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1)) +
     labs(title = paste0('Proportion ', title, ' per Variable & Site'),
          x = 'Site',
          y = 'Variable', 
@@ -330,7 +331,7 @@ evp_ss_anom_at <- function(process_output,
     facet <- facet %>% append('variable') %>% unique()
     
     final <- process_output %>%
-      filter(variable == filter_variable) %>%
+      filter(variable %in% filter_variable) %>%
       unite(facet_col, !!!syms(facet), sep = '\n') %>%
       rename('ycol' = ct,
              'denom' = denom)
@@ -349,7 +350,7 @@ evp_ss_anom_at <- function(process_output,
      geom_point(colour = ssdqa_colors_standard[[6]] , fill = ssdqa_colors_standard[[6]], size = 1) +
      geom_point(data = subset(op_dat, y >= ucl), color = ssdqa_colors_standard[[3]], size = 2) +
      geom_point(data = subset(op_dat, y <= lcl), color = ssdqa_colors_standard[[3]], size = 2) +
-     facet_wrap(~facet1) +
+     facet_wrap(~facet1, scales = 'free_y', ncol = 2) +
      ggtitle(label = paste0('Control Chart: Proportion of ', title, ' per Variable')) +
      labs(x = 'Time',
           y = 'Proportion')+
