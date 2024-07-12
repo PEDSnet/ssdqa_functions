@@ -15,9 +15,6 @@ format:
     toc-depth: 5
     code-copy: true
     code-overflow: wrap
-knit: (function(inputFile, encoding) {
-  rmarkdown::render(inputFile, encoding = encoding, 
-  output_file = paste0('aql-query-3-final-report-', format(Sys.time(), '%Y%m%d'), '.html') )})
 ---
 
 ```{r setup, include=FALSE}
@@ -64,7 +61,7 @@ opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 # Run Time Breakdown
 ```{r runtime}
 
-runtime_per_site <- read_csv(paste0(base_dir, '/aql3-data/processed_files/runtime_site.csv')) %>% 
+runtime_per_site <- get_results('runtime_site_merge') %>% 
   select(qry_site, site_runtime) %>% 
   mutate(site_runtime = round(site_runtime, 3),
          rt_hours = round(site_runtime / 60, 3))
@@ -85,7 +82,7 @@ runtime_per_site %>%
 # Table 1 Summary
 ```{r tbl1_summ, fig.width=10}
 
-t1_cat_merge <- read_csv(paste0(base_dir, '/aql3-data/processed_files/table1.csv')) %>%
+t1_cat_merge <- get_results('table1_merge') %>%
   # group_by(category, value) %>%
   # mutate(site = row_number()) %>%
   group_by(site, label, category) %>%
@@ -145,7 +142,7 @@ t1_pivot %>%
   opt_stylize(style = 6, color = 'red')
 
 
-read_csv(paste0(base_dir, '/aql3-data/processed_files/table1.csv')) %>%
+get_results('table1_merge') %>%
   filter(category == 'average_fu') %>%
   ggplot(aes(y = site, x = ct, fill = site)) +
   geom_col(show.legend = FALSE) +
@@ -173,8 +170,7 @@ read_csv(paste0(base_dir, '/aql3-data/processed_files/table1.csv')) %>%
 
 ## CONFIGS - log_scale, var_col, what step to start at
 
-s0_ss <- ca_output(process_output = 
-                     read_csv(paste0(base_dir, '/aql3-data/processed_files/ca_ms_exp_nt_step0.csv')),
+s0_ss <- ca_output(process_output = get_results('ca_exp_nt_step0_merge'),
           output_function = 'ca_ms_exp_nt',
           log_scale = FALSE,
           var_col = 'prop_retained_start')
@@ -185,8 +181,7 @@ s0_ss[[1]]
 # Step 3
 
 ```{r ca_ss_exp_nt3}
-s3_ss <- ca_output(process_output = 
-                     read_csv(paste0(base_dir, '/aql3-data/processed_files/ca_ms_exp_nt_step3.csv')),
+s3_ss <- ca_output(process_output = get_results('ca_exp_nt_step3_merge'),
           output_function = 'ca_ms_exp_nt',
           log_scale = FALSE,
           var_col = 'prop_retained_start')
@@ -212,8 +207,7 @@ s0_ss[[2]]
 
 ## CONFIGS - var_col, what step to start at
 
-s0_ms <- ca_output(process_output = 
-                     read_csv(paste0(base_dir, '/aql3-data/processed_files/ca_ms_anom_nt_step0.csv')),
+s0_ms <- ca_output(process_output = get_results('ca_ms_anom_nt_step0_merge'),
           output_function = 'ca_ms_anom_nt',
           log_scale = FALSE,
           var_col = 'prop_retained_prior')
@@ -225,8 +219,7 @@ s0_ms
 # Step 3
 
 ```{r ca_ms_anom_nt3}
-s3_ms <- ca_output(process_output = 
-                     read_csv(paste0(base_dir, '/aql3-data/processed_files/ca_ms_anom_nt_step3.csv')),
+s3_ms <- ca_output(process_output = get_results('ca_ms_anom_nt_step3_merge'),
           output_function = 'ca_ms_anom_nt',
           log_scale = FALSE,
           var_col = 'prop_retained_prior')
@@ -282,7 +275,7 @@ s0_ss[[2]]
 
 ```{r pf_ss_exp_at_adult}
 
-adult1 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+adult1 <- pf_output(process_output = get_results('pf_ss_at_merge') %>%
             filter(site == 'C8WCM'),
           output_function = 'pf_ss_exp_at',
           facet = 'visit_type',
@@ -296,7 +289,7 @@ adult1
 
 ```{r pf_ss_exp_at_adult2}
 
-adult2 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+adult2 <- pf_output(process_output = get_results('pf_ss_at_merge') %>%
             filter(site == 'C4UMO'),
           output_function = 'pf_ss_exp_at',
           facet = 'visit_type',
@@ -311,7 +304,7 @@ adult2
 
 ```{r pf_ss_exp_at_peds}
 
-peds <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+peds <- pf_output(process_output = get_results('pf_ss_at_merge') %>%
             filter(site == 'C7LC'),
           output_function = 'pf_ss_exp_at',
           facet = 'visit_type',
@@ -334,7 +327,7 @@ peds
 ## CONFIGS - domain & visit filters
 ## maybe pick two and patchwork?
 
-adult1 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+adult1 <- pf_output(process_output = get_results('pf_ss_at_merge') %>%
             filter(site == 'C8WCM'),
           output_function = 'pf_ss_anom_at',
           facet = NULL,
@@ -349,7 +342,7 @@ adult1
 
 ```{r pf_ss_anom_at_adult2}
 
-adult2 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+adult2 <- pf_output(process_output = get_results('pf_ss_at_merge') %>%
             filter(site == 'C4UMO'),
           output_function = 'pf_ss_anom_at',
           facet = NULL,
@@ -364,7 +357,7 @@ adult2
 
 ```{r pf_ss_anom_at_peds}
 
-peds <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+peds <- pf_output(process_output = get_results('pf_ss_at_merge') %>%
             filter(site == 'C7LC'),
           output_function = 'pf_ss_anom_at',
           facet = NULL,
@@ -384,7 +377,7 @@ peds
 
 ```{r pf_ss_exp_nt_adult}
 
-adult1 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_nt.csv')) %>%
+adult1 <- pf_output(process_output = get_results('pf_ss_nt_merge') %>%
             filter(site == 'C8WCM'),
           output_function = 'pf_ss_exp_nt',
           output = 'median_site_without0s',
@@ -398,7 +391,7 @@ adult1
 
 ```{r pf_ss_exp_nt_adult2}
 
-adult2 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_nt.csv')) %>%
+adult2 <- pf_output(process_output = get_results('pf_ss_nt_merge') %>%
             filter(site == 'C4UMO'),
           output_function = 'pf_ss_exp_nt',
           output = 'median_site_without0s',
@@ -412,7 +405,7 @@ adult2
 
 ```{r pf_ss_exp_nt_peds}
 
-peds <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_nt.csv')) %>%
+peds <- pf_output(process_output = get_results('pf_ss_nt_merge') %>%
             filter(site == 'C7LC'),
           output_function = 'pf_ss_exp_nt',
           output = 'median_site_without0s',
@@ -428,7 +421,7 @@ peds
 ### Multi Site, Exploratory, No Time
 ```{r evp_ms_exp_nt, fig.width=10}
 
-evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_exp_nt.csv')),
+evp_output(process_output = get_results('evp_exp_nt_merge'),
            output_function = 'evp_ms_exp_nt',
            output_level = 'patient')
 
@@ -444,8 +437,7 @@ evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_file
 
 ## hba1c, ckd, elev bp, keto, anti dib, stroke
 
-evp_eucl <- evp_output(process_output = 
-                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
+evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            output_function = 'evp_ms_anom_at',
            output_level = 'patient',
            filter_variable = 'Hba1c greater than 8')
@@ -464,8 +456,7 @@ evp_eucl[[3]]
 
 ```{r evp_ms_anom_at2}
 
-evp_eucl <- evp_output(process_output = 
-                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
+evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            output_function = 'evp_ms_anom_at',
            output_level = 'patient',
            filter_variable = 'CKD')
@@ -484,8 +475,7 @@ evp_eucl[[3]]
 
 ```{r evp_ms_anom_at3}
 
-evp_eucl <- evp_output(process_output = 
-                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
+evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            output_function = 'evp_ms_anom_at',
            output_level = 'patient',
            filter_variable = 'Elevated Blood Pressure')
@@ -504,8 +494,7 @@ evp_eucl[[3]]
 
 ```{r evp_ms_anom_at4}
 
-evp_eucl <- evp_output(process_output = 
-                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
+evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            output_function = 'evp_ms_anom_at',
            output_level = 'patient',
            filter_variable = 'Ketoacidosis')
@@ -524,8 +513,7 @@ evp_eucl[[3]]
 
 ```{r evp_ms_anom_at5}
 
-evp_eucl <- evp_output(process_output = 
-                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
+evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            output_function = 'evp_ms_anom_at',
            output_level = 'patient',
            filter_variable = 'Second-Line Anti Diabetics')
@@ -544,8 +532,7 @@ evp_eucl[[3]]
 
 ```{r evp_ms_anom_at6}
 
-evp_eucl <- evp_output(process_output = 
-                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
+evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            output_function = 'evp_ms_anom_at',
            output_level = 'patient',
            filter_variable = 'Stroke')
@@ -569,7 +556,7 @@ evp_eucl[[3]]
 
 ```{r evp_ss_anom_at_a1}
 
-evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ss_anom_at.csv')) %>%
+evp_output(process_output = get_results('evp_exp_at_merge') %>%
              filter(site == 'C6BAY'),
            output_function = 'evp_ss_anom_at',
            output_level = 'patient',
@@ -581,7 +568,7 @@ evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_file
 
 ```{r evp_ss_anom_at_a2}
 
-evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ss_anom_at.csv')) %>%
+evp_output(process_output = get_results('evp_exp_at_merge') %>%
              filter(site == 'C4UN'),
            output_function = 'evp_ss_anom_at',
            output_level = 'patient',
@@ -593,7 +580,7 @@ evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_file
 
 ```{r evp_ss_anom_at_P1}
 
-evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ss_anom_at.csv')) %>%
+evp_output(process_output = get_results('evp_exp_at_merge') %>%
              filter(site == 'C7NCH'),
            output_function = 'evp_ss_anom_at',
            output_level = 'patient',
@@ -605,7 +592,7 @@ evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_file
 
 ```{r evp_ss_anom_at_p2}
 
-evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ss_anom_at.csv')) %>%
+evp_output(process_output = get_results('evp_exp_at_merge') %>%
              filter(site == 'C7CHCO'),
            output_function = 'evp_ss_anom_at',
            output_level = 'patient',
@@ -624,8 +611,7 @@ evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_file
 
 ```{r csd_ss_exp_nt_a1}
 
-csd_exp_nt <- csd_output(process_output = 
-                           read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_exp_nt.csv')) %>%
+csd_exp_nt <- csd_output(process_output = get_results('csd_exp_nt_merge') %>%
              filter(site == 'C10OC'),
            output_function = 'csd_ss_exp_nt')
 
@@ -637,8 +623,7 @@ csd_exp_nt[[2]]
 # C2WF - Non-Pediatric
 ```{r csd_ss_exp_nt_a2}
 
-csd_exp_nt <- csd_output(process_output = 
-                           read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_exp_nt.csv')) %>%
+csd_exp_nt <- csd_output(process_output = get_results('csd_exp_nt_merge') %>%
              filter(site == 'C2WF'),
            output_function = 'csd_ss_exp_nt')
 
@@ -651,8 +636,7 @@ csd_exp_nt[[2]]
 
 ```{r csd_ss_exp_nt_a3}
 
-csd_exp_nt <- csd_output(process_output = 
-                           read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_exp_nt.csv')) %>%
+csd_exp_nt <- csd_output(process_output = get_results('csd_exp_nt_merge') %>%
              filter(site == 'C4UI'),
            output_function = 'csd_ss_exp_nt')
 
@@ -665,8 +649,7 @@ csd_exp_nt[[2]]
 
 ```{r csd_ss_exp_nt_p}
 
-csd_exp_nt <- csd_output(process_output = 
-                           read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_exp_nt.csv')) %>%
+csd_exp_nt <- csd_output(process_output = get_results('csd_exp_nt_merge') %>%
              filter(site == 'C7SEACH'),
            output_function = 'csd_ss_exp_nt')
 
@@ -684,7 +667,7 @@ csd_exp_nt[[2]]
 
 ```{r csd_ms_anom_nt1}
 
-csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
+csd_output(process_output = get_results('csd_ms_anom_nt_merge'),
            output_function = 'csd_ms_anom_nt',
            filtered_var = 'second_line_rx',
            concept_col = 'concept_code')
@@ -694,7 +677,7 @@ csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_file
 # Stroke
 ```{r csd_ms_anom_nt2}
 
-csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
+csd_output(process_output = get_results('csd_ms_anom_nt_merge'),
            output_function = 'csd_ms_anom_nt',
            filtered_var = 'stroke',
            concept_col = 'concept_code')
@@ -704,7 +687,7 @@ csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_file
 # Elevated Blood Pressure
 ```{r csd_ms_anom_nt3}
 
-csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
+csd_output(process_output = get_results('csd_ms_anom_nt_merge'),
            output_function = 'csd_ms_anom_nt',
            filtered_var = 'elevated_bp',
            concept_col = 'concept_code')
@@ -714,7 +697,7 @@ csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_file
 # Ketoacidosis
 ```{r csd_ms_anom_nt4}
 
-csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
+csd_output(process_output = get_results('csd_ms_anom_nt_merge'),
            output_function = 'csd_ms_anom_nt',
            filtered_var = 'ketoacidosis',
            concept_col = 'concept_code')
@@ -724,7 +707,7 @@ csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_file
 # Type 2 Diabetes Diagnosis
 ```{r csd_ms_anom_nt5}
 
-csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
+csd_output(process_output = get_results('csd_ms_anom_nt_merge'),
            output_function = 'csd_ms_anom_nt',
            filtered_var = 't2d',
            concept_col = 'concept_code')
@@ -734,7 +717,7 @@ csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_file
 # CKD
 ```{r csd_ms_anom_nt6}
 
-csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
+csd_output(process_output = get_results('csd_ms_anom_nt_merge'),
            output_function = 'csd_ms_anom_nt',
            filtered_var = 'ckd',
            concept_col = 'concept_code')
@@ -751,8 +734,7 @@ csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_file
 
 ```{r csd_ms_exp_at_year1}
 
-ms_exp_y <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
+ms_exp_y <- csd_output(process_output = get_results('csd_exp_at_year_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'second_line_rx',
            filter_concept = c(311041, 861004, 242120),
@@ -767,8 +749,7 @@ ms_exp_y[[2]]
 
 ```{r csd_ms_exp_at_year2}
 
-ms_exp_y <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
+ms_exp_y <- csd_output(process_output = get_results('csd_exp_at_year_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'stroke',
            filter_concept = c('I63.9'),
@@ -783,8 +764,7 @@ ms_exp_y[[2]]
 
 ```{r csd_ms_exp_at_year3}
 
-ms_exp_y <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
+ms_exp_y <- csd_output(process_output = get_results('csd_exp_at_year_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'elevated_bp',
            filter_concept = c('R03.0', '796.2'),
@@ -799,8 +779,7 @@ ms_exp_y[[2]]
 
 ```{r csd_ms_exp_at_year4}
 
-ms_exp_y <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
+ms_exp_y <- csd_output(process_output = get_results('csd_exp_at_year_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'ketoacidosis',
            filter_concept = c('E10.10', 'E11.00', '250.13'),
@@ -815,8 +794,7 @@ ms_exp_y[[2]]
 
 ```{r csd_ms_exp_at_year5}
 
-ms_exp_y <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
+ms_exp_y <- csd_output(process_output = get_results('csd_exp_at_year_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 't2d',
            filter_concept = c('E11.9', 'E11.65'),
@@ -831,8 +809,7 @@ ms_exp_y[[2]]
 
 ```{r csd_ms_exp_at_year6}
 
-ms_exp_y <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
+ms_exp_y <- csd_output(process_output = get_results('csd_exp_at_year_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'ckd',
            filter_concept = c('E11.22', 'N18.4', 'D63.1'),
@@ -852,10 +829,7 @@ ms_exp_y[[2]]
 
 ```{r csd_ms_exp_at_qrtr1}
 
-date_list <- read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')) %>% distinct(time_start)
-
-ms_exp_q <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
+ms_exp_q <- csd_output(process_output = get_results('csd_exp_at_qrtr_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'second_line_rx',
            filter_concept = c(311041, 861004, 242120),
@@ -870,8 +844,7 @@ ms_exp_q[[2]]
 
 ```{r csd_ms_exp_at_qrtr2}
 
-ms_exp_q <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
+ms_exp_q <- csd_output(process_output = get_results('csd_exp_at_qrtr_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'stroke',
            filter_concept = c('I63.9'),
@@ -886,8 +859,7 @@ ms_exp_q[[2]]
 
 ```{r csd_ms_exp_at_qrtr3}
 
-ms_exp_q <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
+ms_exp_q <- csd_output(process_output = get_results('csd_exp_at_qrtr_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'elevated_bp',
            filter_concept = c('R03.0', '796.2'),
@@ -902,8 +874,7 @@ ms_exp_q[[2]]
 
 ```{r csd_ms_exp_at_qrtr4}
 
-ms_exp_q <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
+ms_exp_q <- csd_output(process_output = get_results('csd_exp_at_qrtr_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'ketoacidosis',
            filter_concept = c('E10.10', 'E11.00', '250.13'),
@@ -918,8 +889,7 @@ ms_exp_q[[2]]
 
 ```{r csd_ms_exp_at_qrtr5}
 
-ms_exp_q <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
+ms_exp_q <- csd_output(process_output = get_results('csd_exp_at_qrtr_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 't2d',
            filter_concept = c('E11.9', 'E11.65'),
@@ -934,8 +904,7 @@ ms_exp_q[[2]]
 
 ```{r csd_ms_exp_at_qrtr6}
 
-ms_exp_q <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
+ms_exp_q <- csd_output(process_output = get_results('csd_exp_at_qrtr_merge'),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'ckd',
            filter_concept = c('E11.22', 'N18.4', 'D63.1'),
@@ -956,8 +925,7 @@ ms_exp_q[[2]]
 
 ```{r csd_ms_anom_at_year1}
 
-csd_eucl <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
+csd_eucl <- csd_output(process_output = get_results('csd_ms_anom_at_year_merge'),
            output_function = 'csd_ms_anom_at',
            filtered_var = 'second_line_rx',
            filter_concept = 311041,
@@ -976,8 +944,7 @@ csd_eucl[[3]]
 # Stroke
 ```{r csd_ms_anom_at_year2}
 
-csd_eucl <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
+csd_eucl <- csd_output(process_output = get_results('csd_ms_anom_at_year_merge'),
            output_function = 'csd_ms_anom_at',
            filtered_var = 'stroke',
            filter_concept = 'I63.9',
@@ -996,8 +963,7 @@ csd_eucl[[3]]
 # Elevated Blood Pressure
 ```{r csd_ms_anom_at_year3}
 
-csd_eucl <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
+csd_eucl <- csd_output(process_output = get_results('csd_ms_anom_at_year_merge'),
            output_function = 'csd_ms_anom_at',
            filtered_var = 'elevated_bp',
            filter_concept = 'R03.0',
@@ -1016,8 +982,7 @@ csd_eucl[[3]]
 # Ketoacidosis
 ```{r csd_ms_anom_at_year4}
 
-csd_eucl <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
+csd_eucl <- csd_output(process_output = get_results('csd_ms_anom_at_year_merge'),
            output_function = 'csd_ms_anom_at',
            filtered_var = 'ketoacidosis',
            filter_concept = 'E10.10',
@@ -1036,8 +1001,7 @@ csd_eucl[[3]]
 # Type 2 Diabetes Diagnosis
 ```{r csd_ms_anom_at_year5}
 
-csd_eucl <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
+csd_eucl <- csd_output(process_output = get_results('csd_ms_anom_at_year_merge'),
            output_function = 'csd_ms_anom_at',
            filtered_var = 't2d',
            filter_concept = 'E11.9',
@@ -1056,8 +1020,7 @@ csd_eucl[[3]]
 # CKD
 ```{r csd_ms_anom_at_year6}
 
-csd_eucl <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
+csd_eucl <- csd_output(process_output = get_results('csd_ms_anom_at_year_merge'),
            output_function = 'csd_ms_anom_at',
            filtered_var = 'ckd',
            filter_concept = 'N18.4',
@@ -1083,8 +1046,7 @@ csd_eucl[[3]]
 
 ```{r csd_ms_anom_at_quarter1}
 
-csd_anom <- csd_output(process_output = 
-             read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ss_anom_at_qrtr.csv')) %>%
+csd_anom <- csd_output(process_output = get_results('csd_ss_anom_at_qrtr_merge') %>%
              filter(site == 'C10OC'),
              #vocab_tbl = NULL,
            output_function = 'csd_ss_anom_at',
@@ -1100,8 +1062,7 @@ csd_anom[[2]]
 
 ```{r csd_ms_anom_at_quarter2}
 
-csd_anom <- csd_output(process_output = 
-             read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ss_anom_at_qrtr.csv')) %>%
+csd_anom <- csd_output(process_output = get_results('csd_ss_anom_at_qrtr_merge') %>%
              filter(site == 'C2WF'),
              #vocab_tbl = NULL,
            output_function = 'csd_ss_anom_at',
@@ -1117,8 +1078,7 @@ csd_anom[[2]]
 
 ```{r csd_ms_anom_at_quarter3}
 
-csd_anom <- csd_output(process_output = 
-             read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ss_anom_at_qrtr.csv')) %>%
+csd_anom <- csd_output(process_output = get_results('csd_ss_anom_at_qrtr_merge') %>%
              filter(site == 'C4UI'),
              #vocab_tbl = NULL,
            output_function = 'csd_ss_anom_at',
@@ -1134,8 +1094,7 @@ csd_anom[[2]]
 
 ```{r csd_ms_anom_at_quarter4}
 
-csd_anom <- csd_output(process_output = 
-             read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ss_anom_at_qrtr.csv')) %>%
+csd_anom <- csd_output(process_output = get_results('csd_ss_anom_at_qrtr_merge') %>%
              filter(site == 'C7SEACH'),
              #vocab_tbl = NULL,
            output_function = 'csd_ss_anom_at',
@@ -1160,8 +1119,7 @@ csd_anom[[2]]
 
 ```{r pes_ss_exp_nt1_a1}
 
-pes_ss1 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+pes_ss1 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt1_merge') %>% 
                 filter(site == 'C11OSU'))
 
 pes_ss1[[1]]
@@ -1173,8 +1131,7 @@ pes_ss1[[2]]
 
 ```{r pes_ss_exp_nt1_a2}
 
-pes_ss1 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+pes_ss1 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt1_merge') %>% 
                 filter(site == 'C2WF') %>% mutate(num_days = round(num_days, 0)))
 
 pes_ss1[[1]]
@@ -1185,8 +1142,7 @@ pes_ss1[[2]]
 # C4UI - Non-Pediatric 
 ```{r pes_ss_exp_nt1_a3}
 
-pes_ss1 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+pes_ss1 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt1_merge') %>% 
                 filter(site == 'C4UI'))
 
 pes_ss1[[1]]
@@ -1198,8 +1154,7 @@ pes_ss1[[2]]
 
 ```{r pes_ss_exp_nt1_p1}
 
-pes_ss1 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+pes_ss1 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt1_merge') %>% 
                 filter(site == 'C7CHOP'))
 
 pes_ss1[[1]]
@@ -1211,8 +1166,7 @@ pes_ss1[[2]]
 
 ```{r pes_ss_exp_nt1_p2}
 
-pes_ss1 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+pes_ss1 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt1_merge') %>% 
                 filter(site == 'C7CCHMC'))
 
 pes_ss1[[1]]
@@ -1224,8 +1178,7 @@ pes_ss1[[2]]
 
 ```{r pes_ss_exp_nt1_p3}
 
-pes_ss1 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+pes_ss1 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt1_merge') %>% 
                 filter(site == 'C7STAN'))
 
 pes_ss1[[1]]
@@ -1242,8 +1195,7 @@ pes_ss1[[2]]
 
 ```{r pes_ss_exp_nt2_a1}
 
-pes_ss2 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+pes_ss2 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt2_merge') %>% 
                 filter(site == 'C10OC'))
 
 pes_ss2[[1]]
@@ -1254,8 +1206,7 @@ pes_ss2[[2]]
 # C4UMO - Non-Pediatric
 ```{r pes_ss_exp_nt2_a2}
 
-pes_ss2 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+pes_ss2 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt2_merge')%>% 
                 filter(site == 'C4UMO'))
 
 pes_ss2[[1]]
@@ -1266,8 +1217,7 @@ pes_ss2[[2]]
 # C8WCM - Non-Pediatric
 ```{r pes_ss_exp_nt2_a3}
 
-pes_ss2 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+pes_ss2 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt2_merge') %>% 
                 filter(site == 'C8WCM'))
 
 pes_ss2[[1]]
@@ -1279,8 +1229,7 @@ pes_ss2[[2]]
 
 ```{r pes_ss_exp_nt2_p1}
 
-pes_ss2 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+pes_ss2 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt2_merge') %>% 
                 filter(site == 'C7SEACH'))
 
 pes_ss2[[1]]
@@ -1291,8 +1240,7 @@ pes_ss2[[2]]
 # C7CHCO - Pediatric
 ```{r pes_ss_exp_nt2_p2}
 
-pes_ss2 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+pes_ss2 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt2_merge') %>% 
                 filter(site == 'C7CHCO'))
 
 pes_ss2[[1]]
@@ -1304,8 +1252,7 @@ pes_ss2[[2]]
 
 ```{r pes_ss_exp_nt2_p3}
 
-pes_ss2 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+pes_ss2 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt2_merge') %>% 
                 filter(site == 'C7LC'))
 
 pes_ss2[[1]]
@@ -1319,8 +1266,7 @@ pes_ss2[[2]]
 #### Application 1: Type 2 Diabetes & CKD Diagnoses
 ```{r pes_ms_exp_nt1, fig.height=7}
 
-pes_ms1 <- pes_ms_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')))
+pes_ms1 <- pes_ms_exp_nt(process_output = get_results('pes_exp_nt1_merge'))
 
 pes_ms1
 
@@ -1329,8 +1275,7 @@ pes_ms1
 #### Application 2: Hba1c > 5.8% & Anti-Diabetic Drug Prescription
 ```{r pes_ms_exp_nt2, fig.height=7}
 
-pes_ms2 <- pes_ms_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')))
+pes_ms2 <- pes_ms_exp_nt(process_output = get_results('pes_exp_nt2_merge'))
 
 pes_ms2
 
