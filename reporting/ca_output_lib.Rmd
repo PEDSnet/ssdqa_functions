@@ -45,7 +45,7 @@ prettify_kable <- function(data) {
     column_spec(1, bold = T, border_right = T)
 }
 
-combo_attrition <- combine_attritions(site_list = c())
+combo_attrition <- combine_attritions(site_list = c('cchmc', 'chop', 'colorado', 'seattle', 'texas'))
 
 opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
@@ -90,7 +90,7 @@ g2[[1]]
 
 #g2[[2]]
 
-g1[[3]]
+g1[[2]]
 
 
 ```
@@ -119,7 +119,7 @@ g2[[1]]
 
 #g2[[2]]
 
-g1[[3]]
+g1[[2]]
 
 
 ```
@@ -174,7 +174,7 @@ g1[[2]]
 
 ```
 
-## Multi Site, Anomaly Detection, No Time (Step 0 Start) -- **2 OPTIONS**
+## Multi Site, Anomaly Detection, No Time (Step 0 Start)
 
 Used prop_diff_prior as the value in this version to show more outliers / steps that were eligible for outlier detection.
 
@@ -186,23 +186,15 @@ tbl <- ca_process(attrition_tbl = combo_attrition,
                   start_step_num = 0,
                   var_col = 'prop_diff_prior')
 
-g1 <- ca_ms_anom_nt1(process_output = tbl,
-                     output = 'prop_diff_prior')
-
-g2 <- ca_ms_anom_nt2(process_output = tbl,
-                     log_scale = FALSE,
-                     output = 'prop_diff_prior')
+g1 <- ca_ms_anom_nt(process_output = tbl,
+                    output = 'prop_diff_prior')
 
 g1
-
-g2[[1]]
-
-g2[[2]]
 
 
 ```
 
-## Multi Site, Anomaly Detection, No Time (Step 3 Start) -- **2 OPTIONS**
+## Multi Site, Anomaly Detection, No Time (Step 3 Start)
 ```{r ms_anom_nt3}
 
 tbl <- ca_process(attrition_tbl = combo_attrition,
@@ -211,18 +203,10 @@ tbl <- ca_process(attrition_tbl = combo_attrition,
                   start_step_num = 3,
                   var_col = 'prop_diff_prior')
 
-g1 <- ca_ms_anom_nt1(process_output = tbl,
-                     output = 'prop_diff_prior')
-
-g2 <- ca_ms_anom_nt2(process_output = tbl,
-                     log_scale = FALSE,
-                     output = 'prop_diff_prior')
+g1 <- ca_ms_anom_nt(process_output = tbl,
+                    output = 'prop_diff_prior')
 
 g1
-
-g2[[1]]
-
-g2[[2]]
 
 
 ```
