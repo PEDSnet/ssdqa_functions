@@ -15,6 +15,9 @@ format:
     toc-depth: 5
     code-copy: true
     code-overflow: wrap
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, 
+  output_file = paste0('aql-query-3-final-report-', format(Sys.time(), '%Y%m%d'), '.html') )})
 ---
 
 ```{r setup, include=FALSE}
@@ -33,6 +36,8 @@ require(kableExtra)
 require(stringr)
 require(tibble)
 require(ggplot2)
+require(ggiraph)
+require(plotly)
 require(gt)
 require(countmaskr)
 
@@ -59,7 +64,7 @@ opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 # Run Time Breakdown
 ```{r runtime}
 
-runtime_per_site <- read_csv(paste0(base_dir, '/results/runtime_site.csv')) %>% 
+runtime_per_site <- read_csv(paste0(base_dir, '/aql3-data/processed_files/runtime_site.csv')) %>% 
   select(qry_site, site_runtime) %>% 
   mutate(site_runtime = round(site_runtime, 3),
          rt_hours = round(site_runtime / 60, 3))
@@ -78,32 +83,47 @@ runtime_per_site %>%
 ```
 
 # Table 1 Summary
-```{r tbl1_summ}
+```{r tbl1_summ, fig.width=10}
 
-t1_merge <- read_csv(paste0(base_dir, '/results/table1.csv')) %>%
-  group_by(category, value) %>%
-  mutate(site = row_number()) %>%
+t1_cat_merge <- read_csv(paste0(base_dir, '/aql3-data/processed_files/table1.csv')) %>%
+  # group_by(category, value) %>%
+  # mutate(site = row_number()) %>%
   group_by(site, label, category) %>%
-  summarise(ct = sum(ct)) %>% ungroup()
+  summarise(ct = sum(ct)) %>% 
+  group_by(site, category) %>%
+  mutate(total_site_pt = sum(ct),
+         site_prop = ct / total_site_pt,
+         site_prop = ifelse(category == 'average_fu', NA, site_prop)) %>%
+  ungroup()
 
-t1_masked <- mask_table(t1_merge %>% filter(category != 'average_fu'),
-                        col_groups = list("ct"),
-                        group_by = c('site', 'category'),
-                        percentages = TRUE,
-                        overwrite_columns = FALSE)
+t1_total_merge <- t1_cat_merge %>%
+  filter(category != 'average_fu') %>%
+  group_by(category, label) %>%
+  summarise(allsite_ct = sum(ct),
+            allsite_mean = mean(site_prop),
+            allsite_median = median(site_prop),
+            allsite_range = max(site_prop) - min(site_prop),
+            allsite_iqr = IQR(site_prop)) %>%
+  group_by(category) %>%
+  mutate(total_pt = sum(allsite_ct))
 
-t1_fu <- t1_merge %>%
-  filter(category == 'average_fu') %>%
-  rename('ct_masked' = ct) %>%
-  mutate(ct_masked = round(ct_masked, 3),
-         ct_masked = as.character(ct_masked))
+# t1_masked <- mask_table(t1_merge %>% filter(category != 'average_fu'),
+#                         col_groups = list("ct"),
+#                         group_by = c('site', 'category'),
+#                         percentages = TRUE,
+#                         overwrite_columns = FALSE)
 
-t1_pivot <- t1_masked %>%
-  select(site, label, category, ct_masked) %>%
+# t1_fu <- t1_merge %>%
+#   filter(category == 'average_fu') %>%
+#   rename('ct_masked' = ct) %>%
+#   mutate(ct_masked = round(ct_masked, 3),
+#          ct_masked = as.character(ct_masked))
+
+t1_pivot <- t1_total_merge %>%
+  select(label, category, allsite_mean, allsite_median, allsite_range, allsite_iqr) %>%
   ungroup() %>%
-  union(t1_fu) %>%
-  pivot_wider(names_from = site,
-              values_from = ct_masked) %>%
+  # pivot_wider(names_from = site,
+  #             values_from = ct_masked) %>%
   mutate(category = case_when(category == 'age_group' ~ 'Age Group',
                               category == 'race' ~ 'Race',
                               category == 'ethnicity' ~ 'Ethnicity',
@@ -114,13 +134,26 @@ t1_pivot %>%
   arrange(category, label) %>%
   gt::gt(groupname_col = 'category',
          rowname_col = 'label') %>%
-  fmt_number(rows = label != 'fu (years)',
-             decimals = 0) %>%
-  fmt_number(rows = label == 'fu (years)',
-             decimals = 3) %>%
+  fmt_percent() %>%
+  cols_label('allsite_mean' = 'Mean',
+             'allsite_median' = 'Median',
+             'allsite_range' = 'Range',
+             'allsite_iqr' = 'IQR') %>%
   sub_missing(missing_text = '') %>%
-  tab_header('Demographic Table 1 Summary') %>%
+  tab_header(title = 'Demographic Table 1 Summary',
+             subtitle = 'Based on Percentage of Patients') %>%
   opt_stylize(style = 6, color = 'red')
+
+
+read_csv(paste0(base_dir, '/aql3-data/processed_files/table1.csv')) %>%
+  filter(category == 'average_fu') %>%
+  ggplot(aes(y = site, x = ct, fill = site)) +
+  geom_col(show.legend = FALSE) +
+  theme_minimal() +
+  scale_fill_ssdqa() +
+  labs(y = 'Data Mart',
+       x = 'Average Years of F/U',
+       title = 'Average Years of Follow-Up Between First and Last Visit')
 
 
 ```
@@ -129,9 +162,11 @@ t1_pivot %>%
 
 ## Module: Cohort Attrition
 
-### Single Site, Exploratory, No Time
+### Multi Site, Exploratory, No Time
 
-#### Beginning at Step 0
+::: panel-tabset
+
+# Step 0
 ```{r ca_ss_exp_nt0}
 
 ## Need to decide how to visualize the single site output
@@ -139,155 +174,459 @@ t1_pivot %>%
 ## CONFIGS - log_scale, var_col, what step to start at
 
 s0_ss <- ca_output(process_output = 
-                     read_csv(paste0(base_dir, '/results/ca_ms_exp_nt_step0.csv')) %>% 
-            filter(site == 'C7TCH'),
-          output_function = 'ca_ss_exp_nt',
+                     read_csv(paste0(base_dir, '/aql3-data/processed_files/ca_ms_exp_nt_step0.csv')),
+          output_function = 'ca_ms_exp_nt',
           log_scale = FALSE,
           var_col = 'prop_retained_start')
 
 s0_ss[[1]]
 ```
 
-#### Beginning at Step 3
+# Step 3
 
 ```{r ca_ss_exp_nt3}
 s3_ss <- ca_output(process_output = 
-                     read_csv(paste0(base_dir, '/results/ca_ms_exp_nt_step3.csv')) %>% 
-            filter(site == 'C7TCH'),
-          output_function = 'ca_ss_exp_nt',
+                     read_csv(paste0(base_dir, '/aql3-data/processed_files/ca_ms_exp_nt_step3.csv')),
+          output_function = 'ca_ms_exp_nt',
           log_scale = FALSE,
           var_col = 'prop_retained_start')
 
 s3_ss[[1]]
-s0_ss[[2]]
 
 ```
 
+# Attrition Metadata
+```{r ca_ss_exp_met}
+
+s0_ss[[2]]
+
+```
+:::
+
 ### Multi Site, Anomaly Detection, No Time
 
-#### Beginning at Step 0
+::: panel-tabset
+
+# Step 0
 ```{r ca_ms_anom_nt0}
 
 ## CONFIGS - var_col, what step to start at
 
 s0_ms <- ca_output(process_output = 
-                     read_csv(paste0(base_dir, '/results/ca_ms_anom_nt_step0.csv')),
+                     read_csv(paste0(base_dir, '/aql3-data/processed_files/ca_ms_anom_nt_step0.csv')),
           output_function = 'ca_ms_anom_nt',
           log_scale = FALSE,
-          var_col = 'prop_retained_start')
+          var_col = 'prop_retained_prior')
 
 s0_ms
 
 ```
 
-#### Beginning at Step 3
+# Step 3
 
 ```{r ca_ms_anom_nt3}
 s3_ms <- ca_output(process_output = 
-                     read_csv(paste0(base_dir, '/results/ca_ms_anom_nt_step3.csv')),
+                     read_csv(paste0(base_dir, '/aql3-data/processed_files/ca_ms_anom_nt_step3.csv')),
           output_function = 'ca_ms_anom_nt',
           log_scale = FALSE,
-          var_col = 'prop_retained_start')
+          var_col = 'prop_retained_prior')
 
 s3_ms
 
 ```
+
+# Attrition Metadata
+```{r ca_ms_anom_met}
+
+s0_ss[[2]]
+
+```
+:::
 
 ## Module: Clinical Events and Specialties
 
 ### Single Site, Anomaly Detection, No Time
 ```{r cnc_sp_ss_anom_nt}
 
+# output_ss_an <- conc_output_gen(conc_process_output= 'read cnc file' ,
+#                                 conc_process_names= 'read spc names file',
+#                                 multi_or_single_site='single',
+#                                 anomaly_or_exploratory='anomaly',
+#                                 time_dimension=FALSE,
+#                                 facet_vars=c('codeset_name'),
+#                                 n_mad=3)
+# output_ss_an
+
 ```
 
 ### Multi Site, Exploratory, No Time
 ```{r cnc_sp_ms_exp_nt}
+
+# output_ms_exp_nt <- conc_output_gen(conc_process_output= 'read cnc file',
+#                                     conc_process_names= 'read spc names file',
+#                                     multi_or_single_site='multi',
+#                                     anomaly_or_exploratory='exploratory',
+#                                     time_dimension=FALSE,
+#                                     facet_vars=c('codeset_name'))
+# output_ms_exp_nt
 
 ```
 
 ## Module: Clinical Facts per Patient
 
 ### Single Site, Exploratory, Across Time
-```{r pf_ss_exp_at}
 
-pf_output(process_output = read_csv(paste0(base_dir, '/results/pf_ss_at.csv')) %>%
-            filter(site == 'C7TCH'),
+::: panel-tabset
+
+# C8WCM - Non-Pediatric
+
+```{r pf_ss_exp_at_adult}
+
+adult1 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+            filter(site == 'C8WCM'),
           output_function = 'pf_ss_exp_at',
           facet = 'visit_type',
           output = 'median_fact_ct',
           date_breaks_str = '1 year')
 
+adult1
 ```
 
+# C4UMO - Non-Pediatric
+
+```{r pf_ss_exp_at_adult2}
+
+adult2 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+            filter(site == 'C4UMO'),
+          output_function = 'pf_ss_exp_at',
+          facet = 'visit_type',
+          output = 'median_fact_ct',
+          date_breaks_str = '1 year')
+
+adult2 
+
+```
+
+# C7LC - Pediatric
+
+```{r pf_ss_exp_at_peds}
+
+peds <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+            filter(site == 'C7LC'),
+          output_function = 'pf_ss_exp_at',
+          facet = 'visit_type',
+          output = 'median_fact_ct',
+          date_breaks_str = '1 year')
+
+peds
+
+```
+:::
+
 ### Single Site, Anomaly Detection, Across Time
-```{r pf_ss_anom_at}
+
+::: panel-tabset
+
+# C8WCM - Non-Pediatric
+
+```{r pf_ss_anom_at_adult}
 
 ## CONFIGS - domain & visit filters
 ## maybe pick two and patchwork?
 
-pf_output(process_output = read_csv(paste0(base_dir, '/results/pf_ss_at.csv')) %>%
-            filter(site == 'C7TCH'),
+adult1 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+            filter(site == 'C8WCM'),
           output_function = 'pf_ss_anom_at',
           facet = NULL,
           visit_filter = 'inpatient',
           domain_filter = 'meds_admin')
 
+adult1
+
 ```
 
-### Single Site, Exploratory, No Time
-```{r pf_ms_exp_nt}
+# C4UMO - Non-Pediatric
 
-pf_output(process_output = read_csv(paste0(base_dir, '/results/pf_ss_nt.csv')) %>%
-            filter(site == 'C7TCH'),
+```{r pf_ss_anom_at_adult2}
+
+adult2 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+            filter(site == 'C4UMO'),
+          output_function = 'pf_ss_anom_at',
+          facet = NULL,
+          visit_filter = 'outpatient',
+          domain_filter = 'diagnoses')
+
+adult2
+
+```
+
+# C7LC - Pediatric
+
+```{r pf_ss_anom_at_peds}
+
+peds <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_at.csv')) %>%
+            filter(site == 'C7LC'),
+          output_function = 'pf_ss_anom_at',
+          facet = NULL,
+          visit_filter = 'inpatient',
+          domain_filter = 'procedures')
+
+peds
+
+```
+:::
+
+### Single Site, Exploratory, No Time
+
+::: panel-tabset
+
+# C8WCM - Non-Pediatric
+
+```{r pf_ss_exp_nt_adult}
+
+adult1 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_nt.csv')) %>%
+            filter(site == 'C8WCM'),
           output_function = 'pf_ss_exp_nt',
           output = 'median_site_without0s',
           facet = 'visit_type')
 
+adult1
+
 ```
+
+# C4UMO - Non-Pediatric
+
+```{r pf_ss_exp_nt_adult2}
+
+adult2 <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_nt.csv')) %>%
+            filter(site == 'C4UMO'),
+          output_function = 'pf_ss_exp_nt',
+          output = 'median_site_without0s',
+          facet = 'visit_type')
+
+adult2
+
+```
+
+# C7LC - Pediatric
+
+```{r pf_ss_exp_nt_peds}
+
+peds <- pf_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/pf_ss_nt.csv')) %>%
+            filter(site == 'C7LC'),
+          output_function = 'pf_ss_exp_nt',
+          output = 'median_site_without0s',
+          facet = 'visit_type')
+
+peds
+
+```
+:::
 
 ## Module: Expected Variables Present
 
 ### Multi Site, Exploratory, No Time
-```{r evp_ms_exp_nt}
+```{r evp_ms_exp_nt, fig.width=10}
 
-evp_output(process_output = read_csv(paste0(base_dir, '/results/evp_ms_exp_nt.csv')),
+evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_exp_nt.csv')),
            output_function = 'evp_ms_exp_nt',
            output_level = 'patient')
 
 ```
 
 ### Multi Site, Anomaly Detection, Across Time
-```{r evp_ms_anom_at}
 
-evp_eucl <- evp_output(process_output = read_csv(paste0(base_dir, '/results/evp_ms_anom_at.csv')),
+::: panel-tabset
+
+# Hba1c greater than 8
+
+```{r evp_ms_anom_at1}
+
+## hba1c, ckd, elev bp, keto, anti dib, stroke
+
+evp_eucl <- evp_output(process_output = 
+                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
            output_function = 'evp_ms_anom_at',
            output_level = 'patient',
            filter_variable = 'Hba1c greater than 8')
 
-evp_eucl[[1]]
-evp_eucl[[2]]
+sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \n Hba1c greater than 8 Over Time') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
 evp_eucl[[3]]
 
 ```
 
-### Single Site, Anomaly Detection, Across Time
-```{r evp_ss_anom_at}
+# CKD
 
-evp_output(process_output = read_csv(paste0(base_dir, '/results/evp_ss_anom_at.csv')) %>%
-             filter(site == 'C7TCH'),
-           output_function = 'evp_ss_anom_at',
+```{r evp_ms_anom_at2}
+
+evp_eucl <- evp_output(process_output = 
+                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
+           output_function = 'evp_ms_anom_at',
+           output_level = 'patient',
+           filter_variable = 'CKD')
+
+sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \nCKD') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
+evp_eucl[[3]]
+
+```
+
+# Elevated Blood Pressure
+
+```{r evp_ms_anom_at3}
+
+evp_eucl <- evp_output(process_output = 
+                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
+           output_function = 'evp_ms_anom_at',
            output_level = 'patient',
            filter_variable = 'Elevated Blood Pressure')
 
+sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \nElevated Blood Pressure') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
+evp_eucl[[3]]
+
 ```
+
+# Ketoacidosis
+
+```{r evp_ms_anom_at4}
+
+evp_eucl <- evp_output(process_output = 
+                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
+           output_function = 'evp_ms_anom_at',
+           output_level = 'patient',
+           filter_variable = 'Ketoacidosis')
+
+sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \nKetoacidosis') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
+evp_eucl[[3]]
+
+```
+
+# Second-Line Anti-Diabetic Drugs
+
+```{r evp_ms_anom_at5}
+
+evp_eucl <- evp_output(process_output = 
+                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
+           output_function = 'evp_ms_anom_at',
+           output_level = 'patient',
+           filter_variable = 'Second-Line Anti Diabetics')
+
+sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \nSecond-Line Anti Diabetic Drugs') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
+evp_eucl[[3]]
+
+```
+
+# Stroke
+
+```{r evp_ms_anom_at6}
+
+evp_eucl <- evp_output(process_output = 
+                         read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ms_anom_at.csv')),
+           output_function = 'evp_ms_anom_at',
+           output_level = 'patient',
+           filter_variable = 'Stroke')
+
+sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \nStroke') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
+evp_eucl[[3]]
+
+```
+:::
+
+### Single Site, Anomaly Detection, Across Time
+
+::: panel-tabset
+
+# C6BAY - Non-Pediatric
+
+```{r evp_ss_anom_at_a1}
+
+evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ss_anom_at.csv')) %>%
+             filter(site == 'C6BAY'),
+           output_function = 'evp_ss_anom_at',
+           output_level = 'patient',
+           filter_variable = c('CKD', 'Stroke', 'Elevated Blood Pressure', 'Hba1c greater than 8', 'Second-Line Anti Diabetics', 'Ketoacidosis'))
+
+```
+
+# C4UN - Non-Pediatric
+
+```{r evp_ss_anom_at_a2}
+
+evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ss_anom_at.csv')) %>%
+             filter(site == 'C4UN'),
+           output_function = 'evp_ss_anom_at',
+           output_level = 'patient',
+           filter_variable = c('CKD', 'Stroke', 'Elevated Blood Pressure', 'Hba1c greater than 8', 'Second-Line Anti Diabetics', 'Ketoacidosis'))
+
+```
+
+# C7NCH - Pediatric
+
+```{r evp_ss_anom_at_P1}
+
+evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ss_anom_at.csv')) %>%
+             filter(site == 'C7NCH'),
+           output_function = 'evp_ss_anom_at',
+           output_level = 'patient',
+           filter_variable = c('CKD', 'Stroke', 'Elevated Blood Pressure', 'Hba1c greater than 8', 'Second-Line Anti Diabetics', 'Ketoacidosis'))
+
+```
+
+# C7CHCO - Pediatric
+
+```{r evp_ss_anom_at_p2}
+
+evp_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/evp_ss_anom_at.csv')) %>%
+             filter(site == 'C7CHCO'),
+           output_function = 'evp_ss_anom_at',
+           output_level = 'patient',
+           filter_variable = c('CKD', 'Stroke', 'Elevated Blood Pressure', 'Hba1c greater than 8', 'Second-Line Anti Diabetics', 'Ketoacidosis'))
+
+```
+:::
 
 ## Module: Concept Set Distribution
 
 ### Single Site, Exploratory, No Time
-```{r csd_ss_exp_nt}
 
-csd_exp_nt <- csd_output(process_output = read_csv(paste0(base_dir, '/results/csd_exp_nt.csv')) %>%
-             filter(site == 'C7TCH'),
+::: panel-tabset
+
+# C10OC - Non-Pediatric
+
+```{r csd_ss_exp_nt_a1}
+
+csd_exp_nt <- csd_output(process_output = 
+                           read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_exp_nt.csv')) %>%
+             filter(site == 'C10OC'),
            output_function = 'csd_ss_exp_nt')
 
 csd_exp_nt[[1]]
@@ -295,25 +634,128 @@ csd_exp_nt[[2]]
 
 ```
 
-### Multi Site, Anomaly Detection, No Time
-```{r csd_ms_anom_nt}
+# C2WF - Non-Pediatric
+```{r csd_ss_exp_nt_a2}
 
-csd_output(process_output = read_csv(paste0(base_dir, '/results/csd_ms_anom_nt.csv')),
+csd_exp_nt <- csd_output(process_output = 
+                           read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_exp_nt.csv')) %>%
+             filter(site == 'C2WF'),
+           output_function = 'csd_ss_exp_nt')
+
+csd_exp_nt[[1]]
+csd_exp_nt[[2]]
+
+```
+
+# C4UI - Non-Pediatric
+
+```{r csd_ss_exp_nt_a3}
+
+csd_exp_nt <- csd_output(process_output = 
+                           read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_exp_nt.csv')) %>%
+             filter(site == 'C4UI'),
+           output_function = 'csd_ss_exp_nt')
+
+csd_exp_nt[[1]]
+csd_exp_nt[[2]]
+
+```
+
+# C7SEACH - Pediatric
+
+```{r csd_ss_exp_nt_p}
+
+csd_exp_nt <- csd_output(process_output = 
+                           read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_exp_nt.csv')) %>%
+             filter(site == 'C7SEACH'),
+           output_function = 'csd_ss_exp_nt')
+
+csd_exp_nt[[1]]
+csd_exp_nt[[2]]
+
+```
+:::
+
+### Multi Site, Anomaly Detection, No Time
+
+::: panel-tabset
+
+# Second-Line Anti-Diabetic Drugs
+
+```{r csd_ms_anom_nt1}
+
+csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
            output_function = 'csd_ms_anom_nt',
            filtered_var = 'second_line_rx',
            concept_col = 'concept_code')
 
 ```
 
+# Stroke
+```{r csd_ms_anom_nt2}
+
+csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
+           output_function = 'csd_ms_anom_nt',
+           filtered_var = 'stroke',
+           concept_col = 'concept_code')
+
+```
+
+# Elevated Blood Pressure
+```{r csd_ms_anom_nt3}
+
+csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
+           output_function = 'csd_ms_anom_nt',
+           filtered_var = 'elevated_bp',
+           concept_col = 'concept_code')
+
+```
+
+# Ketoacidosis
+```{r csd_ms_anom_nt4}
+
+csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
+           output_function = 'csd_ms_anom_nt',
+           filtered_var = 'ketoacidosis',
+           concept_col = 'concept_code')
+
+```
+
+# Type 2 Diabetes Diagnosis
+```{r csd_ms_anom_nt5}
+
+csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
+           output_function = 'csd_ms_anom_nt',
+           filtered_var = 't2d',
+           concept_col = 'concept_code')
+
+```
+
+# CKD
+```{r csd_ms_anom_nt6}
+
+csd_output(process_output = read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ms_anom_nt.csv')),
+           output_function = 'csd_ms_anom_nt',
+           filtered_var = 'ckd',
+           concept_col = 'concept_code')
+
+```
+:::
+
 ### Multi Site, Exploratory, Across Time
 #### Yearly
-```{r csd_ms_exp_at_year}
+
+::: panel-tabset
+
+# Second-Line Anti-Diabetic Drugs
+
+```{r csd_ms_exp_at_year1}
 
 ms_exp_y <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/results/csd_ms_exp_at_year.csv')),
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'second_line_rx',
-           filter_concept = 311041,
+           filter_concept = c(311041, 861004, 242120),
            concept_col = 'concept_code')
 
 ms_exp_y[[1]]
@@ -321,14 +763,102 @@ ms_exp_y[[2]]
 
 ```
 
-### Multi Site, Exploratory, Across Time
-#### Quarterly
-```{r csd_ms_exp_at_quarter}
+# Stroke
 
-ms_exp_q <- csd_output(process_output = read_csv(paste0(base_dir, '/results/csd_exp_at_qrtr.csv')),
+```{r csd_ms_exp_at_year2}
+
+ms_exp_y <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 'stroke',
+           filter_concept = c('I63.9'),
+           concept_col = 'concept_code')
+
+ms_exp_y[[1]]
+ms_exp_y[[2]]
+
+```
+
+# Elevated Blood Pressure
+
+```{r csd_ms_exp_at_year3}
+
+ms_exp_y <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 'elevated_bp',
+           filter_concept = c('R03.0', '796.2'),
+           concept_col = 'concept_code')
+
+ms_exp_y[[1]]
+ms_exp_y[[2]]
+
+```
+
+# Ketoacidosis
+
+```{r csd_ms_exp_at_year4}
+
+ms_exp_y <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 'ketoacidosis',
+           filter_concept = c('E10.10', 'E11.00', '250.13'),
+           concept_col = 'concept_code')
+
+ms_exp_y[[1]]
+ms_exp_y[[2]]
+
+```
+
+# Type 2 Diabetes Diagnosis
+
+```{r csd_ms_exp_at_year5}
+
+ms_exp_y <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 't2d',
+           filter_concept = c('E11.9', 'E11.65'),
+           concept_col = 'concept_code')
+
+ms_exp_y[[1]]
+ms_exp_y[[2]]
+
+```
+
+# CKD
+
+```{r csd_ms_exp_at_year6}
+
+ms_exp_y <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_exp_at_year.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 'ckd',
+           filter_concept = c('E11.22', 'N18.4', 'D63.1'),
+           concept_col = 'concept_code')
+
+ms_exp_y[[1]]
+ms_exp_y[[2]]
+
+```
+:::
+
+#### Quarterly
+
+::: panel-tabset
+
+# Second-Line Anti-Diabetic Drugs
+
+```{r csd_ms_exp_at_qrtr1}
+
+date_list <- read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')) %>% distinct(time_start)
+
+ms_exp_q <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
            output_function = 'csd_ms_exp_at',
            filtered_var = 'second_line_rx',
-           filter_concept = 311041,
+           filter_concept = c(311041, 861004, 242120),
            concept_col = 'concept_code')
 
 ms_exp_q[[1]]
@@ -336,30 +866,226 @@ ms_exp_q[[2]]
 
 ```
 
+# Stroke
+
+```{r csd_ms_exp_at_qrtr2}
+
+ms_exp_q <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 'stroke',
+           filter_concept = c('I63.9'),
+           concept_col = 'concept_code')
+
+ms_exp_q[[1]]
+ms_exp_q[[2]]
+
+```
+
+# Elevated Blood Pressure
+
+```{r csd_ms_exp_at_qrtr3}
+
+ms_exp_q <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 'elevated_bp',
+           filter_concept = c('R03.0', '796.2'),
+           concept_col = 'concept_code')
+
+ms_exp_q[[1]]
+ms_exp_q[[2]]
+
+```
+
+# Ketoacidosis
+
+```{r csd_ms_exp_at_qrtr4}
+
+ms_exp_q <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 'ketoacidosis',
+           filter_concept = c('E10.10', 'E11.00', '250.13'),
+           concept_col = 'concept_code')
+
+ms_exp_q[[1]]
+ms_exp_q[[2]]
+
+```
+
+# Type 2 Diabetes Diagnosis
+
+```{r csd_ms_exp_at_qrtr5}
+
+ms_exp_q <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 't2d',
+           filter_concept = c('E11.9', 'E11.65'),
+           concept_col = 'concept_code')
+
+ms_exp_q[[1]]
+ms_exp_q[[2]]
+
+```
+
+# CKD
+
+```{r csd_ms_exp_at_qrtr6}
+
+ms_exp_q <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_exp_at_qrtr.csv')),
+           output_function = 'csd_ms_exp_at',
+           filtered_var = 'ckd',
+           filter_concept = c('E11.22', 'N18.4', 'D63.1'),
+           concept_col = 'concept_code')
+
+ms_exp_q[[1]]
+ms_exp_q[[2]]
+
+```
+:::
+
 ### Multi Site, Anomaly Detection, Across Time
 #### Yearly
-```{r csd_ms_anom_at_year}
+
+::: panel-tabset
+
+# Second-Line Anti-Diabetic Drugs
+
+```{r csd_ms_anom_at_year1}
 
 csd_eucl <- csd_output(process_output = 
-             read_csv(paste0(base_dir,'/results/csd_ms_anom_at_year.csv')),
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
            output_function = 'csd_ms_anom_at',
            filtered_var = 'second_line_rx',
            filter_concept = 311041,
            concept_col = 'concept_code')
 
-csd_eucl[[1]]
-csd_eucl[[2]]
+sub <- subplot(csd_eucl[[1]], csd_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \n311041') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
 csd_eucl[[3]]
 
 ```
 
+# Stroke
+```{r csd_ms_anom_at_year2}
+
+csd_eucl <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
+           output_function = 'csd_ms_anom_at',
+           filtered_var = 'stroke',
+           filter_concept = 'I63.9',
+           concept_col = 'concept_code')
+
+sub <- subplot(csd_eucl[[1]], csd_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \nI63.9') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
+csd_eucl[[3]]
+
+```
+
+# Elevated Blood Pressure
+```{r csd_ms_anom_at_year3}
+
+csd_eucl <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
+           output_function = 'csd_ms_anom_at',
+           filtered_var = 'elevated_bp',
+           filter_concept = 'R03.0',
+           concept_col = 'concept_code')
+
+sub <- subplot(csd_eucl[[1]], csd_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \nR03.0') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
+csd_eucl[[3]]
+
+```
+
+# Ketoacidosis
+```{r csd_ms_anom_at_year4}
+
+csd_eucl <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
+           output_function = 'csd_ms_anom_at',
+           filtered_var = 'ketoacidosis',
+           filter_concept = 'E10.10',
+           concept_col = 'concept_code')
+
+sub <- subplot(csd_eucl[[1]], csd_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \nE10.10') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
+csd_eucl[[3]]
+
+```
+
+# Type 2 Diabetes Diagnosis
+```{r csd_ms_anom_at_year5}
+
+csd_eucl <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
+           output_function = 'csd_ms_anom_at',
+           filtered_var = 't2d',
+           filter_concept = 'E11.9',
+           concept_col = 'concept_code')
+
+sub <- subplot(csd_eucl[[1]], csd_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \nE11.9') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
+csd_eucl[[3]]
+
+```
+
+# CKD
+```{r csd_ms_anom_at_year6}
+
+csd_eucl <- csd_output(process_output = 
+             read_csv(paste0(base_dir,'/aql3-data/processed_files/csd_ms_anom_at_year.csv')),
+           output_function = 'csd_ms_anom_at',
+           filtered_var = 'ckd',
+           filter_concept = 'N18.4',
+           concept_col = 'concept_code')
+
+sub <- subplot(csd_eucl[[1]], csd_eucl[[2]]) %>% 
+   layout(title = 'Smoothed & Linear Proportion of \nN18.4') %>% style(showlegend = FALSE, traces = 1:17)
+
+sub
+#evp_eucl[[1]]
+#evp_eucl[[2]]
+csd_eucl[[3]]
+
+```
+:::
+
 ### Single Site, Anomaly Detection, Across Time
 #### Quarterly
-```{r csd_ms_anom_at_quarter}
+
+::: panel-tabset
+
+# C10OC - Non-Pediatric
+
+```{r csd_ms_anom_at_quarter1}
 
 csd_anom <- csd_output(process_output = 
-             read_csv(paste0(base_dir, '/results/csd_ss_anom_at_qrtr.csv')) %>%
-             filter(site == 'C7TCH'),
+             read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ss_anom_at_qrtr.csv')) %>%
+             filter(site == 'C10OC'),
              #vocab_tbl = NULL,
            output_function = 'csd_ss_anom_at',
            concept_col = 'concept_code',
@@ -370,51 +1096,241 @@ csd_anom[[2]]
 
 ```
 
+# C2WF - Non-Pediatric
+
+```{r csd_ms_anom_at_quarter2}
+
+csd_anom <- csd_output(process_output = 
+             read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ss_anom_at_qrtr.csv')) %>%
+             filter(site == 'C2WF'),
+             #vocab_tbl = NULL,
+           output_function = 'csd_ss_anom_at',
+           concept_col = 'concept_code',
+           filter_concept = 'E11.9')
+
+csd_anom[[1]]
+csd_anom[[2]]
+
+```
+
+# C4UI - Non-Pediatric
+
+```{r csd_ms_anom_at_quarter3}
+
+csd_anom <- csd_output(process_output = 
+             read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ss_anom_at_qrtr.csv')) %>%
+             filter(site == 'C4UI'),
+             #vocab_tbl = NULL,
+           output_function = 'csd_ss_anom_at',
+           concept_col = 'concept_code',
+           filter_concept = 'E11.9')
+
+csd_anom[[1]]
+csd_anom[[2]]
+
+```
+
+# C7SEACH - Pediatric
+
+```{r csd_ms_anom_at_quarter4}
+
+csd_anom <- csd_output(process_output = 
+             read_csv(paste0(base_dir, '/aql3-data/processed_files/csd_ss_anom_at_qrtr.csv')) %>%
+             filter(site == 'C7SEACH'),
+             #vocab_tbl = NULL,
+           output_function = 'csd_ss_anom_at',
+           concept_col = 'concept_code',
+           filter_concept = 'E11.9')
+
+csd_anom[[1]]
+csd_anom[[2]]
+
+```
+:::
+
 ## Module: Patient Event Sequencing
 
 ### Single Site, Exploratory, No Time
 
 #### Application 1: Type 2 Diabetes & CKD Diagnoses
-```{r pes_ss_exp_nt1}
+
+:::panel-tabset
+
+# C11OSU - Non-Pediatric
+
+```{r pes_ss_exp_nt1_a1}
 
 pes_ss1 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/results/pes_exp_nt1.csv')) %>% 
-                filter(site == 'C7TCH'))
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+                filter(site == 'C11OSU'))
 
 pes_ss1[[1]]
 pes_ss1[[2]]
 
 ```
 
+# C2WF - Non-Pediatric
+
+```{r pes_ss_exp_nt1_a2}
+
+pes_ss1 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+                filter(site == 'C2WF') %>% mutate(num_days = round(num_days, 0)))
+
+pes_ss1[[1]]
+pes_ss1[[2]]
+
+```
+
+# C4UI - Non-Pediatric 
+```{r pes_ss_exp_nt1_a3}
+
+pes_ss1 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+                filter(site == 'C4UI'))
+
+pes_ss1[[1]]
+pes_ss1[[2]]
+
+```
+
+# C7CHOP - Pediatric
+
+```{r pes_ss_exp_nt1_p1}
+
+pes_ss1 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+                filter(site == 'C7CHOP'))
+
+pes_ss1[[1]]
+pes_ss1[[2]]
+
+```
+
+# C7CCHMC - Pediatric
+
+```{r pes_ss_exp_nt1_p2}
+
+pes_ss1 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+                filter(site == 'C7CCHMC'))
+
+pes_ss1[[1]]
+pes_ss1[[2]]
+
+```
+
+# C7STAN - Pediatric
+
+```{r pes_ss_exp_nt1_p3}
+
+pes_ss1 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')) %>% 
+                filter(site == 'C7STAN'))
+
+pes_ss1[[1]]
+pes_ss1[[2]]
+
+```
+:::
+
 #### Application 2: Hba1c > 5.8% & Anti-Diabetic Drug Prescription
-```{r pes_ss_exp_nt2}
+
+::: panel-tabset
+
+# C10OC - Non-Pediatric
+
+```{r pes_ss_exp_nt2_a1}
 
 pes_ss2 <- pes_ss_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/results/pes_exp_nt2.csv')) %>% 
-                filter(site == 'C7TCH'))
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+                filter(site == 'C10OC'))
 
 pes_ss2[[1]]
 pes_ss2[[2]]
 
 ```
 
+# C4UMO - Non-Pediatric
+```{r pes_ss_exp_nt2_a2}
+
+pes_ss2 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+                filter(site == 'C4UMO'))
+
+pes_ss2[[1]]
+pes_ss2[[2]]
+
+```
+
+# C8WCM - Non-Pediatric
+```{r pes_ss_exp_nt2_a3}
+
+pes_ss2 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+                filter(site == 'C8WCM'))
+
+pes_ss2[[1]]
+pes_ss2[[2]]
+
+```
+
+# C7SEACH - Pediatric
+
+```{r pes_ss_exp_nt2_p1}
+
+pes_ss2 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+                filter(site == 'C7SEACH'))
+
+pes_ss2[[1]]
+pes_ss2[[2]]
+
+```
+
+# C7CHCO - Pediatric
+```{r pes_ss_exp_nt2_p2}
+
+pes_ss2 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+                filter(site == 'C7CHCO'))
+
+pes_ss2[[1]]
+pes_ss2[[2]]
+
+```
+
+# C7LC - Pediatric
+
+```{r pes_ss_exp_nt2_p3}
+
+pes_ss2 <- pes_ss_exp_nt(process_output = 
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')) %>% 
+                filter(site == 'C7LC'))
+
+pes_ss2[[1]]
+pes_ss2[[2]]
+
+```
+:::
+
 ### Multi Site, Exploratory, No Time
 
 #### Application 1: Type 2 Diabetes & CKD Diagnoses
-```{r pes_ms_exp_nt1}
+```{r pes_ms_exp_nt1, fig.height=7}
 
 pes_ms1 <- pes_ms_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/results/pes_exp_nt1.csv')))
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt1.csv')))
 
 pes_ms1
 
 ```
 
 #### Application 2: Hba1c > 5.8% & Anti-Diabetic Drug Prescription
-```{r pes_ms_exp_nt2}
+```{r pes_ms_exp_nt2, fig.height=7}
 
 pes_ms2 <- pes_ms_exp_nt(process_output = 
-                read_csv(paste0(base_dir, '/results/pes_exp_nt2.csv')))
+                read_csv(paste0(base_dir, '/aql3-data/processed_files/pes_exp_nt2.csv')))
 
 pes_ms2
 
