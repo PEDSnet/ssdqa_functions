@@ -239,31 +239,68 @@ s0_ss[[2]]
 ## Module: Clinical Events and Specialties
 
 ### Single Site, Anomaly Detection, No Time
-```{r cnc_sp_ss_anom_nt}
 
-# output_ss_an <- conc_output_gen(conc_process_output= 'read cnc file' ,
-#                                 conc_process_names= 'read spc names file',
-#                                 multi_or_single_site='single',
-#                                 anomaly_or_exploratory='anomaly',
-#                                 time_dimension=FALSE,
-#                                 facet_vars=c('codeset_name'),
-#                                 n_mad=3)
-# output_ss_an
+::: panel-tabset
 
+# C4UI - Non-Pediatric
+
+```{r cnc_sp_ss_anom_nt_adult}
+output_ss_an <- conc_output_gen(conc_process_output= filter(get_results('cnc_sp_ss_nt_merge'),site=='C4UI'),
+                                conc_process_names= get_results('cnc_sp_vs_names_pp'),
+                                multi_or_single_site='single',
+                                anomaly_or_exploratory='anomaly',
+                                time_dimension=FALSE,
+                                facet_vars=c('codeset_name'),
+                                n_mad=3)
+output_ss_an
 ```
+
+# C7NEMCHS - Pediatric
+
+```{r cnc_sp_ss_anom_nt_ped}
+output_ss_an_ped <- conc_output_gen(conc_process_output= filter(get_results('cnc_sp_ss_nt_merge'),site=='C7NEMCHS'),
+                                conc_process_names= get_results('cnc_sp_vs_names_pp'),
+                                multi_or_single_site='single',
+                                anomaly_or_exploratory='anomaly',
+                                time_dimension=FALSE,
+                                facet_vars=c('codeset_name'),
+                                n_mad=3)
+output_ss_an_ped
+```
+
+:::
 
 ### Multi Site, Exploratory, No Time
-```{r cnc_sp_ms_exp_nt}
 
-# output_ms_exp_nt <- conc_output_gen(conc_process_output= 'read cnc file',
-#                                     conc_process_names= 'read spc names file',
-#                                     multi_or_single_site='multi',
-#                                     anomaly_or_exploratory='exploratory',
-#                                     time_dimension=FALSE,
-#                                     facet_vars=c('codeset_name'))
-# output_ms_exp_nt
+::: panel-tabset
+
+# Overall
+
+```{r cnc_sp_ms_exp_nt_overall}
+output_ms_exp_nt <- conc_output_gen(conc_process_output=get_results('cnc_sp_ss_nt_merge'),
+                                    conc_process_names= get_results('cnc_sp_vs_names_pp'),
+                                    multi_or_single_site='multi',
+                                    anomaly_or_exploratory='exploratory',
+                                    time_dimension=FALSE,
+                                    facet_vars=c('codeset_name'))
+output_ms_exp_nt
 
 ```
+# Diabetes Related Specialties
+
+```{r cnc_sp_ms_exp_nt_endo}
+output_ms_exp_nt_endo <- conc_output_gen(conc_process_output=get_results('cnc_sp_ss_nt_merge'),
+conc_process_names=get_results('cnc_sp_vs_names_pp'),
+                                    multi_or_single_site='multi',
+                                    anomaly_or_exploratory='exploratory',
+                                    time_dimension=FALSE,
+                                specialty_filter=c("Endocrinology", "Nutrition & Dietetics",
+"Ophthalmology", "Podiatry", "Pharmacy", "Psychology, Psychiatry & Mental Health"),
+                                    facet_vars=c('codeset_name'))
+output_ms_exp_nt_endo
+
+```
+:::
 
 ## Module: Clinical Facts per Patient
 

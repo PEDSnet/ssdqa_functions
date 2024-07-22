@@ -163,7 +163,7 @@ conc_output_gen <- function(conc_process_output,
                             facet_vars,
                             top_n=nrow(conc_process_output),
                             n_mad=3L,
-                            specialty_filter,
+                            specialty_filter=NULL,
                             p_value=0.9){
   # determine color/fill value based on type of plot to be produced
   if((multi_or_single_site=='single'&anomaly_or_exploratory=='exploratory')|
@@ -247,8 +247,6 @@ conc_output_gen <- function(conc_process_output,
       #                                 facet_vars=facet_vars,
       #                                 distinct_vars=c('codeset_name', 'specialty_name'))
     }
-
-
   }
   if(anomaly_or_exploratory=='anomaly'&multi_or_single_site=='single'&!time_dimension){
     gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site'&!spec_gp_vars=='cluster']
@@ -268,6 +266,10 @@ conc_output_gen <- function(conc_process_output,
       #                        val_col="n_mad",
       #                        n=top_n)%>%
       # filter(top_n_indicator)
+  }
+  
+  if(!is.null(specialty_filter)){
+    conc_output_pp<-conc_output_pp%>%filter(specialty_name%in%specialty_filter)
   }
   
   # generate color palette for color variable

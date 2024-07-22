@@ -32,7 +32,7 @@ plot_cnc_sp_ss_exp_nt <- function(data_tbl,
     theme_classic() +
     theme(panel.grid.major = element_line(size=0.4, linetype = 'solid'),
           panel.grid.minor = element_line(size=0.2, linetype = 'dashed'))+
-    labs(title=paste0("Proportion of visits with each of the top ",top_n," Specialties\nby ",facet_name))
+    labs(title=paste0("Proportion of visits with each of the top ",top_n," Specialties"))
   
   ggplotly(plt,
            tooltip="text")

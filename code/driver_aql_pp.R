@@ -53,6 +53,11 @@ config_append('extra_packages', c())
                name='cnc_sp_vs_names',
                db=TRUE,
                file=TRUE)
+    ### post-classification reload
+    rslt$cnc_output_names_pp<-read_csv("results/cnc_sp_names_named.csv",
+                                          col_types='ccccc')
+    output_tbl(rslt$cnc_output_names_pp,
+               name='cnc_sp_vs_names_pp')
   
   cnc_sp_cts <- merge_csvs(output_directory = paste0(base_dir, '/aql3-data/results/'),
                            name_string = 'cnc_sp_ss_nt_') %>% mutate(site = toupper(site))
