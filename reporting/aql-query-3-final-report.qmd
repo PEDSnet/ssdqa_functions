@@ -63,7 +63,7 @@ opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 runtime_per_site <- get_results('runtime_site_merge') %>% 
   select(qry_site, site_runtime) %>% 
-  mutate(site_runtime = round(site_runtime, 3),
+  mutate(site_runtime = as.numeric(round(site_runtime / 60, 3)),
          rt_hours = round(site_runtime / 60, 3))
 
 runtime_per_site %>%
@@ -71,6 +71,8 @@ runtime_per_site %>%
   cols_label('site_runtime' = 'Site Runtime (Minutes)',
              'rt_hours' = 'Site Runtime (Hours)') %>%
   opt_stylize(style = 6, color = 'red') %>%
+  fmt_number(use_seps = TRUE, sep_mark = ',',
+             drop_trailing_zeros = TRUE) %>%
   grand_summary_rows(columns = c('site_runtime', 'rt_hours'),
                      fns = list('Average' ~ mean(.),
                                 'Median' ~ median(.))) %>%
@@ -175,7 +177,14 @@ s0_ss <- ca_output(process_output = get_results('ca_exp_nt_step0_merge'),
           log_scale = FALSE,
           var_col = 'prop_retained_start')
 
+s0_ssl <- ca_output(process_output = get_results('ca_exp_nt_step0_merge'),
+          output_function = 'ca_ms_exp_nt',
+          log_scale = TRUE,
+          var_col = 'prop_retained_start')
+
 s0_ss[[1]]
+s0_ssl[[1]]
+
 ```
 
 # Step 3
@@ -186,7 +195,14 @@ s3_ss <- ca_output(process_output = get_results('ca_exp_nt_step3_merge'),
           log_scale = FALSE,
           var_col = 'prop_retained_start')
 
+s3_ssl <- ca_output(process_output = get_results('ca_exp_nt_step3_merge'),
+          output_function = 'ca_ms_exp_nt',
+          log_scale = TRUE,
+          var_col = 'prop_retained_start')
+
+
 s3_ss[[1]]
+s3_ssl[[1]]
 
 ```
 
