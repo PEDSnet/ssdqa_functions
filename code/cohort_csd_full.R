@@ -1,6 +1,6 @@
 
 
-#' SCV Process function 
+#' CSD Process function 
 #' 
 #' add csv output of main table and csv output of param summary 
 #' (that function needs updating to be more generalizable)
@@ -132,7 +132,8 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
       
       csd_tbl_int <- compute_dist_anomalies(df_tbl = csd_tbl,
                                             grp_vars = c('variable', 'concept_id'), 
-                                            var_col = 'prop_concept') 
+                                            var_col = 'prop_concept',
+                                            denom_cols = c('variable', 'ct_denom')) 
       
       csd_tbl_final <- detect_outliers(df_tbl = csd_tbl_int,
                                        tail_input = 'both',
@@ -222,7 +223,6 @@ csd_output <- function(process_output=process_output,
                        output_function,
                        concept_set = read_codeset('csd_codesets','iccccc'),
                        vocab_tbl = vocabulary_tbl('concept'),
-                       concept_col = 'concept_code',
                        num_variables = 10,
                        num_mappings = 10,
                        filtered_var = 'general_jia',
@@ -230,6 +230,9 @@ csd_output <- function(process_output=process_output,
                        facet=NULL,
                        text_wrapping_char = 80,
                        output_value = 'prop_concept'){
+  
+  ## check concept col
+  concept_col <- ifelse('concept_id' %in% colnames(process_output), 'concept_id', 'concept_code')
   
   ## Get concept names from vocabulary table
   if(output_function != 'csd_ss_anom_nt'){
@@ -243,16 +246,16 @@ csd_output <- function(process_output=process_output,
   ## Run output functions
   if(output_function == 'csd_ss_exp_nt'){
     csd_output <- csd_ss_exp_nt(process_output=process_output,
-                                 #vocab_tbl = vocab_tbl,
                                 concept_col = concept_col,
-                                 num_codes = num_variables,
-                                 num_mappings = num_mappings)
+                                num_codes = num_variables,
+                                num_mappings = num_mappings)
   }else if(output_function == 'csd_ss_anom_nt'){
     csd_output <- csd_ss_anom_nt(process_output,
                                  vocab_tbl = vocab_tbl,
                                  filtered_var = filtered_var)
   }else if(output_function == 'csd_ss_exp_at'){
     csd_output <- csd_ss_exp_at(process_output,
+                                concept_col = concept_col,
                                 facet=facet,
                                 filtered_var = filtered_var,
                                 num_mappings = num_mappings,
@@ -260,21 +263,20 @@ csd_output <- function(process_output=process_output,
   }else if(output_function == 'csd_ss_anom_at'){
     csd_output <- csd_ss_anom_at(process_output=process_output,
                                  concept_col = concept_col,
-                                filter_concept = filter_concept,
-                                filtered_var=filtered_var,
-                                facet=facet)
+                                 filter_concept = filter_concept,
+                                 filtered_var=filtered_var,
+                                 facet=facet)
   }else if(output_function == 'csd_ms_exp_nt'){
     csd_output <- csd_ms_exp_nt(process_output=process_output,
+                                concept_col = concept_col,
                                  facet=facet,
-                                 #vocab_tbl = vocab_tbl,
                                  num_codes = num_variables)
   }else if(output_function == 'csd_ms_anom_nt'){
     csd_output <- csd_ms_anom_nt(process_output=process_output,
-                                   #vocab_tbl=vocab_tbl,
                                  concept_col = concept_col,
-                                   text_wrapping_char=text_wrapping_char,
-                                   filtered_var=filtered_var,
-                                   comparison_col=output_value)
+                                 text_wrapping_char=text_wrapping_char,
+                                 filtered_var=filtered_var,
+                                 comparison_col=output_value)
   }else if(output_function == 'csd_ms_exp_at'){
     csd_output <- csd_ms_exp_at(process_output = process_output,
                                 concept_col = concept_col,
@@ -282,12 +284,11 @@ csd_output <- function(process_output=process_output,
                                 filtered_concept = filter_concept,
                                 output_value = output_value,
                                 facet = facet
-                                #vocab_tbl = vocab_tbl
                                 )
   }else if(output_function == 'csd_ms_anom_at'){
     csd_output <- csd_ms_anom_at(process_output=process_output,
-                                 filter_concept=filter_concept,
-                                 concept_col = concept_col)
+                                 concept_col = concept_col,
+                                 filter_concept=filter_concept)
   }else(cli::cli_abort('Please enter a valid output_function for this check'))
   
   return(csd_output)

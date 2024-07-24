@@ -865,15 +865,18 @@ anomalize_ss_anom_at <- function(fot_input_tbl,
 
 compute_dist_anomalies <- function(df_tbl,
                                    grp_vars,
-                                   var_col){
+                                   var_col,
+                                   denom_cols){
   
   site_rows <-
     df_tbl %>% ungroup() %>% select(site) %>% distinct()
   grpd_vars_tbl <- df_tbl %>% ungroup() %>% select(!!!syms(grp_vars)) %>% distinct()
+  denom_tbl <- df_tbl %>% ungroup() %>% select(site, !!!syms(denom_cols)) %>% distinct()
   
   tbl_new <- 
     cross_join(site_rows,
                grpd_vars_tbl) %>% 
+    left_join(denom_tbl) %>%
     left_join(df_tbl) %>% 
     mutate(across(where(is.numeric), ~replace_na(.x,0)))
   

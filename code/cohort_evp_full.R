@@ -158,7 +158,8 @@ evp_process <- function(cohort,
       
       evp_tbl_int <- compute_dist_anomalies(df_tbl = evp_tbl,
                                             grp_vars = c('variable'), 
-                                            var_col = var_col) 
+                                            var_col = var_col,
+                                            denom_cols = c('variable', 'total_pt_ct', 'total_row_ct')) 
       
       evp_tbl_final <- detect_outliers(df_tbl = evp_tbl_int,
                                        tail_input = 'both',

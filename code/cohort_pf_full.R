@@ -201,7 +201,8 @@ pf_process <- function(cohort = cohort,
       
       pf_anom_int <- compute_dist_anomalies(df_tbl = pf_int_summ %>% replace_site_col(),
                                             grp_vars = c('domain', 'visit_type'), 
-                                            var_col = 'prop_pt_fact') 
+                                            var_col = 'prop_pt_fact',
+                                            denom_cols = c('domain', 'visit_type', 'tot_pt')) 
       
       pf_final <- detect_outliers(df_tbl = pf_anom_int,
                                   tail_input = 'both',

@@ -49,7 +49,8 @@ ca_process <- function(attrition_tbl,
     
     att_int <- compute_dist_anomalies(df_tbl = attrition_process,
                                       grp_vars = c('step_number', 'attrition_step'),
-                                      var_col = var_col)
+                                      var_col = var_col,
+                                      denom_cols = c('step_number', 'attrition_step'))
     
     att_final <- detect_outliers(df_tbl = att_int,
                                  p_input = p_value,

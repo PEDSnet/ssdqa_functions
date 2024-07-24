@@ -226,7 +226,8 @@ conc_output_gen <- function(conc_process_output,
       gp_vars_no_site<-spec_gp_vars[!spec_gp_vars=='site']
       conc_output_pp <- compute_dist_anomalies(df_tbl = conc_output_pp,
                                             grp_vars = gp_vars_no_site, 
-                                            var_col = 'prop') 
+                                            var_col = 'prop',
+                                            denom_cols = c(gp_vars_no_site, 'total')) 
       
       conc_output_pp <- detect_outliers(df_tbl = conc_output_pp,
                                        tail_input = 'both',
