@@ -15,8 +15,8 @@
 #'        2) a table with each mapping and the total variable count
 #' 
 csd_ss_exp_nt <- function(process_output,
+                          concept_col,
                           facet = NULL,
-                          concept_col = 'concept_code',
                           num_codes = 10,
                           num_mappings = 10){
   
@@ -187,12 +187,13 @@ csd_ss_anom_nt <- function(process_output,
 #'         the data removed in the regression are also returned
 #' 
 csd_ss_anom_at <- function(process_output,
-                           concept_col = 'concept_id',
+                           concept_col,
                            filtered_var='ibd',
                            filter_concept=81893,
                            facet=NULL){
   
   time_inc <- process_output %>% filter(!is.na(time_increment)) %>% distinct(time_increment) %>% pull()
+  concept_col <- concept_col
   
   if(time_inc == 'year'){
   
@@ -278,13 +279,14 @@ csd_ss_anom_at <- function(process_output,
 #'         time period
 #' 
 csd_ss_exp_at <- function(process_output,
+                          concept_col,
                           facet=NULL,
                           filtered_var = c('spondyloarthritis'),
                           num_mappings = 10,
                           output_value='prop_concept'){
   
   denom <- 'ct_concept'
-  col <- 'concept_id'
+  col <- concept_col
   
   output_value <- output_value
   
@@ -313,7 +315,7 @@ csd_ss_exp_at <- function(process_output,
     inner_join(topcodes) 
   
   dat_to_plot <- ref %>% 
-    mutate(text=paste("Concept: ",concept_id,
+    mutate(text=paste("Concept: ",!!sym(col),
                       "\nConcept Name: ",concept_name,
                       "\nSite: ",site,
                       "\nValue: ",!!sym(output_value),
@@ -321,21 +323,21 @@ csd_ss_exp_at <- function(process_output,
   
   
   ref_tbl <- generate_ref_table(tbl = dat_to_plot %>% 
-                                  mutate(concept_id=as.integer(concept_id)) %>% 
+                                  #mutate(concept_id=as.integer(concept_id)) %>% 
                                   group_by(site),
-                                id_col = 'concept_id',
+                                id_col = col,
                                 denom = 'ct_concept',
                                 name_col = 'concept_name',
                                 time = TRUE)
   
   p <-dat_to_plot %>% filter(variable == filtered_var)  %>%
-    mutate(concept_id=as.character(concept_id)) %>% 
-    ggplot(aes(y = !!sym(output_value), x = time_start, color = concept_id,
-               group=concept_id, text=text)) +
+    mutate(concept=as.character(!!sym(col))) %>% 
+    ggplot(aes(y = !!sym(output_value), x = time_start, color = concept,
+               group=concept, text=text)) +
     geom_line() +
     facet_wrap((facet)) +
     labs(title = paste0('Top ', num_mappings, ' Concepts for ', filtered_var, ' Over Time'),
-         color = 'concept_id') +
+         color = col) +
     theme_minimal() +
     scale_color_ssdqa()
   
@@ -364,13 +366,14 @@ csd_ss_exp_at <- function(process_output,
 #'         time period
 #' 
 csd_ms_exp_at <- function(process_output,
-                          concept_col = 'concept_id',
-                             facet=NULL,
-                             filtered_var = c('ibd','spondyloarthritis'),
-                             filtered_concept = c(81893),
-                             output_value='prop_concept'){
+                          concept_col,
+                          facet=NULL,
+                          filtered_var = c('ibd','spondyloarthritis'),
+                          filtered_concept = c(81893),
+                          output_value='prop_concept'){
   
   output_value <- output_value
+  concept_col <- concept_col
   
   site_num <- 
     process_output %>% ungroup() %>%select(site) %>% distinct() %>% pull()
@@ -435,13 +438,14 @@ csd_ms_exp_at <- function(process_output,
 #' 
 csd_ms_exp_nt <- function(process_output,
                           facet,
+                          concept_col,
                           num_codes = 10){
   
   # picking columns / titles 
 
     denom <-  'ct_denom'
     col <- 'variable'
-    map_col <- 'concept_id'
+    map_col <- concept_col
     prop <- 'prop_concept'
     ct = 'ct_concept'
   
@@ -504,12 +508,13 @@ csd_ms_exp_nt <- function(process_output,
 #'                  
 
 csd_ms_anom_nt<-function(process_output,
-                         concept_col = 'concept_id',
-                        text_wrapping_char=80,
-                        filtered_var='ibd',
-                        comparison_col='prop_concept'){
+                         concept_col,
+                         text_wrapping_char=80,
+                         filtered_var='ibd',
+                         comparison_col='prop_concept'){
   
   cname_samp <- process_output %>% head(1) %>% select(concept_name) %>% pull()
+  concept_col <- concept_col
   
   if(cname_samp == 'No vocabulary table input'){
     concept_label <- concept_col
@@ -566,8 +571,9 @@ csd_ms_anom_nt<-function(process_output,
 
 csd_ms_anom_at <- function(process_output,
                            filter_concept,
-                           concept_col = 'concept_id'){
+                           concept_col){
   
+  concept_col <- concept_col
   filt_op <- process_output %>% filter(!!sym(concept_col) == filter_concept)
   
   allsites <- 
