@@ -49,13 +49,13 @@ compute_evp <- function(cohort,
     if(is.na(evp_list[[i]][[6]])){
       fact_pts <- domain_tbl %>%
         inner_join(load_codeset(evp_list[[i]][[5]]), by = join_cols) %>%
-        summarise(variable_pt_ct = n_distinct(patid),
+        summarise(variable_pt_ct = n_distinct(person_id),
                   variable_row_ct = n()) %>% collect()
     }else{
       fact_pts <- domain_tbl %>%
         inner_join(load_codeset(evp_list[[i]][[5]]), by = join_cols) %>%
         filter(!! rlang::parse_expr(evp_list[[i]][[6]])) %>%
-        summarise(variable_pt_ct = n_distinct(patid),
+        summarise(variable_pt_ct = n_distinct(person_id),
                   variable_row_ct = n()) %>% collect()
     }
     
