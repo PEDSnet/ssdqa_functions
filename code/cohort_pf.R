@@ -47,8 +47,11 @@ compute_pf <- function(cohort,
       ) %>% summarise(total_strat_ct=n()) %>% 
       ungroup() %>% 
       mutate(domain=domain_name) %>% 
-      mutate(fact_ct_strat=round(total_strat_ct/fu,2)) %>% 
-      select(-total_strat_ct) %>% 
+      mutate(k_mult = case_when(fu < 0.1 ~ 100,
+                                fu >= 0.1 & fu < 1 ~ 10,
+                                TRUE ~ 1),
+             fact_ct_strat=ifelse(fu != 0,round(total_strat_ct/(fu * k_mult),2),0)) %>% 
+      #select(-c(total_strat_ct, k_mult)) %>% 
       select(person_id,
              domain,
              fact_ct_strat) %>%
