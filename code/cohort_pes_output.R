@@ -114,3 +114,261 @@ pes_ms_exp_nt <- function(process_output){
   return(bgrph)
   
 }
+
+
+pes_ss_exp_at <- function(process_output){
+  
+  expand_cts <- process_output %>%
+    uncount(pt_ct)
+  
+  time_period <- process_output %>% select(time_increment) %>% distinct() %>% pull()
+  thrs <- process_output %>% select(user_cutoff) %>% distinct() %>% pull()
+  
+  thrs_cutoffs <- expand_cts %>%
+    mutate(user_thrs = ifelse(abs(num_days) <= user_cutoff, 1, 0)) %>%
+    pivot_longer(cols = c('user_thrs')) %>%
+    group_by(site, user_cutoff, total_pts, name, time_start) %>%
+    summarise(n_pts_thrs = sum(value, na.rm = TRUE)) %>%
+    mutate(prop_pts_thrs = round(n_pts_thrs / total_pts, 3),
+           text = paste0('Proportion: ', prop_pts_thrs,
+                         '\nTotal Patients: ', total_pts)) %>% ungroup()
+  
+  
+  ggplot(thrs_cutoffs,
+                 aes(x = time_start, y = prop_pts_thrs, color = site)) +
+    geom_line(show.legend = FALSE) +
+    theme_minimal() +
+    scale_color_ssdqa() +
+    labs(y = 'Proportion',
+         x = 'Time',
+         title = paste0('Proportion of Patients Meeting \n', thrs, ' Day User Threshold'),
+         subtitle = paste0('When Event A occurs within each ', time_period))
+  
+}
+
+
+pes_ms_exp_at <- function(process_output){
+  
+  expand_cts <- process_output %>%
+    uncount(pt_ct)
+  
+  time_period <- process_output %>% select(time_increment) %>% distinct() %>% pull()
+  thrs <- process_output %>% select(user_cutoff) %>% distinct() %>% pull()
+  
+  thrs_cutoffs <- expand_cts %>%
+    mutate(user_thrs = ifelse(abs(num_days) <= user_cutoff, 1, 0)) %>%
+    pivot_longer(cols = c('user_thrs')) %>%
+    group_by(site, user_cutoff, total_pts, name, time_start) %>%
+    summarise(n_pts_thrs = sum(value, na.rm = TRUE)) %>%
+    mutate(prop_pts_thrs = round(n_pts_thrs / total_pts, 3),
+           text = paste0('Proportion: ', prop_pts_thrs,
+                         '\nTotal Patients: ', total_pts)) %>% ungroup()
+  
+  allsite_median <- thrs_cutoffs %>%
+    group_by(name, time_start) %>%
+    mutate(prop_pts_thrs = median(prop_pts_thrs),
+           site = 'All Site Median',
+           text = paste0('All Site Median: ', prop_pts_thrs)) %>%
+    ungroup() %>%
+    select(site, time_start, prop_pts_thrs, text) %>% distinct()
+  
+  
+  grph <- ggplot(thrs_cutoffs,
+                 aes(x = time_start, y = prop_pts_thrs, color = site)) +
+    geom_line() +
+    geom_line(data = filter(allsite_median, site == "All Site Median"), size = 1.5) +
+    theme_minimal() +
+    scale_color_ssdqa() +
+    labs(y = 'Proportion',
+         x = 'Time',
+         color = 'Site',
+         title = paste0('Proportion of Patients Meeting \n', thrs, ' Day User Threshold'),
+         subtitle = paste0('When Event A occurs within each ', time_period))
+  
+  ggplotly(grph) %>% plot_annotation(subtitle = paste0('When Event A occurs within each ', time_period))
+  
+}
+
+
+pes_ss_anom_at <- function(process_output){
+  
+  thrs <- process_output %>% distinct(user_cutoff) %>% pull()
+  
+  expand_cts <- process_output %>%
+    uncount(pt_ct)
+  
+  thrs_cutoffs <- expand_cts %>%
+    mutate(user_thrs = ifelse(abs(num_days) <= user_cutoff, 1, 0)) %>%
+    pivot_longer(cols = c('user_thrs')) %>%
+    group_by(site, user_cutoff, total_pts, name, time_start) %>%
+    summarise(n_pts_thrs = sum(value, na.rm = TRUE)) %>%
+    mutate(prop_pts_thrs = round(n_pts_thrs / total_pts, 3)) %>% ungroup()
+  
+  #if(time_inc == 'year'){
+    
+    final <- thrs_cutoffs %>%
+      #unite(facet_col, !!!syms(facet), sep = '\n') %>%
+      rename('ycol' = n_pts_thrs,
+             'denom' = total_pts)
+    
+    pp_qi <-  qic(data = final, x = time_start, y = ycol, chart = 'pp', #facet = ~facet_col,
+                  title = paste0('Control Chart: Proportion of Patients Meeting User Threshold'), 
+                  ylab = 'Proportion', xlab = 'Time',
+                  show.grid = TRUE, n = denom)
+    
+    op_dat <- pp_qi$data
+    
+    new_pp <- ggplot(op_dat,aes(x,y)) +
+      geom_ribbon(aes(ymin = lcl,ymax = ucl), fill = "lightgray",alpha = 0.4) +
+      geom_line(colour = ssdqa_colors_standard[[12]], size = .5) +  
+      geom_line(aes(x,cl)) +
+      geom_point(colour = ssdqa_colors_standard[[6]] , fill = ssdqa_colors_standard[[6]], size = 1) +
+      geom_point(data = subset(op_dat, y >= ucl), color = ssdqa_colors_standard[[3]], size = 2) +
+      geom_point(data = subset(op_dat, y <= lcl), color = ssdqa_colors_standard[[3]], size = 2) +
+      #facet_wrap(~facet1, scales = 'free_y', ncol = 2) +
+      ggtitle(label = paste0('Control Chart: Proportion of Patients Meeting \n', thrs, ' User Threshold')) +
+      labs(x = 'Time',
+           y = 'Proportion')+
+      theme_minimal()
+    
+    output <- ggplotly(new_pp)
+    
+  # }else{
+  #   
+  #   anomalies <- 
+  #     plot_anomalies(.data=process_output,
+  #                    .date_var=time_start) %>% 
+  #     layout(title = paste0('Anomalous Proportion of Patients Meeting User Threshold'))
+  #   
+  #   decomp <- 
+  #     plot_anomalies_decomp(.data=process_output,
+  #                           .date_var=time_start) %>% 
+  #     layout(title = paste0('Anomalous Proportion of Patients Meeting User Threshold'))
+  #   
+  #   output <- list(anomalies, decomp)
+  #   
+  # }
+  
+  return(output)
+  
+}
+
+
+pes_ms_anom_nt <- function(process_output){
+  
+  
+  dat_to_plot <- pes_tbl_final %>% 
+    mutate(label = case_when(threshold_cutoff == 'thirty_thrs' ~ '30 days',
+                             threshold_cutoff == 'sixty_thrs' ~ '60 days',
+                             threshold_cutoff == 'ninety_thrs' ~ '90 days',
+                             threshold_cutoff == 'year_thrs' ~ '1 year',
+                             threshold_cutoff == 'user_thrs' ~ paste0('User Threshold \n', 
+                                                               user_cutoff, ' days')),
+           text = paste0('Site: ', site,
+                         '\nProportion: ', prop_pts_thrs,
+                         "\nMean proportion:",round(mean_val,2),
+                         '\nSD: ', round(sd_val,2),
+                         "\nMedian proportion: ",round(median_val,2),
+                         "\nMAD: ", round(mad_val,2)))
+  
+  plt<-ggplot(dat_to_plot %>% filter(anomaly_yn != 'no outlier in group'),
+              aes(x=site, y=label, text=text, color=prop_pts_thrs))+
+    geom_point_interactive(aes(size=mean_val,shape=anomaly_yn, tooltip = text))+
+    geom_point_interactive(data = dat_to_plot %>% filter(anomaly_yn == 'not outlier'), 
+                           aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
+    scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
+    scale_shape_manual(values=c(19,8))+
+    #scale_y_discrete(labels = function(x) str_wrap(x, width = text_wrapping_char)) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle=60)) +
+    labs(y = "Threshold Cutoff",
+         size="",
+         title=paste0('Anomalous Propotion Patients per \nThreshold Cutoff by Site'),
+         subtitle = 'Dot size is the mean proportion per group') +
+    guides(color = guide_colorbar(title = 'Proportion'),
+           shape = guide_legend(title = 'Anomaly'),
+           size = 'none')
+  
+  girafe(ggobj = plt)
+  
+}
+
+
+pes_ms_anom_at <- function(process_output){
+  
+  thrs <- process_output %>% distinct(user_cutoff) %>% pull()
+  
+  allsites <- 
+    process_output %>% 
+    select(time_start,mean_allsiteprop) %>% distinct() %>% 
+    rename(prop_col=mean_allsiteprop) %>% 
+    mutate(site='all site average') %>% 
+    mutate(text_smooth=paste0("Site: ", site,
+                              "\n","Proportion: ",prop_col),
+           text_raw=paste0("Site: ", site,
+                           "\n","Proportion: ",prop_col)) 
+  
+  dat_to_plot <- 
+    process_output %>% 
+    rename(prop_col=prop_pts_thrs) %>% 
+    mutate(text_smooth=paste0("Site: ", site,
+                              "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean),
+           text_raw=paste0("Site: ", site,
+                           "\n","Site Proportion: ",prop_col,
+                           "\n","Site Smoothed Proportion: ",site_loess,
+                           "\n","Euclidean Distance from All-Site Mean: ",dist_eucl_mean)) 
+  
+  p <- dat_to_plot %>%
+    ggplot(aes(y = prop_col, x = time_start, color = site, group = site, text = text_smooth)) +
+    geom_line(data=allsites, linewidth=1.1) +
+    geom_smooth(se=TRUE,alpha=0.1,linewidth=0.5, formula = y ~ x) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    scale_color_ssdqa() +
+    labs(y = 'Proportion (Loess)',
+         x = 'Time',
+         title = paste0('Smoothed Proportion of Patients Meeting \n', thrs, ' Day User Threshold'))
+  
+  q <- dat_to_plot %>%
+    ggplot(aes(y = prop_col, x = time_start, color = site,
+               group=site, text=text_raw)) +
+    geom_line(data=allsites,linewidth=1.1) +
+    geom_line(linewidth=0.2) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    scale_color_ssdqa() +
+    labs(x = 'Time',
+         y = 'Proportion',
+         title = paste0('Raw Proportion of Patients Meeting \n', thrs, ' Day User Threshold'))
+  
+  t <- dat_to_plot %>% 
+    distinct(site, dist_eucl_mean, site_loess) %>% 
+    group_by(site, dist_eucl_mean) %>% 
+    summarise(mean_site_loess = mean(site_loess)) %>%
+    ggplot(aes(x = site, y = dist_eucl_mean, fill = mean_site_loess)) + 
+    geom_col() + 
+    geom_text(aes(label = dist_eucl_mean), vjust = 2, size = 3,
+              show.legend = FALSE) +
+    coord_radial(r_axis_inside = FALSE, rotate_angle = TRUE) + 
+    guides(theta = guide_axis_theta(angle = 0)) +
+    theme_minimal() + 
+    scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
+    theme(legend.position = 'bottom',
+          legend.text = element_text(angle = 45, vjust = 0.9, hjust = 1),
+          axis.text.x = element_text(face = 'bold')) + 
+    labs(fill = 'Avg. Proportion \n(Loess)', 
+         y ='Euclidean Distance', 
+         x = '', 
+         title = paste0('Euclidean Distance for \n', thrs, ' Day User Threshold'))
+  
+  plotly_p <- ggplotly(p,tooltip="text")
+  plotly_q <- ggplotly(q,tooltip="text")
+  
+  output <- list(plotly_p,
+                 plotly_q,
+                 t)
+  
+  return(output)
+  
+  
+}

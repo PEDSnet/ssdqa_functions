@@ -40,11 +40,12 @@ pes_process <- function(cohort,
                         user_cutoff = 30,
                         n_event_a = 1,
                         n_event_b = 1,
-                        pes_event_file = read_codeset('pes_events', 'cccc'),
+                        pes_event_file = read_codeset('pes_events_1', 'cccc'),
                         multi_or_single_site = 'single',
                         anomaly_or_exploratory='exploratory',
                         age_groups = NULL,
                         intermediate_tbl = FALSE,
+                        p_value = 0.9,
                         time = FALSE,
                         time_span = c('2012-01-01', '2020-01-01'),
                         time_period = 'year'){
@@ -98,21 +99,77 @@ pes_process <- function(cohort,
     
   }
   
-  pes_tbl_final <- purrr::reduce(.x = site_output,
-                                 .f = dplyr::union) %>%
+  
+  pes_tbl_reduce <- purrr::reduce(.x = site_output,
+                                  .f = dplyr::union) %>%
     replace_site_col()
   
-  if(time){
-    file_name <- paste0(output_type, '_', time_period, '_', config('qry_site'))
+  if(!time){
+    
+    if(multi_or_single_site == 'multi' && anomaly_or_exploratory == 'anomaly'){
+      
+      expand_cts <- pes_tbl_reduce %>%
+        uncount(pt_ct)
+      
+      thrs_cutoffs <- expand_cts %>%
+        mutate(user_thrs = ifelse(abs(num_days) <= user_cutoff, 1, 0),
+               thirty_thrs = ifelse(abs(num_days) <= 30, 1, 0),
+               sixty_thrs = ifelse(abs(num_days) <= 60, 1, 0),
+               ninety_thrs = ifelse(abs(num_days) <= 90, 1, 0),
+               year_thrs = ifelse(abs(num_days) <= 365, 1, 0)) %>%
+        pivot_longer(cols = c('user_thrs', 'thirty_thrs', 'sixty_thrs', 
+                              'ninety_thrs', 'year_thrs')) %>%
+        group_by(site, user_cutoff, total_pts, name) %>%
+        summarise(n_pts_thrs = sum(value, na.rm = TRUE)) %>%
+        mutate(prop_pts_thrs = round(n_pts_thrs / total_pts, 3)) %>%
+        rename('threshold_cutoff' = name)
+      
+      pes_tbl_int <- compute_dist_anomalies(df_tbl = thrs_cutoffs,
+                                            grp_vars = c('threshold_cutoff'), 
+                                            var_col = 'prop_pts_thrs',
+                                            denom_cols = c('threshold_cutoff', 'total_pts')) 
+      
+      pes_tbl_final <- detect_outliers(df_tbl = pes_tbl_int,
+                                       tail_input = 'both',
+                                       p_input = p_value,
+                                       column_analysis = 'prop_pts_thrs',
+                                       column_variable = 'threshold_cutoff')
+    }else{pes_tbl_final <- pes_tbl_reduce}
+    
   }else{
-    file_name <- paste0(output_type, '_', config('qry_site'))
+    
+    if(multi_or_single_site == 'multi' && anomaly_or_exploratory == 'anomaly'){
+      
+      expand_cts <- process_output %>%
+        uncount(pt_ct)
+      
+      thrs_cutoffs <- expand_cts %>%
+        mutate(user_thrs = ifelse(abs(num_days) <= user_cutoff, 1, 0)) %>%
+        pivot_longer(cols = c('user_thrs')) %>%
+        group_by(site, user_cutoff, total_pts, name, time_start, time_increment) %>%
+        summarise(n_pts_thrs = sum(value, na.rm = TRUE)) %>%
+        mutate(prop_pts_thrs = round(n_pts_thrs / total_pts, 3)) %>% 
+        rename('threshold_cutoff' = name) %>% ungroup()
+      
+      pes_tbl_final <- ms_anom_euclidean(fot_input_tbl = thrs_cutoffs,
+                                         var_col = 'prop_pts_thrs',
+                                         grp_vars = c('site', 'threshold_cutoff', 'user_cutoff'))
+      
+    }else{pes_tbl_final <- pes_tbl_reduce}
+    
+  }
+  
+  if(time){
+    file_name <- paste0(output_type, '_', time_period)
+  }else{
+    file_name <- paste0(output_type)
   }
   
   pes_tbl_final %>%
-    replace_site_col_pcnt() %>%
+    replace_site_col() %>%
     output_tbl(file_name, file = TRUE)
   
-  return(pes_tbl_final %>% replace_site_col_pcnt())
+  return(pes_tbl_final %>% replace_site_col())
   
   message(str_wrap(paste0('Based on your chosen parameters, we recommend using the following
                        output function in pes_output: ', output_type, '. This is also included

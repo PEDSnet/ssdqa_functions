@@ -42,15 +42,15 @@
 #'
 
 compute_event_sequence <- function(cohort,
-                                        grouped_list,
-                                        user_cutoff = 30,
-                                        n_event_a = 1,
-                                        n_event_b = 1,
-                                        intermediate_tbl = FALSE,
-                                        time = FALSE,
-                                        time_period = 'year',
-                                        time_span = c('2011-01-01', '2023-12-31'),
-                                        event_csv = read_codeset('pes_events', 'ccccc')){
+                                   grouped_list,
+                                   user_cutoff = 30,
+                                   n_event_a = 1,
+                                   n_event_b = 1,
+                                   intermediate_tbl = FALSE,
+                                   time = FALSE,
+                                   time_period = 'year',
+                                   time_span = c('2011-01-01', '2023-12-31'),
+                                   event_csv = read_codeset('pes_events', 'ccccc')){
   
   ## Pull event information
   event_list <- split(event_csv, seq(nrow(event_csv)))
@@ -103,7 +103,7 @@ compute_event_sequence <- function(cohort,
   
   ## Reformat event data
   grp <- group_vars(event_combo)
-  new_grp <- grp[!grp %in% 'patid']
+  new_grp <- grp[!grp %in% 'person_id']
   
   eventa <- event_combo %>% filter(toupper(event_type) == 'A') %>%
     rename(event_a_index_date = event_date) %>% select(-event_type)
