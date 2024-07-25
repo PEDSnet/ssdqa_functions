@@ -666,8 +666,8 @@ compute_at_cross_join <- function(cj_tbl,
   cj_tbl <- ungroup(cj_tbl)
   blah <- list()
   
-  date_first <- cj_tbl %>% distinct(time_start) %>% first() %>% pull()
-  date_last <- cj_tbl %>% distinct(time_start) %>% last() %>% pull()
+  date_first <- cj_tbl %>% distinct(time_start) %>% arrange(time_start) %>% first() %>% pull()
+  date_last <- cj_tbl %>% distinct(time_start) %>% arrange(time_start) %>% last() %>% pull()
   time_increment_var <- cj_tbl %>% distinct(time_increment) %>% pull()
   
   all_months <- seq.Date(from=date_first,
