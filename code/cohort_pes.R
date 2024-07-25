@@ -43,6 +43,7 @@
 
 compute_event_sequence <- function(cohort,
                                    grouped_list,
+                                   site_col,
                                    user_cutoff = 30,
                                    n_event_a = 1,
                                    n_event_b = 1,
@@ -80,7 +81,8 @@ compute_event_sequence <- function(cohort,
         mutate(event_date = !!sym(event_list[[i]][[5]])) %>%
         distinct(person_id, !!!syms(grouped_list), event_date) %>%
         collect() %>%
-        mutate(event_type = event_list[[i]][[1]])
+        mutate(event_type = event_list[[i]][[1]],
+               event_name = event_list[[i]][[2]])
     }else{
       event_index <- event_domain %>%
         inner_join(load_codeset(event_list[[i]][[6]]), by = join_cols) %>%
@@ -91,7 +93,8 @@ compute_event_sequence <- function(cohort,
         mutate(event_date = !!sym(event_list[[i]][[5]])) %>%
         distinct(person_id, !!!syms(grouped_list), event_date) %>%
         collect() %>%
-        mutate(event_type = event_list[[i]][[1]])
+        mutate(event_type = event_list[[i]][[1]],
+               event_name = event_list[[i]][[2]])
     }
       
     event_rslt[[i]] <- event_index
@@ -106,14 +109,16 @@ compute_event_sequence <- function(cohort,
   new_grp <- grp[!grp %in% 'person_id']
   
   eventa <- event_combo %>% filter(toupper(event_type) == 'A') %>%
-    rename(event_a_index_date = event_date) %>% select(-event_type)
+    rename(event_a_index_date = event_date,
+           event_a_name = event_name) %>% select(-event_type)
   
   eventb <- event_combo %>% filter(toupper(event_type) == 'B') %>%
-    rename(event_b_occurrence_date = event_date) %>% select(-event_type)
+    rename(event_b_occurrence_date = event_date,
+           event_b_name = event_name) %>% select(-event_type)
   
   event_ptlv <- eventa %>% left_join(eventb) %>%
     mutate(num_days = as.numeric(event_b_occurrence_date - event_a_index_date)) %>%
-    mutate(user_cutoff = user_cutoff)
+    mutate(user_cutoff = user_cutoff) %>% ungroup() %>% fill(event_b_name, .direction = 'updown')
   
   ## OPTIONAL: output patient level file
   if(intermediate_tbl){
@@ -128,16 +133,21 @@ compute_event_sequence <- function(cohort,
     time_df <- tibble('time_start' = t1,
                       'time_end' = t2)
     
+    cat_df <- event_ptlv %>% select(!!sym(site_col), user_cutoff, event_a_name, event_b_name) %>%
+      distinct() %>% cross_join(time_df) %>% select(-time_end)
+    
     event_agg <- event_ptlv %>%
       cross_join(time_df) %>%
       filter(event_a_index_date <= time_end,
              event_a_index_date >= time_start) %>%
-      group_by(!!!syms(new_grp), num_days, user_cutoff, time_start) %>%
+      group_by(!!!syms(new_grp), num_days, user_cutoff, time_start,
+               event_a_name, event_b_name) %>%
       summarise(pt_ct = n()) %>%
       group_by(!!!syms(new_grp), user_cutoff, time_start) %>%
       mutate(total_pts = sum(pt_ct)) %>%
       ungroup() %>%
-      full_join(time_df %>% select(time_start)) %>%
+      filter(!is.na(!!sym(site_col))) %>%
+      full_join(cat_df) %>%
       mutate(user_cutoff = user_cutoff,
              total_pts = ifelse(is.na(total_pts), 0, total_pts),
              pt_ct = ifelse(is.na(pt_ct), 0, pt_ct),
@@ -148,7 +158,8 @@ compute_event_sequence <- function(cohort,
     
     ## Aggregate patient level output
     event_agg <- event_ptlv %>%
-      group_by(!!!syms(new_grp), num_days, user_cutoff) %>%
+      group_by(!!!syms(new_grp), num_days, user_cutoff,
+               event_a_name, event_b_name) %>%
       summarise(pt_ct = n()) %>%
       ungroup() %>%
       mutate(total_pts = sum(pt_ct))

@@ -1,0 +1,155 @@
+---
+title: "PES Check Output Library"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, 
+  output_file = paste0('pes_output_lib_', format(Sys.time(), '%Y%m%d'), '.html') )}) 
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(ggiraph)
+require(gt)
+require(plotly)
+require(qicharts2)
+require(ggcharts)
+require(ggpmisc)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+## Single Site, Exploratory, No Time
+
+Two graphs are output -- 
+
+1. A histogram displaying the distribution of days between events for the cohort. The binsize (bar width) is automatically determined by the geom_histogram function
+  - do we want to make this a parameter??
+2. A bar graph displaying the proportion of patients whose time between events falls within each threshold window: 30, 60, 90, and 365 days, plus a user provided threshold.
+  - these are **NOT** currently mutually exclusive, meaning the year bar also contains patients from all the other bars. Do we want to change this??
+
+```{r ss_exp_nt}
+
+pes_ss_exp_nt(process_output = get_results('pes_ss_nt'))
+
+```
+
+## Single Site, Anomaly Detection, No Time -- *ABSENT FOR THIS CHECK*
+
+## Multi Site, Exploratory, No Time
+
+For each site, the bar graph shows the proportion of patients whose time between events falls within each threshold window. The dotted line represents the median proportion for each window.
+
+```{r ms_exp_nt}
+
+pes_ms_exp_nt(process_output = get_results('pes_ms_exp_nt'))
+
+```
+
+## Multi Site, Anomaly Detection, No Time
+
+For each threshold window, the dot and star plot identifies sites with anomalous proportion of patients whose time between event falls within the window. Color of the dot represents proportion, size represents mean, and shape represents whether or not the site is anomalous.
+
+```{r ms_anom_nt}
+
+pes_ms_anom_nt(process_output = get_results('pes_ms_anom_nt'))
+
+```
+
+## Single Site, Exploratory, Across Time
+
+For one site, shows the proportion of patients whose time between events falls within the user provided threshold window when the index event (Event A) occurs within the year/month/other time period of interest. The graph below was run on a yearly basis, so for the year of 2012, that represents the proportion of patients who had Event A occur in that year *and* had Event B occur within the user provided window of that occurrence.
+
+```{r ss_exp_at}
+
+pes_ss_exp_at(process_output = get_results('pes_ss_at_year'))
+
+```
+
+## Single Site, Anomaly Detection, Across Time
+
+Outputs a control chart for ALL time period lengths. Orange dots represent anomalous proportion of patients whose time between events fell within the user provided threshold window.
+
+For example, for the year of 2012 or the month of 01-01-2012, that represents the proportion of patients who had Event A occur in that year/month *and* had Event B occur within the user provided window of that occurrence.
+
+### By Year
+```{r ss_anom_at_yr}
+
+pes_ss_anom_at(process_output = get_results('pes_ss_at_year'))
+
+```
+
+### By Month
+```{r ss_anom_at_mnth}
+
+pes_ss_anom_at(process_output = get_results('pes_ss_at_month'))
+
+```
+
+## Multi Site, Exploratory, Across Time
+
+For each site, shows the proportion of patients whose time between events falls within the user provided threshold window when the index event (Event A) occurs within the year/month/other time period of interest. The graph below was run on a yearly basis, so for the year of 2012, that represents the proportion of patients who had Event A occur in that year *and* had Event B occur within the user provided window of that occurrence.
+
+Thicker pink line represents the all site median proportion across time.
+
+```{r ms_exp_at}
+
+pes_ms_exp_at(process_output = get_results('pes_ms_exp_at'))
+
+```
+
+## Multi Site, Anomaly, Across Time
+
+This check displays the Euclidean distance between two time series: the smoothed (Loess) proportion of patients who meet the user selected threshold for a given site and the all-site average proportion. Here we used 30 days.
+
+Three graphs are output:
+
+  * a line graph displaying the smoothed proportion of patients at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+  * a line graph displaying the raw (not smoothed) proportion of patients at each site over time
+  * a circular bar graph displaying the Euclidean distance from the all-site mean where the fill represents the average Loess proportion over time
+
+```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
+
+op <- pes_ms_anom_at(process_output = get_results('pes_ms_anom_at'))
+
+op[[1]]
+op[[2]]
+op[[3]]
+
+```

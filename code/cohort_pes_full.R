@@ -86,6 +86,7 @@ pes_process <- function(cohort,
     
     pes_tbl_site <- compute_event_sequence(cohort = cohort_site,
                                            grouped_list = grouped_list,
+                                           site_col = site_col,
                                            user_cutoff = user_cutoff,
                                            n_event_a = n_event_a,
                                            n_event_b = n_event_b,
@@ -119,7 +120,7 @@ pes_process <- function(cohort,
                year_thrs = ifelse(abs(num_days) <= 365, 1, 0)) %>%
         pivot_longer(cols = c('user_thrs', 'thirty_thrs', 'sixty_thrs', 
                               'ninety_thrs', 'year_thrs')) %>%
-        group_by(site, user_cutoff, total_pts, name) %>%
+        group_by(site, user_cutoff, total_pts, name, event_a_name, event_b_name) %>%
         summarise(n_pts_thrs = sum(value, na.rm = TRUE)) %>%
         mutate(prop_pts_thrs = round(n_pts_thrs / total_pts, 3)) %>%
         rename('threshold_cutoff' = name)
@@ -140,20 +141,22 @@ pes_process <- function(cohort,
     
     if(multi_or_single_site == 'multi' && anomaly_or_exploratory == 'anomaly'){
       
-      expand_cts <- process_output %>%
+      expand_cts <- pes_tbl_reduce %>%
         uncount(pt_ct)
       
       thrs_cutoffs <- expand_cts %>%
         mutate(user_thrs = ifelse(abs(num_days) <= user_cutoff, 1, 0)) %>%
         pivot_longer(cols = c('user_thrs')) %>%
-        group_by(site, user_cutoff, total_pts, name, time_start, time_increment) %>%
+        group_by(site, user_cutoff, total_pts, name, time_start, time_increment,
+                 event_a_name, event_b_name) %>%
         summarise(n_pts_thrs = sum(value, na.rm = TRUE)) %>%
         mutate(prop_pts_thrs = round(n_pts_thrs / total_pts, 3)) %>% 
         rename('threshold_cutoff' = name) %>% ungroup()
       
       pes_tbl_final <- ms_anom_euclidean(fot_input_tbl = thrs_cutoffs,
                                          var_col = 'prop_pts_thrs',
-                                         grp_vars = c('site', 'threshold_cutoff', 'user_cutoff'))
+                                         grp_vars = c('site', 'threshold_cutoff', 'user_cutoff',
+                                                      'event_a_name', 'event_b_name'))
       
     }else{pes_tbl_final <- pes_tbl_reduce}
     
