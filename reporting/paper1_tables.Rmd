@@ -1,0 +1,217 @@
+---
+title: "SSDQA Paper 1 Tables"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(gt)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+```
+
+# Table 1: Data Quality Module Descriptions
+
+I borrowed the copy written for PEDSpace here -- let me know if we want to use different or shorter descriptors
+
+```{r t1}
+
+read_csv(paste0(base_dir, '/specs/paper1_table1.csv')) %>%
+  gt::gt(groupname_col = 'mod_cat') %>%
+  cols_label('mod_name' = 'Module Name',
+             'mod_abb' = 'Module Abbreviation',
+             'mod_desc' = 'Module Description') %>%
+  tab_header('Current Data Quality Modules') %>%
+  opt_stylize(style = 6)
+
+
+```
+
+
+# Table 2: Visualization Pairs
+```{r t2}
+
+read_csv(paste0(base_dir, '/specs/paper1_table2.csv')) %>% 
+  arrange(row_alias) %>%
+  gt::gt() %>% 
+  cols_label('row_alias' = 'Reference Alias',
+             'data_output' = 'Analytic Output',
+             'viz_output' = 'Visualization') %>%
+  tab_header('Unique Analytic & Visualization Pairs') %>%
+  opt_stylize(style = 5)
+
+
+```
+
+# Table 3: Data Quality Module Configurations
+
+## Option 1
+
+```{r t3.1}
+
+read_csv(paste0(base_dir, '/specs/paper1_table3_option1.csv')) %>%
+  mutate(no_time = str_replace(no_time, 'Anomaly', '<br><br>Anomaly'),
+         no_time = paste0(no_time, '</br>'),
+         across_time = str_replace(across_time, 'Anomaly', '<br><br>Anomaly'),
+         across_time = paste0(across_time, '</br>'),) %>%
+  gt::gt(groupname_col = 'module',
+         rowname_col = 'site_config') %>%
+  fmt_markdown(columns = c('no_time', 'across_time')) %>%
+  tab_options(row_group.as_column = TRUE) %>%
+  cols_label('no_time' = 'No Time Dimension',
+             'across_time' = 'Measured Across Time') %>%
+  opt_stylize(style = 2) %>% 
+  tab_header('Visualization Pairs per Check Configuration',
+             subtitle = 'As described in Table 2')
+
+
+```
+
+## Option 2
+
+```{r t3.2}
+
+read_csv(paste0(base_dir, '/specs/paper1_table3_option2.csv')) %>%
+  rename('Cohort Attrition' = 'ca',
+         'Source and Concept Vocabularies' = 'scv',
+         'Expected Variables Present' = 'evp',
+         'Patient Facts' = 'pf',
+         'Patient Event Sequencing' = 'pes', 
+         'Clinical Events and Specialty Agreement' = 'cnc_sp',
+         'Concept Set Distribution' = 'csd') %>%
+  gt::gt(rowname_col = 'configuration') %>%
+  sub_missing() %>%
+  opt_stylize(style = 4) %>%
+  tab_header('Visualization Pairs per Check Configuration',
+             subtitle = 'As described in Table 2')
+
+```
+
+## Option 3
+```{r t3.3}
+
+read_csv(paste0(base_dir, '/specs/paper1_table3_option3.csv')) %>%
+  rename('Cohort Attrition' = 'ca',
+         'Source and Concept Vocabularies' = 'scv',
+         'Expected Variables Present' = 'evp',
+         'Patient Facts' = 'pf',
+         'Patient Event Sequencing' = 'pes', 
+         'Clinical Events and Specialty Agreement' = 'cnc_sp',
+         'Concept Set Distribution' = 'csd') %>%
+  mutate(site_level = ifelse(site_level == 'single', 'Single Site', 'Multi Site')) %>%
+  gt(rowname_col = 'configuration',
+     groupname_col = 'site_level') %>%
+  opt_stylize(style = 4) %>%
+  tab_header('Visualization Pairs per Check Configuration',
+             subtitle = 'As described in Table 2')
+
+```
+
+## Option 4
+```{r t3.4}
+
+read_csv(paste0(base_dir, '/specs/paper1_table3_option3.csv')) %>%
+  pivot_longer(cols = !c(site_level, configuration)) %>%
+  pivot_wider(names_from = c(site_level, configuration),
+              values_from = value) %>%
+  mutate(name = case_when(name == 'ca' ~ 'Cohort Attrition',
+                          name == 'scv' ~ 'Source and Concept Vocabularies',
+                          name == 'evp' ~ 'Expected Variables Present',
+                          name == 'pf' ~ 'Patient Facts',
+                          name == 'pes' ~ 'Patient Event Sequencing',
+                          name == 'cnc_sp' ~ 'Clinical Events and Specialty Agreement',
+                          name == 'csd' ~ 'Concept Set Distribution')) %>%
+  gt(rowname_col = 'name') %>%
+  tab_spanner(label = 'Single Site',
+              columns = starts_with('single')) %>%
+  tab_spanner(label = 'Multi Site',
+              columns = starts_with('multi')) %>%
+  cols_label(matches('Exploratory') ~ 'Exploratory (Stable Time, Across Time)',
+             matches('Anomaly') ~ 'Anomaly <br>(Stable Time, Across Time)</br>',
+             .fn = md) %>%
+  opt_stylize(style = 4) %>%
+  tab_header('Visualization Pairs per Check Configuration',
+             subtitle = 'As described in Table 2')
+
+```
+
+## Option 5
+
+```{r t3.5}
+
+read_csv(paste0(base_dir, '/specs/paper1_table3_option4.csv')) %>%
+    mutate(check = case_when(check == 'ca' ~ 'Cohort Attrition',
+                          check == 'scv' ~ 'Source and Concept Vocabularies',
+                          check == 'evp' ~ 'Expected Variables Present',
+                          check == 'pf' ~ 'Patient Facts',
+                          check == 'pes' ~ 'Patient Event Sequencing',
+                          check == 'cnc_sp' ~ 'Clinical Events and Specialty Agreement',
+                          check == 'csd' ~ 'Concept Set Distribution')) %>%
+  mutate(grp = str_replace(grp, 'Single', '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Single'),
+         grp = str_replace(grp, 'Multi', '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Multi'),
+         check = str_replace(check, 'Specialty', '<br>Specialty'),
+         check = str_replace(check, 'Vocabularies', '<br>Vocabularies')) %>%
+  gt(groupname_col = c('grp'),
+     rowname_col = 'check',
+     process_md = TRUE) %>%
+  sub_missing(missing_text = "") %>%
+  tab_options(column_labels.hidden = TRUE) %>%
+  tab_header('Visualization Pairs per Check Configuration',
+             subtitle = 'As described in Table 2') %>%
+  tab_style(
+    style = list(cell_borders(sides = c('bottom'))),
+    locations = cells_body(
+      columns = everything(),
+      rows = is.na(check))) %>%
+  tab_style(
+    style = list(cell_text(weight = 'bold')),
+    locations = cells_group()
+  ) %>%
+  tab_style(
+    style = list(cell_fill(color = 'lightblue')),
+    locations = cells_stub()) %>%
+  tab_style(
+    style = list(cell_borders(color = 'lightgrey',
+                              style = 'dotted')),
+    locations = list(cells_body(rows = !is.na(check)),
+                     cells_stub())
+  )
+
+
+```

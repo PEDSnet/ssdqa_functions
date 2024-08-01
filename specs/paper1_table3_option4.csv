@@ -1,0 +1,17 @@
+check,grp,exp_ss_nt,anom_ss_nt,exp_ms_at,anom_ms_at
+,Single Site: Stable Time Multi Site: Stable Time,Exploratory,Anomaly,Exploratory,Anomaly
+,Single Site: Across Time Multi Site: Across Time,Exploratory,Anomaly,Exploratory,Anomaly
+ca,Single Site: Stable Time Multi Site: Stable Time,exp2,,exp2,anom3
+ca,Single Site: Across Time Multi Site: Across Time,,,,
+scv,Single Site: Stable Time Multi Site: Stable Time,exp7,anom3,exp4,anom3
+scv,Single Site: Across Time Multi Site: Across Time,exp3,anom4 / anom5,exp3,anom2
+evp,Single Site: Stable Time Multi Site: Stable Time,exp1,anom1,exp7,anom3
+evp,Single Site: Across Time Multi Site: Across Time,exp3,anom4 / anom5,exp3,anom2
+pes,Single Site: Stable Time Multi Site: Stable Time,exp5,,exp1,anom3
+pes,Single Site: Across Time Multi Site: Across Time,exp3,anom4,exp3,anom2
+pf,Single Site: Stable Time Multi Site: Stable Time,exp1,anom6,exp6,anom3
+pf,Single Site: Across Time Multi Site: Across Time,exp3,anom4 / anom5,exp3,anom2
+csd,Single Site: Stable Time Multi Site: Stable Time,exp7,anom1,exp4,anom3
+csd,Single Site: Across Time Multi Site: Across Time,exp3,anom4 / anom5,exp3,anom2
+cnc_sp,Single Site: Stable Time Multi Site: Stable Time,exp1,anom3,exp6,anom3
+cnc_sp,Single Site: Across Time Multi Site: Across Time,exp3,anom4 / anom5,exp3,anom2

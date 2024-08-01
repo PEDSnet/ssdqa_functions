@@ -1,0 +1,15 @@
+module,site_config,no_time,across_time
+Attrition Step,single,Exploratory: exp2 Anomaly Detection: --,Exploratory: -- Anomaly Detection: --
+Attrition Step,multi,Exploratory: exp2 Anomaly Detection: anom3,Exploratory: -- Anomaly Detection: --
+Patient Event Sequencing,single,Exploratory: exp5 Anomaly Detection: --,Exploratory: exp3 Anomaly Detection: anom4
+Patient Event Sequencing,multi,Exploratory: exp1 Anomaly Detection: anom3,Exploratory: exp3 Anomaly Detection: anom2
+Patient Facts,single,Exploratory: exp1 Anomaly Detection: anom6,Exploratory: exp3 Anomaly Detection: anom4 or anom5
+Patient Facts,multi,Exploratory: exp6 Anomaly Detection: anom3,Exploratory: exp3 Anomaly Detection: anom2
+Expected Variables Present,single,Exploratory: exp1 Anomaly Detection: anom1,Exploratory: exp3 Anomaly Detection: anom4 or anom5
+Expected Variables Present,multi,Exploratory: exp7 Anomaly Detection: anom3,Exploratory: exp3 Anomaly Detection: anom2
+Source and Concept Vocabularies,single,Exploratory: exp7 Anomaly Detection: anom3,Exploratory: exp3 Anomaly Detection: anom4 or anom5
+Source and Concept Vocabularies,multi,Exploratory: exp4 Anomaly Detection: anom3,Exploratory: exp3 Anomaly Detection: anom2
+Clinical Events and Specialty Agreement,single,Exploratory: exp1 Anomaly Detection: anom3,Exploratory: exp3 Anomaly Detection: anom4 or anom5
+Clinical Events and Specialty Agreement,multi,Exploratory: exp6 Anomaly Detection: anom3,Exploratory: exp3 Anomaly Detection: anom2
+Concept Set Distribution,single,Exploratory: exp7 Anomaly Detection: anom1,Exploratory: exp3 Anomaly Detection: anom4 or anom5
+Concept Set Distribution,multi,Exploratory: exp4 Anomaly Detection: anom3,Exploratory: exp3 Anomaly Detection: anom2

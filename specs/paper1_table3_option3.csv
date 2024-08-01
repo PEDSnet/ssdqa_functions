@@ -1,0 +1,5 @@
+site_level,configuration,ca,scv,evp,pes,pf,csd,cnc_sp
+single,"Exploratory (Stable Time, Across Time)","(exp2, --)","(exp7, exp3)","(exp1, exp3)","(exp5, exp3)","(exp1, exp3)","(exp7, exp3)","(exp1, exp3)"
+single,"Anomaly (Stable Time, Across Time)","(--, --)","(anom3, anom4/anom5)","(anom1, anom4/anom5)","(--, anom4)","(anom6, anom4/anom5)","(anom1, anom4/anom5)","(anom3, anom4/anom5)"
+multi,"Exploratory (Stable Time, Across Time)","(exp2, --)","(exp4, exp3)","(exp7, exp3)","(exp1, exp3)","(exp6, exp3) ","(exp4, exp3)","(exp6, exp3)"
+multi,"Anomaly (Stable Time, Across Time)","(anom3, --)","(anom3, anom2)","(anom3, anom2)","(anom3, anom2)","(anom3, anom2)","(anom3, anom2)","(anom3, anom2)"

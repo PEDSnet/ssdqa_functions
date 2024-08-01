@@ -1,0 +1,9 @@
+configuration,ca,scv,evp,pes,pf,csd,cnc_sp
+"Single Site, Exploratory, No Time",exp2,exp7,exp1,exp5,exp1,exp7,exp1
+"Single Site, Anomaly Detection, No Time",,anom3,anom1,,anom6,anom1,anom3
+"Single Site, Exploratory, Across Time",,exp3,exp3,exp3,exp3,exp3,exp3
+"Single Site, Anomaly Detection, Across Time",,anom4 or anom5,anom4 or anom5,anom4,anom4 or anom5,anom4 or anom5,anom4 or anom5
+"Multi Site, Exploratory, No Time",exp2,exp4,exp7,exp1,exp6,exp4,exp6
+"Multi Site, Anomaly Detection, No Time",anom3,anom3,anom3,anom3,anom3,anom3,anom3
+"Multi Site, Exploratory, Across Time",,exp3,exp3,exp3,exp3,exp3,exp3
+"Multi Site, Anomaly Detection, Across Time",,anom2,anom2,anom2,anom2,anom2,anom2
