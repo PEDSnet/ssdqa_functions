@@ -129,7 +129,8 @@ scv_process <- function(cohort,
       
       scv_tbl_int <- compute_dist_anomalies(df_tbl = scv_tbl %>% replace_site_col(),
                                             grp_vars = c('domain', var_col), 
-                                            var_col = prop_col) 
+                                            var_col = prop_col,
+                                            denom_cols = c(var_col, denom_col)) 
       
       scv_tbl_final <- detect_outliers(df_tbl = scv_tbl_int,
                                        tail_input = 'both',
@@ -269,8 +270,9 @@ scv_output <- function(process_output,
                                   col = 'source_concept_id') %>%
     rename('source_concept_name' = 'concept_name')
   
-  process_output <- rslt_cid %>%
-    full_join(rslt_scid)
+  process_output <- process_output %>% 
+    left_join(rslt_cid %>% distinct(concept_id, concept_name)) %>%
+    left_join(rslt_scid %>% distinct(source_concept_id, source_concept_name))
   
   }else{
     process_output <- process_output

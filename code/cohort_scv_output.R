@@ -98,7 +98,8 @@ scv_ss_exp_nt <- function(process_output,
   
   ref <- process_output %>% 
     ungroup() %>%
-    inner_join(topcodes) 
+    inner_join(topcodes) %>%
+    distinct()
   
   nmap_total <- ref %>%
     group_by(!!sym(col), !!!syms(facet)) %>%
@@ -200,7 +201,7 @@ scv_ms_exp_nt <- function(process_output,
   
     
     final <- process_output %>% 
-      inner_join(topcodes)
+      inner_join(topcodes) %>% distinct()
     
     table <- final %>%
       ungroup() %>%
@@ -281,7 +282,8 @@ scv_ss_anom_nt <- function(process_output,
   
   ref <- process_output %>% 
     ungroup() %>%
-    inner_join(topcodes) 
+    inner_join(topcodes) %>%
+    distinct()
   
   nmap_total <- ref %>%
     group_by(!!sym(col), !!!syms(facet)) %>%

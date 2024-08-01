@@ -48,6 +48,32 @@ pes_ss_exp_nt <- function(process_output){
     labs(x = 'Days Between Events',
          title = 'Distribution of Time Between Events')
   
+  missing_events <- process_output %>%
+    filter(is.na(num_days))
+  
+  if(nrow(missing_events) == 0){
+    missing_events <- tibble(site = process_output$site,
+                             num_days = NA,
+                             prop_miss = 0,
+                             xlab = '')
+  }else{
+    
+    missing_events <- missing_events %>%
+      mutate(prop_miss = pt_ct / total_pts,
+             xlab = '') %>%
+      distinct(site, num_days, prop_miss, xlab)
+  }
+  
+  miss_grph <- missing_events %>%
+    ggplot(aes(y = prop_miss, x = xlab, fill = xlab)) +
+    geom_col(show.legend = FALSE) +
+    geom_label(aes(label = round(prop_miss, 3)), fill = 'white') +
+    scale_fill_manual(values = ssdqa_colors_standard[[2]]) +
+    theme_minimal() +
+    ylim(0,1) +
+    labs(x = '',
+         y = 'Proportion Patients without Event B')
+  
   thrs_cutoffs <- expand_cts %>%
     mutate(user_thrs = ifelse(abs(num_days) <= user_cutoff, 1, 0),
            thirty_thrs = ifelse(abs(num_days) <= 30, 1, 0),
@@ -76,7 +102,10 @@ pes_ss_exp_nt <- function(process_output){
          y = 'Proportion Patients',
          title = 'Proportion of Patients where Events \nOccur within Threshold Window')
     
-  otpt <- list(hstgrm,
+  plt_grp <- patchwork::wrap_plots(hstgrm, miss_grph) +
+    patchwork::plot_layout(widths = c(8, 3))
+  
+  otpt <- list(plt_grp,
                bgrph)
   
   return(otpt)

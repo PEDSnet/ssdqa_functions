@@ -311,13 +311,13 @@ join_to_vocabulary <- function(tbl,
                                vocab_tbl,
                                col){
   if(!is.null(vocab_tbl)){
-  
-  final <- select(vocab_tbl, !!sym(col), concept_name, vocabulary_id) %>%
-    rename('join_col' := !!sym(col)) %>%
-    right_join(tbl %>% rename('join_col' = col), by = c('join_col'),
-               copy = TRUE) %>%
-    rename_with(~col, join_col) %>%
-    collect()
+    
+    final <- select(vocab_tbl, concept_id, concept_name, vocabulary_id) %>%
+      rename('join_col' = concept_id) %>%
+      right_join(tbl %>% rename('join_col' = col), by = c('join_col'),
+                 copy = TRUE) %>%
+      rename_with(~col, join_col) %>%
+      collect()
   }else{
     final <- tbl %>% mutate(concept_name = 'No vocabulary table input')
   }

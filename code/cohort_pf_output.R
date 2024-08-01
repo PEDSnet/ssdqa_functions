@@ -108,11 +108,6 @@ pf_ss_exp_at <- function(data_tbl,
   }else(cli::cli_abort('Please select a valid output: {.code median_fact_ct} or {.code sum_fact_ct}'))
   # if(output=='fact_ct_denom') {y_title='What does this represent'}
   
-  domain_deframe <- 
-    data_tbl %>% distinct(domain) %>% 
-    inner_join(read_codeset('domain_color_config','cc')) %>% 
-    deframe()
-  
   p <- ggplot(data_tbl, aes(x=time_start, y=!! sym(output), group=domain, fill=domain)) +
     geom_point(aes(color=domain)) +
     geom_smooth(method='loess',formula=y~x, size=0.5) +
@@ -324,11 +319,6 @@ pf_ss_anom_nt <- function(data_tbl,
   }else(cli::cli_abort('Please select a valid output: {.code outlier_fact}, {.code prop_outlier_fact}, {.code outlier_site_fact}, or 
              {.code prop_outlier_site_fact}'))
   
-  domain_deframe <- 
-    data_tbl %>% rename(domain=domain) %>% distinct(domain) %>% 
-    inner_join(read_codeset('domain_color_config','cc')) %>% 
-    deframe()
-  
   ggplot(data_tbl,
          aes(x = !!sym(output), y = domain, fill = domain)) +
     geom_col() +
@@ -378,11 +368,6 @@ pf_ss_exp_nt <- function(data_tbl,
   }else if(output=='median_site_without0s'){
       y_title='Median Facts / Follow-Up for Patients with Fact'
   }else(cli::cli_abort('Please select a valid output: {.code median_site_with0s} or {.code median_site_without0s}'))
-  
-  domain_deframe <- 
-    data_tbl %>% distinct(domain) %>% 
-    inner_join(read_codeset('domain_color_config','cc')) %>% 
-    deframe()
   
   # domain_setup <- 
   #   data_tbl %>% rename(domain=domain)
@@ -494,11 +479,6 @@ pf_ms_exp_nt <- function(data_tbl,
       y_title='Median Facts / Follow-Up for Patients with Fact Across Sites'
       comp_var = 'median_all_without0s'
   }else(stop('Please select a valid output: {.code median_site_with0s} or {.code median_site_without0s}'))
-  
-  # site_deframe <- 
-  #   data_tbl %>% distinct(site) %>% 
-  #   inner_join(read_codeset('site_color_config','cc')) %>% 
-  #   deframe()
   
   data_format <- data_tbl %>%
     mutate(n_w_fact = format(n_w_fact, big.mark = ',', scientific = FALSE),
