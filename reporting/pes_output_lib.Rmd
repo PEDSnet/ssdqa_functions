@@ -59,10 +59,10 @@ opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
 Two graphs are output -- 
 
-1. A histogram displaying the distribution of days between events for the cohort. The binsize (bar width) is automatically determined by the geom_histogram function
-  - do we want to make this a parameter??
+1. A histogram displaying the distribution of days between events for the cohort, with a single bar graph (patchworked together with the histogram) displaying the proportion of patients who did not have Event B at all. 
+    * The binsize (bar width) is automatically determined by the geom_histogram function -- do we want to make this a parameter??
 2. A bar graph displaying the proportion of patients whose time between events falls within each threshold window: 30, 60, 90, and 365 days, plus a user provided threshold.
-  - these are **NOT** currently mutually exclusive, meaning the year bar also contains patients from all the other bars. Do we want to change this??
+    * these are **NOT** currently mutually exclusive, meaning the year bar also contains patients from all the other bars. Do we want to change this??
 
 ```{r ss_exp_nt}
 
