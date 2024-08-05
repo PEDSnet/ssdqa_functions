@@ -46,8 +46,8 @@ check_code_dist <- function(cohort,
     
     domain_tbl <- cohort %>%
       inner_join(cdm_tbl(code_domain)) %>%
-      filter(!!sym(domain_filter$date_col) >= start_date,
-             !!sym(domain_filter$date_col) <= end_date)
+      filter(!!sym(domain_filter$date_col) >= time_start,
+             !!sym(domain_filter$date_col) <= time_end)
     
     
     fact_tbl <- 

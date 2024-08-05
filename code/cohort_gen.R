@@ -50,7 +50,8 @@ compute_fot <- function(cohort,
     baseline_end_date <- ceiling_date(target, time_period) - 1
     
     cohort_narrowed <- cohort %>% 
-      filter(start_date <= baseline_end_date)
+      filter(start_date <= baseline_end_date,
+             baseline_start_date <= end_date)
     # mutate(start_date = as_date(baseline_start_date),
     #        end_date = as_date(baseline_end_date))
     
