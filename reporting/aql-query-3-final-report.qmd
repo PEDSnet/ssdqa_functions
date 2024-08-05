@@ -496,7 +496,7 @@ evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            filter_variable = 'Hba1c greater than 8')
 
 sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
-   layout(title = 'Smoothed & Linear Proportion of \n Hba1c greater than 8 Over Time') %>% style(showlegend = FALSE, traces = 1:17)
+   layout(title = 'Smoothed & Linear Proportion of \n Hba1c greater than 8 Over Time') %>% style(showlegend = FALSE, traces = 1:18)
 
 sub
 #evp_eucl[[1]]
@@ -515,7 +515,7 @@ evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            filter_variable = 'CKD')
 
 sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
-   layout(title = 'Smoothed & Linear Proportion of \nCKD') %>% style(showlegend = FALSE, traces = 1:17)
+   layout(title = 'Smoothed & Linear Proportion of \nCKD') %>% style(showlegend = FALSE, traces = 1:18)
 
 sub
 #evp_eucl[[1]]
@@ -534,7 +534,7 @@ evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            filter_variable = 'Elevated Blood Pressure')
 
 sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
-   layout(title = 'Smoothed & Linear Proportion of \nElevated Blood Pressure') %>% style(showlegend = FALSE, traces = 1:17)
+   layout(title = 'Smoothed & Linear Proportion of \nElevated Blood Pressure') %>% style(showlegend = FALSE, traces = 1:18)
 
 sub
 #evp_eucl[[1]]
@@ -553,7 +553,7 @@ evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            filter_variable = 'Ketoacidosis')
 
 sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
-   layout(title = 'Smoothed & Linear Proportion of \nKetoacidosis') %>% style(showlegend = FALSE, traces = 1:17)
+   layout(title = 'Smoothed & Linear Proportion of \nKetoacidosis') %>% style(showlegend = FALSE, traces = 1:18)
 
 sub
 #evp_eucl[[1]]
@@ -572,7 +572,7 @@ evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            filter_variable = 'Second-Line Anti Diabetics')
 
 sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
-   layout(title = 'Smoothed & Linear Proportion of \nSecond-Line Anti Diabetic Drugs') %>% style(showlegend = FALSE, traces = 1:17)
+   layout(title = 'Smoothed & Linear Proportion of \nSecond-Line Anti Diabetic Drugs') %>% style(showlegend = FALSE, traces = 1:18)
 
 sub
 #evp_eucl[[1]]
@@ -591,7 +591,7 @@ evp_eucl <- evp_output(process_output = get_results('evp_ms_anom_at_merge'),
            filter_variable = 'Stroke')
 
 sub <- subplot(evp_eucl[[1]], evp_eucl[[2]]) %>% 
-   layout(title = 'Smoothed & Linear Proportion of \nStroke') %>% style(showlegend = FALSE, traces = 1:17)
+   layout(title = 'Smoothed & Linear Proportion of \nStroke') %>% style(showlegend = FALSE, traces = 1:18)
 
 sub
 #evp_eucl[[1]]
@@ -685,12 +685,12 @@ csd_exp_nt[[2]]
 
 ```
 
-# C4UI - Non-Pediatric
+# C13UFH - Non-Pediatric
 
 ```{r csd_ss_exp_nt_a3}
 
 csd_exp_nt <- csd_output(process_output = get_results('csd_exp_nt_merge') %>%
-             filter(site == 'C4UI'),
+             filter(site == 'C13UFH'),
            output_function = 'csd_ss_exp_nt')
 
 csd_exp_nt[[1]]
@@ -1101,12 +1101,12 @@ csd_anom[[2]]
 
 ```
 
-# C4UI - Non-Pediatric
+# C13UFH - Non-Pediatric
 
 ```{r csd_ms_anom_at_quarter3}
 
 csd_anom <- csd_output(process_output = get_results('csd_ss_anom_at_qrtr_merge') %>%
-             filter(site == 'C4UI'),
+             filter(site == 'C13UFH'),
              #vocab_tbl = NULL,
            output_function = 'csd_ss_anom_at',
            filter_concept = 'E11.9')
@@ -1228,11 +1228,11 @@ pes_ss2[[2]]
 
 ```
 
-# C4UMO - Non-Pediatric
+# C13UFH - Non-Pediatric
 ```{r pes_ss_exp_nt2_a2}
 
 pes_ss2 <- pes_ss_exp_nt(process_output = get_results('pes_exp_nt2_merge')%>% 
-                filter(site == 'C4UMO'))
+                filter(site == 'C13UFH'))
 
 pes_ss2[[1]]
 pes_ss2[[2]]
