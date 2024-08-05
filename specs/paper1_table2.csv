@@ -1,14 +1,14 @@
 row_alias,data_output,viz_output
 anom1,Jaccard Similarity Index,Heatmap
-anom2,Euclidean Distance,Line graph & radial bar graph
-anom3,Hotspots Outlier Detection,Dot + star plot
-exp1,Frequency Distributions,Bar graph
-exp2,Attrition Counts,Line graph
+anom2,Euclidean Distance,Line Graph & Radial Bar Graph
+anom3,Hotspots Outlier Detection,Dot + Star Plot
+exp1,Frequency Distributions,Bar Graph
+exp2,Attrition Counts,Line Graph
 exp7,Frequency Distributions,Heatmap
-exp3,Time Series Exploration,Line graph
-anom4,Time Series Anomalies,Control chart
-anom5,Time Series Anomalies,STL regression
-exp4,Frequency Distributions,Interactive table
-exp5,Time Between Events,Histogram & bar graph
-exp6,Frequency Distributions,Dot plot
-anom6,Distance from Mean,Bar graph
+exp3,Time Series Exploration,Line Graph
+anom4,Time Series Anomalies,Control Chart
+anom5,Time Series Anomalies,STL Regression
+exp4,Frequency Distributions,Interactive Table
+exp5,Time Between Events,Histogram & Bar Graph
+exp6,Frequency Distributions,Dot Plot
+anom6,Distance from Mean,Bar Graph

@@ -25,6 +25,8 @@ require(stringr)
 require(tibble)
 require(ggplot2)
 require(gt)
+require(gtExtras)
+require(webshot2)
 
 get_results <- function(tbl_name) {
   if (data_source == 'local') {
@@ -52,13 +54,40 @@ I borrowed the copy written for PEDSpace here -- let me know if we want to use d
 
 ```{r t1}
 
-read_csv(paste0(base_dir, '/specs/paper1_table1.csv')) %>%
+t1 <- read_csv(paste0(base_dir, '/specs/paper1_table1.csv')) %>%
+  arrange(mod_subcat) %>%
   gt::gt(groupname_col = 'mod_cat') %>%
   cols_label('mod_name' = 'Module Name',
-             'mod_abb' = 'Module Abbreviation',
-             'mod_desc' = 'Module Description') %>%
+             'mod_subcat' = 'Module Category',
+             'mod_desc' = 'Module Description',
+             'stt' = 'Development Status') %>%
   tab_header('Current Data Quality Modules') %>%
-  opt_stylize(style = 6)
+  opt_stylize(style = 5) %>%
+  # tab_style(
+  #   style = list(cell_fill(color = 'lightgreen', alpha = 0.1)),
+  #   locations = list(cells_body(columns = stt,
+  #                               rows = stt == 'Tested & Validated'))
+  # ) %>%
+  # tab_style(
+  #   style = list(cell_fill(color = 'orange', alpha = 0.1)),
+  #   locations = list(cells_body(columns = stt,
+  #                               rows = stt == 'Active Development'))
+  # ) %>%
+  # tab_style(
+  #   style = list(cell_fill(color = 'purple', alpha = 0.1)),
+  #   locations = list(cells_body(columns = stt,
+  #                               rows = stt == 'Specified & In Queue'))
+  # ) %>%
+  tab_style(
+    style = list(cell_fill(color = '#1E4C7D', alpha = 0.85),
+                 cell_text(color = 'white')),
+    locations = list(cells_row_groups())
+  )
+
+t1
+
+gtExtras::gtsave_extra(t1, paste0(base_dir, '/results/paper1_table1.png'))
+#gtsave(t1, paste0(base_dir, '/results/paper1_table1.pdf'))
 
 
 ```
@@ -67,7 +96,7 @@ read_csv(paste0(base_dir, '/specs/paper1_table1.csv')) %>%
 # Table 2: Visualization Pairs
 ```{r t2}
 
-read_csv(paste0(base_dir, '/specs/paper1_table2.csv')) %>% 
+t2 <- read_csv(paste0(base_dir, '/specs/paper1_table2.csv')) %>% 
   arrange(row_alias) %>%
   gt::gt() %>% 
   cols_label('row_alias' = 'Reference Alias',
@@ -76,14 +105,15 @@ read_csv(paste0(base_dir, '/specs/paper1_table2.csv')) %>%
   tab_header('Unique Analytic & Visualization Pairs') %>%
   opt_stylize(style = 5)
 
+t2
+
+gtExtras::gtsave_extra(t2, paste0(base_dir, '/results/paper1_table2.png'))
 
 ```
 
 # Table 3: Data Quality Module Configurations
 
-## Option 1
-
-```{r t3.1}
+```{r t3.1, include=FALSE}
 
 read_csv(paste0(base_dir, '/specs/paper1_table3_option1.csv')) %>%
   mutate(no_time = str_replace(no_time, 'Anomaly', '<br><br>Anomaly'),
@@ -103,9 +133,7 @@ read_csv(paste0(base_dir, '/specs/paper1_table3_option1.csv')) %>%
 
 ```
 
-## Option 2
-
-```{r t3.2}
+```{r t3.2, include = FALSE}
 
 read_csv(paste0(base_dir, '/specs/paper1_table3_option2.csv')) %>%
   rename('Cohort Attrition' = 'ca',
@@ -123,8 +151,7 @@ read_csv(paste0(base_dir, '/specs/paper1_table3_option2.csv')) %>%
 
 ```
 
-## Option 3
-```{r t3.3}
+```{r t3.3, include = FALSE}
 
 read_csv(paste0(base_dir, '/specs/paper1_table3_option3.csv')) %>%
   rename('Cohort Attrition' = 'ca',
@@ -143,8 +170,7 @@ read_csv(paste0(base_dir, '/specs/paper1_table3_option3.csv')) %>%
 
 ```
 
-## Option 4
-```{r t3.4}
+```{r t3.4, include = FALSE}
 
 read_csv(paste0(base_dir, '/specs/paper1_table3_option3.csv')) %>%
   pivot_longer(cols = !c(site_level, configuration)) %>%
@@ -171,11 +197,9 @@ read_csv(paste0(base_dir, '/specs/paper1_table3_option3.csv')) %>%
 
 ```
 
-## Option 5
-
 ```{r t3.5}
 
-read_csv(paste0(base_dir, '/specs/paper1_table3_option4.csv')) %>%
+t3 <- read_csv(paste0(base_dir, '/specs/paper1_table3_option4.csv')) %>%
     mutate(check = case_when(check == 'ca' ~ 'Cohort Attrition',
                           check == 'scv' ~ 'Source and Concept Vocabularies',
                           check == 'evp' ~ 'Expected Variables Present',
@@ -204,14 +228,22 @@ read_csv(paste0(base_dir, '/specs/paper1_table3_option4.csv')) %>%
     locations = cells_group()
   ) %>%
   tab_style(
-    style = list(cell_fill(color = 'lightblue')),
+    style = list(cell_fill(color = '#1E4C7D', alpha = 0.95),
+                 cell_text(color = 'white')),
     locations = cells_stub()) %>%
   tab_style(
     style = list(cell_borders(color = 'lightgrey',
                               style = 'dotted')),
-    locations = list(cells_body(rows = !is.na(check)),
-                     cells_stub())
+    locations = list(cells_body(rows = !is.na(check)))
+  ) %>%
+  tab_style(
+    style = list(cell_fill(color = 'white'),
+                 cell_borders(color = 'white', sides = 'left')),
+    locations = list(cells_stub(rows = is.na(check)))
   )
 
+t3
+
+gtExtras::gtsave_extra(t3, paste0(base_dir, '/results/paper1_table3.png'))
 
 ```
