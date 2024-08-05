@@ -91,7 +91,8 @@ config_append('extra_packages', c())
   ### Multi-Site Anomaly
   ca_step0_int <- compute_dist_anomalies(df_tbl = ca_output_step0,
                                          grp_vars = c('step_number', 'attrition_step'),
-                                         var_col = 'prop_retained_prior')
+                                         var_col = 'prop_retained_prior',
+                                         c('step_number', 'attrition_step'))
   
   ca_step0_final <- detect_outliers(df_tbl = ca_step0_int,
                                     p_input = 0.9,
@@ -103,7 +104,8 @@ config_append('extra_packages', c())
   
   ca_step3_int <- compute_dist_anomalies(df_tbl = ca_output_step3,
                                          grp_vars = c('step_number', 'attrition_step'),
-                                         var_col = 'prop_retained_prior')
+                                         var_col = 'prop_retained_prior',
+                                         denom_cols = c('step_number', 'attrition_step'))
   
   ca_step3_final <- detect_outliers(df_tbl = ca_step3_int,
                                     p_input = 0.9,
@@ -249,7 +251,8 @@ config_append('extra_packages', c())
   
   csd_ms_nt_anom_int <- compute_dist_anomalies(df_tbl = csd_nt_merge,
                                                grp_vars = c('variable', 'concept_code'), 
-                                               var_col = 'prop_concept') 
+                                               var_col = 'prop_concept',
+                                               denom_cols = c('variable', 'ct_denom')) 
   
   csd_ms_nt_anom_final <- detect_outliers(df_tbl = csd_ms_nt_anom_int,
                                           tail_input = 'both',
