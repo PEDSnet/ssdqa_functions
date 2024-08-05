@@ -310,11 +310,12 @@ replace_site_col <- function(tbl) {
 #' 
 join_to_vocabulary <- function(tbl,
                                vocab_tbl,
-                               col){
+                               col,
+                               vocab_col = 'concept_id'){
   if(!is.null(vocab_tbl)){
     
-    final <- select(vocab_tbl, concept_id, concept_name, vocabulary_id) %>%
-      rename('join_col' = concept_id) %>%
+    final <- select(vocab_tbl, vocab_col, concept_name, vocabulary_id) %>%
+      rename('join_col' = vocab_col) %>%
       right_join(tbl %>% rename('join_col' = col), by = c('join_col'),
                  copy = TRUE) %>%
       rename_with(~col, join_col) %>%

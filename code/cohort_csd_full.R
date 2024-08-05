@@ -240,7 +240,8 @@ csd_output <- function(process_output=process_output,
                                            inner_join(select(concept_set, concept_id, concept_code,
                                                              vocabulary_id)), 
                                          vocab_tbl = vocab_tbl,
-                                         col = 'concept_id')
+                                         col = concept_col,
+                                         vocab_col = concept_col)
   }
   
   ## Run output functions
