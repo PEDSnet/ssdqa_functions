@@ -66,7 +66,8 @@ Two graphs are output --
 
 ```{r ss_exp_nt}
 
-pes_ss_exp_nt(process_output = get_results('pes_ss_nt'))
+pes_output(process_output = get_results('pes_ss_nt'),
+           output_function = 'pes_ss_exp_nt')
 
 ```
 
@@ -78,7 +79,8 @@ For each site, the bar graph shows the proportion of patients whose time between
 
 ```{r ms_exp_nt}
 
-pes_ms_exp_nt(process_output = get_results('pes_ms_exp_nt'))
+pes_output(process_output = get_results('pes_ms_exp_nt'),
+           output_function = 'pes_ms_exp_nt')
 
 ```
 
@@ -88,7 +90,8 @@ For each threshold window, the dot and star plot identifies sites with anomalous
 
 ```{r ms_anom_nt}
 
-pes_ms_anom_nt(process_output = get_results('pes_ms_anom_nt'))
+pes_output(process_output = get_results('pes_ms_anom_nt'),
+           output_function = 'pes_ms_anom_nt')
 
 ```
 
@@ -98,7 +101,8 @@ For one site, shows the proportion of patients whose time between events falls w
 
 ```{r ss_exp_at}
 
-pes_ss_exp_at(process_output = get_results('pes_ss_at_year'))
+pes_output(process_output = get_results('pes_ss_at_year'),
+           output_function = 'pes_ss_exp_at')
 
 ```
 
@@ -111,14 +115,16 @@ For example, for the year of 2012 or the month of 01-01-2012, that represents th
 ### By Year
 ```{r ss_anom_at_yr}
 
-pes_ss_anom_at(process_output = get_results('pes_ss_at_year'))
+pes_output(process_output = get_results('pes_ss_at_year'),
+           output_function = 'pes_ss_anom_at')
 
 ```
 
 ### By Month
 ```{r ss_anom_at_mnth}
 
-pes_ss_anom_at(process_output = get_results('pes_ss_at_month'))
+pes_output(process_output = get_results('pes_ss_at_month'),
+           output_function = 'pes_ss_anom_at')
 
 ```
 
@@ -130,7 +136,8 @@ Thicker pink line represents the all site median proportion across time.
 
 ```{r ms_exp_at}
 
-pes_ms_exp_at(process_output = get_results('pes_ms_exp_at'))
+pes_output(process_output = get_results('pes_ms_exp_at'),
+           output_function = 'pes_ms_exp_at')
 
 ```
 
@@ -146,7 +153,8 @@ Three graphs are output:
 
 ```{r ms_anom_at, echo=FALSE, message=FALSE, warning=FALSE}
 
-op <- pes_ms_anom_at(process_output = get_results('pes_ms_anom_at'))
+op <- pes_output(process_output = get_results('pes_ms_anom_at'),
+                 output_function = 'pes_ms_anom_at')
 
 op[[1]]
 op[[2]]

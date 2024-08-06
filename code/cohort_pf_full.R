@@ -249,7 +249,7 @@ pf_process <- function(cohort = cohort,
 
 #' Clinical Facet per Patient -- Output Generation
 #'
-#' @param pf_process - the summary dataframe output by the `pf_process` function. 
+#' @param process_output - the summary dataframe output by the `pf_process` function. 
 #' 
 #'                     Note any intermediate table generated is not intended to be used with this function.
 #' @param output_function - the name of the output function that should be used provided in the `parameter_summary` csv 
