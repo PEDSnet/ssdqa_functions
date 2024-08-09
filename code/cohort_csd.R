@@ -49,6 +49,8 @@ check_code_dist_csd <- function(cohort_codedist,
     if(time){
       fact_tbl <- 
         domain_tbl_cdm %>% 
+        filter(!!sym(dates) >= time_start,
+               !!sym(dates) <= time_end) %>%
         inner_join(concept_set_db,
                    by=setNames('concept_id',final_col)) %>% 
         select(all_of(group_vars(cohort_codedist)),

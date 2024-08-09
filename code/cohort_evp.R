@@ -30,12 +30,14 @@ compute_evp <- function(cohort,
     
     domain_tbl <- cdm_tbl(evp_list[[i]][[2]]) %>%
       inner_join(cohort) %>%
+      filter(!!sym(evp_list[[i]][[4]]) >= start_date &
+               !!sym(evp_list[[i]][[4]]) <= end_date) %>%
       group_by(!!!syms(grouped_list))
     
     if(time){
       domain_tbl <- domain_tbl %>% 
-        filter(!!sym(evp_list[[i]][[4]]) >= start_date &
-                 !!sym(evp_list[[i]][[4]]) <= end_date) %>%
+        filter(!!sym(evp_list[[i]][[4]]) >= time_start &
+                 !!sym(evp_list[[i]][[4]]) <= time_end) %>%
         group_by(time_start, time_increment, .add = TRUE)
       }
     

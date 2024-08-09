@@ -582,7 +582,7 @@ compute_dist_mean_median <- function(tbl,
 loop_through_visits <- function(cohort_tbl,
                                 check_func,
                                 site_col,
-                                #time=FALSE,
+                                time=FALSE,
                                 visit_type_tbl=read_codeset('pf_visit_types','ic'),
                                 visit_tbl=cdm_tbl('visit_occurrence'),
                                 site_list,
@@ -625,6 +625,9 @@ loop_through_visits <- function(cohort_tbl,
                visit_start_date <= end_date) %>% 
         compute_new(temporary=TRUE,
                     indexes=list('person_id'))
+      
+      if(time){visits <- visits %>% filter(visit_start_date >= time_start,
+                                           visit_start_date <= time_end)}
       
       # execute function
       domain_compute <- check_func(cht = cohort_site,

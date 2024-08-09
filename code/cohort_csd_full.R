@@ -57,7 +57,7 @@
 #' 
 csd_process <- function(cohort = results_tbl('jspa_cohort'),
                         domain_tbl=read_codeset('scv_domains', 'cccc'),
-                        concept_set = read_codeset('csd_codesets','iccccc'), 
+                        concept_set = read_codeset('csd_codesets_jspa','iccccc'), 
                         multi_or_single_site = 'single',
                         anomaly_or_exploratory='exploratory',
                         num_concept_combined = FALSE,
@@ -221,7 +221,7 @@ csd_process <- function(cohort = results_tbl('jspa_cohort'),
 #' 
 csd_output <- function(process_output=process_output,
                        output_function,
-                       concept_set = read_codeset('csd_codesets','iccccc'),
+                       concept_set = read_codeset('csd_codesets_jspa','iccccc'),
                        vocab_tbl = vocabulary_tbl('concept'),
                        num_variables = 10,
                        num_mappings = 10,
@@ -233,6 +233,10 @@ csd_output <- function(process_output=process_output,
   
   ## check concept col
   concept_col <- ifelse('concept_id' %in% colnames(process_output), 'concept_id', 'concept_code')
+  
+  if('concept_id' %in% colnames(process_output)){
+    process_output <- process_output %>% mutate(concept_id = as.integer(concept_id))
+  }else{process_output <- process_output}
   
   ## Get concept names from vocabulary table
   if(output_function != 'csd_ss_anom_nt'){
