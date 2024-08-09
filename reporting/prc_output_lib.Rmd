@@ -1,0 +1,189 @@
+---
+title: "Patient Record Consistency Output Library"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, 
+  output_file = paste0('prc_output_lib_', format(Sys.time(), '%Y%m%d'), '.html') )}) 
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(qicharts2)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+```
+
+This reports displays all available output for the Patient Record Consistency (PRC) Check. This check examines how many times each of two events occur within the same patient record. In most versions of the output, patients are categorized into one of 4 categories: `Event A Only`, `Event B Only`, `Both Events`, `Neither Event`. 
+
+
+## Single Site, Exploratory, No Time
+
+This bar graph displays the proportion of patients that fall into each event category. The tooltip contains the name of the event, the proportion for the category, and the average number of times events A and B occur within each patient record. The computation of the mean includes 0s to ensure that patients with no event are still taken into account.
+
+```{r ss_exp_nt}
+
+ss_exp_nt <- prc_ss_exp_nt(process_output = get_results('prc_ss_exp_nt'))
+
+ss_exp_nt
+
+```
+
+## Multi Site, Exploratory, No Time
+
+This bar graph displays the proportion of patients that fall into each event category at each individual site. The tooltip contains the name of the event, the proportion for the category, and the average number of times events A and B occur within each patient record. The computation of the mean is conducted for each site and includes 0s to ensure that patients with no event are still taken into account.
+
+```{r ms_exp_nt}
+
+ms_exp_nt <- prc_ms_exp_nt(process_output = get_results('prc_ms_exp_nt'))
+
+ms_exp_nt
+
+```
+
+## Single Site, Anomaly, No Time
+
+This heatmap displays the Jaccard similarity index for categories of event occurrence counts. Here we want to see when different numbers of each event occur together within the same patient. For example, you can see that 0 Event B occurrences and 1 Event A occurrence occur together frequently.
+
+The bins are decided on procedurally (**subject to change**). Counts less than 10 are given their own bin (i.e. 0, 1, 2, etc), counts 10-100 are binned by tens (i.e. 10-20, 20-30), counts 100-1000 are binned by hundreds (i.e. 100-200, 200-300), and counts greater than 1000 are binned by thousands (i.e. 1000-2000). This was done to try to preserve granularity where needed but still aim to consolidate and reduce computation time.
+
+The higher the jaccard index, the more the two event counts occur together.
+
+```{r ss_anom_nt}
+
+ss_anom_nt <- prc_ss_anom_nt(process_output = get_results('prc_ss_anom_nt'))
+
+ss_anom_nt
+
+```
+
+## Multi Site, Anomaly, No Time
+
+This uses the same Jaccard similarity index computed for Single Site, Anomaly, No Time and runs it through the rule & hotspots based anomaly detection function to find anomalous sites for each pair of event counts.
+
+Here, the color of the dot represents the Jaccard index value for that site, the size of the dot represents the mean Jaccard index value across all sites, and the shape of the dot represents whether the point is anomalous or not.
+
+```{r ms_anom_nt}
+
+ms_anom_nt <- prc_ms_anom_nt(process_output = get_results('prc_ms_anom_nt'))
+
+ms_anom_nt
+
+```
+
+## Single Site, Exploratory, Across Time
+
+This line graph represents the proportion of patients that fall into each event category across the user-specified time period.
+
+```{r ss_exp_at}
+
+ss_exp_at <- prc_ss_exp_at(process_output = get_results('prc_ss_exp_at'))
+
+ss_exp_at
+
+```
+
+## Multi Site, Exploratory, Across Time
+
+This line graph shows how far each site falls from the mean proportion of patients for each event category across time. The dotted line in the middle at 0 represents the mean, and each line represents an individual site and its distance from that mean. The farther away the site line is from the dotted line, the farther away it is from the overall mean.
+
+```{r ms_exp_at}
+
+ms_exp_at <- prc_ms_exp_at(process_output = get_results('prc_ms_exp_at'))
+
+ms_exp_at
+
+```
+
+## Single Site, Anomaly, Across Time
+
+### By Year
+
+This check outputs a control chart that highlights anomalies in the proportion of patients per event category. A `P Prime` chart is used to account for the high sample size, which means that the standard deviation is multiplied by a numerical constant. Blue dots along the line indicate non-anomalous values, while orange dots are anomalies.
+
+Only one event category should be specified via the `event_filter` parameter to be displayed on the graph. Any of the four options seen in the other output may be chosen with `a`, `b`, `both`, or `neither.`
+
+```{r ss_anom_at}
+
+ss_anom_at <- prc_ss_anom_at(process_output = get_results('prc_ss_anom_at_year'),
+                             event_filter = 'a')
+
+ss_anom_at
+
+```
+
+### By Month or Smaller
+
+With smaller time increments, seasonality can make it difficult to detect true anomalies in a time series. This output computes anomalies while ignoring seasonality and outputs 2 graphs:
+
+- a time series line graph with anomalies highlighted with a red dot
+- a 4-facet time series line graph that demonstrates the decomposition of the anomalies to make it more clear how the anomalies were identified
+
+```{r ss_anom_at_month}
+
+ss_anom_at2 <- prc_ss_anom_at(process_output = get_results('prc_ss_anom_at_month'),
+                              event_filter = 'a')
+
+ss_anom_at2[[1]]
+
+ss_anom_at2[[2]]
+
+```
+
+## Multi Site, Anomaly, Across Time
+
+This check displays the Euclidean distance between two time series: the smoothed (Loess) proportion of a user-selected event category for a given site and the all-site average proportion for each time point. 
+
+Three graphs are output:
+
+  * a line graph displaying the smoothed proportion of the event category at each site over time, with the Euclidean distance available in the tooltip when hovering over the line
+  * a line graph displaying the raw (not smoothed) proportion of the event category at each site over time
+  * a circular bar graph displaying the Euclidean distance from the all-site mean where the fill represents the average Loess proportion over time
+
+```{r ms_anom_at}
+
+ms_anom_at <- prc_ms_anom_at(process_output = get_results('prc_ms_anom_at'),
+                             event_filter = 'both')
+
+ms_anom_at[[1]]
+
+ms_anom_at[[2]]
+
+ms_anom_at[[3]]
+
+```
