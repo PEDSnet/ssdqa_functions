@@ -82,7 +82,7 @@ This heatmap displays the Jaccard similarity index for categories of event occur
 
 The bins are decided on procedurally (**subject to change**). Counts less than 10 are given their own bin (i.e. 0, 1, 2, etc), counts 10-100 are binned by tens (i.e. 10-20, 20-30), counts 100-1000 are binned by hundreds (i.e. 100-200, 200-300), and counts greater than 1000 are binned by thousands (i.e. 1000-2000). This was done to try to preserve granularity where needed but still aim to consolidate and reduce computation time.
 
-The higher the jaccard index, the more the two event counts occur together.
+The top 20 most frequently occurring bins are chosen by the function to save space on the graph. The higher the Jaccard index, the more the two bins occur together.
 
 ```{r ss_anom_nt}
 
