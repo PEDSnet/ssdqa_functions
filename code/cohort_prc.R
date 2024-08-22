@@ -130,9 +130,10 @@ compute_event_counts <- function(cohort,
 #'
 #' @examples
 compute_prc_ntanom <- function(cohort = results_tbl('jspa_cohort'),
+                               site_col,
                                grouped_list = 'site',
                                event_csv = read_codeset('pes_events_1', 'ccccc'),
-                               target_col = 'bin_col'){
+                               grp_breaks = c(0, 1, 3, 8, 11, 15, 25, 50, 100)){
   
   ## Pull event information
   event_list <- split(event_csv, seq(nrow(event_csv)))
@@ -192,48 +193,73 @@ compute_prc_ntanom <- function(cohort = results_tbl('jspa_cohort'),
   
   ## Get Patient - Level data
   event_ptlv <- eventa %>% full_join(eventb) %>% 
-    full_join(cohort %>% select(!!sym(site_col), person_id) %>% collect()) %>%
+    full_join(cohort %>% select(!!sym(site_col), person_id, fu) %>% collect()) %>%
     mutate(event_a_num = ifelse(is.na(event_a_num), 0, event_a_num),
            event_b_num = ifelse(is.na(event_b_num), 0, event_b_num)) %>%
     ungroup() %>%
     fill(event_b_name, .direction = 'updown') %>% fill(event_a_name, .direction = 'updown')
   
-  if(target_col == 'bin_col'){
   
-    ## Create event bins
-    binned_event_cts <- as_tibble(event_ptlv) %>%
-      ungroup() %>%
-      mutate(eventa_bin = case_when(event_a_num >= 0 & event_a_num < 10 ~ as.character(event_a_num),
-                                    event_a_num >= 10 & event_a_num < 100 ~ as.character(cut_interval(event_a_num, length = 10),
-                                                                                         right = FALSE),
-                                    event_a_num >= 100 & event_a_num < 1000 ~ as.character(cut_interval(event_a_num, length = 100)),
-                                    event_a_num >= 1000 ~ as.character(cut_interval(event_a_num, length = 1000))),
-             eventb_bin = case_when(event_b_num >= 0 & event_b_num < 10 ~ as.character(event_b_num),
-                                    event_b_num >= 10 & event_b_num < 100 ~ as.character(cut_interval(event_b_num, length = 10),
-                                                                                         right = FALSE),
-                                    event_b_num >= 100 & event_b_num < 1000 ~ as.character(cut_interval(event_b_num, length = 100)),
-                                    event_b_num >= 1000 ~ as.character(cut_interval(event_b_num, length = 1000)))) %>%
-      pivot_longer(cols = c(eventa_bin, eventb_bin)) %>%
-      mutate(bin_col = paste0(name, '_', value)) %>% select(-c(name, value)) %>%
-      unite(facet_col, !!!syms(grouped_list), sep = '\n')
-    
-    facet_list <- group_split(binned_event_cts %>% group_by(facet_col))
+  ## Bin FU time
+  grp_breaks <- grp_breaks %>% append(Inf) %>% unique()
+  grouped_list <- grouped_list %>% append('fu_bins')
   
-  }else if(target_col == 'event_name'){
-    
-    event_type_cts <- event_ptlv %>%
-      pivot_wider(names_from = 'event_a_name', 
-                  values_from = 'event_a_num') %>% 
-      pivot_wider(names_from = 'event_b_name', 
-                  values_from = 'event_b_num') %>% 
-      pivot_longer(cols = !c('person_id', 'site'),
-                   names_to = 'event_name') %>% 
-      filter(value != 0) %>%
-      unite(facet_col, !!!syms(grouped_list), sep = '\n')
-      
-    facet_list <- group_split(event_type_cts %>% group_by(facet_col))
-    
-  }
+  event_type_cts <- as_tibble(event_ptlv) %>%
+        pivot_wider(names_from = 'event_a_name',
+                    values_from = 'event_a_num') %>%
+        pivot_wider(names_from = 'event_b_name',
+                    values_from = 'event_b_num') %>%
+        pivot_longer(cols = !c('person_id', !!sym(site_col), fu),
+                     names_to = 'event_name') %>%
+        filter(value != 0)
+  
+  binned_fu_time <- event_type_cts %>%
+    ungroup() %>%
+    mutate(fu_bins = cut(fu, breaks = grp_breaks, right = FALSE)) %>%
+    # group_by(fu_bins) %>%
+    # mutate(fu_min = round(min(fu), 3),
+    #        fu_max = round(max(fu), 3)) %>%
+    # mutate(bin_cat = fu_bins) %>%
+    unite(facet_col, !!!syms(grouped_list), sep = '_')
+
+  facet_list <- group_split(binned_fu_time %>% group_by(facet_col))
+  
+  # if(target_col == 'bin_col'){
+  # 
+  #   ## Create event bins
+  #   binned_event_cts <- as_tibble(event_ptlv) %>%
+  #     ungroup() %>%
+  #     mutate(eventa_bin = case_when(event_a_num >= 0 & event_a_num < 10 ~ as.character(event_a_num),
+  #                                   event_a_num >= 10 & event_a_num < 100 ~ as.character(cut_interval(event_a_num, length = 10),
+  #                                                                                        right = FALSE),
+  #                                   event_a_num >= 100 & event_a_num < 1000 ~ as.character(cut_interval(event_a_num, length = 100)),
+  #                                   event_a_num >= 1000 ~ as.character(cut_interval(event_a_num, length = 1000))),
+  #            eventb_bin = case_when(event_b_num >= 0 & event_b_num < 10 ~ as.character(event_b_num),
+  #                                   event_b_num >= 10 & event_b_num < 100 ~ as.character(cut_interval(event_b_num, length = 10),
+  #                                                                                        right = FALSE),
+  #                                   event_b_num >= 100 & event_b_num < 1000 ~ as.character(cut_interval(event_b_num, length = 100)),
+  #                                   event_b_num >= 1000 ~ as.character(cut_interval(event_b_num, length = 1000)))) %>%
+  #     pivot_longer(cols = c(eventa_bin, eventb_bin)) %>%
+  #     mutate(bin_col = paste0(name, '_', value)) %>% select(-c(name, value)) %>%
+  #     unite(facet_col, !!!syms(grouped_list), sep = '\n')
+  #   
+  #   facet_list <- group_split(binned_event_cts %>% group_by(facet_col))
+  # 
+  # }else if(target_col == 'event_name'){
+  #   
+  #   event_type_cts <- event_ptlv %>%
+  #     pivot_wider(names_from = 'event_a_name', 
+  #                 values_from = 'event_a_num') %>% 
+  #     pivot_wider(names_from = 'event_b_name', 
+  #                 values_from = 'event_b_num') %>% 
+  #     pivot_longer(cols = !c('person_id', 'site'),
+  #                  names_to = 'event_name') %>% 
+  #     filter(value != 0) %>%
+  #     unite(facet_col, !!!syms(grouped_list), sep = '\n')
+  #     
+  #   facet_list <- group_split(event_type_cts %>% group_by(facet_col))
+  #   
+  # }
   
   jacc_list <- list()
   
@@ -242,7 +268,7 @@ compute_prc_ntanom <- function(cohort = results_tbl('jspa_cohort'),
     grp <- facet_list[[i]] %>% distinct(facet_col) %>% pull()
     
     jaccards <- compute_jaccard(jaccard_input_tbl = facet_list[[i]],
-                                var_col = target_col) %>%
+                                var_col = 'event_name') %>%
       mutate(grp = grp)
     
     jacc_list[[i]] <- jaccards

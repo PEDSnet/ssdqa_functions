@@ -54,7 +54,7 @@ This reports displays all available output for the Patient Record Consistency (P
 
 ## Single Site, Exploratory, No Time
 
-This bar graph displays the proportion of patients that fall into each event category. The tooltip contains the name of the event, the proportion for the category, and the average number of times events A and B occur within each patient record. The computation of the mean includes 0s to ensure that patients with no event are still taken into account.
+This bar graph displays the proportion of patients that fall into each event category and the raw patient count. The tooltip contains the name of the event, the proportion for the category, the patient count, and the average number of times events A and B occur within each patient record. The computation of the mean includes 0s to ensure that patients with no event are still taken into account.
 
 ```{r ss_exp_nt}
 
@@ -78,11 +78,9 @@ ms_exp_nt
 
 ## Single Site, Anomaly, No Time
 
-This heatmap displays the Jaccard similarity index for categories of event occurrence counts. Here we want to see when different numbers of each event occur together within the same patient. For example, you can see that 0 Event B occurrences and 1 Event A occurrence occur together frequently.
+This heatmap displays the Jaccard similarity index for categories of F/U time. 
 
-The bins are decided on procedurally (**subject to change**). Counts less than 10 are given their own bin (i.e. 0, 1, 2, etc), counts 10-100 are binned by tens (i.e. 10-20, 20-30), counts 100-1000 are binned by hundreds (i.e. 100-200, 200-300), and counts greater than 1000 are binned by thousands (i.e. 1000-2000). This was done to try to preserve granularity where needed but still aim to consolidate and reduce computation time.
-
-The top 20 most frequently occurring bins are chosen by the function to save space on the graph. The higher the Jaccard index, the more the two bins occur together.
+The bins are provided by the user using a vector of integers to be used as breaks. Each bin includes the starting integer and up to but NOT including the ending integer. For example, `[0,1)` includes patients with F/U between 0 and 0.99 years. The vector used for this graph was `c(0, 1, 3, 8, 11, 15, 25, 50, 100)`
 
 ```{r ss_anom_nt}
 
@@ -94,7 +92,7 @@ ss_anom_nt
 
 ## Multi Site, Anomaly, No Time
 
-This uses the same Jaccard similarity index computed for Single Site, Anomaly, No Time and runs it through the rule & hotspots based anomaly detection function to find anomalous sites for each pair of event counts.
+This uses the same Jaccard similarity index computed for Single Site, Anomaly, No Time and runs it through the rule & hotspots based anomaly detection function to find anomalous sites for each F/U bin.
 
 Here, the color of the dot represents the Jaccard index value for that site, the size of the dot represents the mean Jaccard index value across all sites, and the shape of the dot represents whether the point is anomalous or not.
 
@@ -124,7 +122,8 @@ This line graph shows how far each site falls from the mean proportion of patien
 
 ```{r ms_exp_at}
 
-ms_exp_at <- prc_ms_exp_at(process_output = get_results('prc_ms_exp_at'))
+ms_exp_at <- prc_ms_exp_at(process_output = get_results('prc_ms_exp_at'),
+                           dist_from_stat = 'median')
 
 ms_exp_at
 

@@ -24,13 +24,17 @@ prc_ss_exp_nt <- function(process_output){
            prop_event = stat_ct / total_pts,
            tooltip = paste0(tooltip, 
                             '\nProportion: ', round(prop_event, 3),
+                            '\nPatient Count: ', format(stat_ct, big.mark = ','),
                             '\nAvg No. Event A: ', round(avgs$eventa_mean, 3),
                             '\nAvg No. Event B: ', round(avgs$eventb_mean, 3)))
+  
+  total_mult <- stat_labs %>% distinct(total_pts) %>% pull()
   
   g <- ggplot(stat_labs, aes(x = stat_type, y = prop_event, fill = stat_type)) +
     geom_col_interactive(aes(tooltip = tooltip), show.legend = FALSE) +
     scale_fill_ssdqa() +
     theme_minimal() +
+    scale_y_continuous(sec.axis = sec_axis(~.*total_mult, name="Patient Count")) +
     labs(y = 'Proportion Patients',
          x = '',
          title = 'Proportion Patients with Each Event')
@@ -133,7 +137,8 @@ prc_ss_exp_at <- function(process_output){
 
 #' *Multi Site, Exploratory, Across Time*
 #' 
-prc_ms_exp_at <- function(process_output){
+prc_ms_exp_at <- function(process_output,
+                          dist_from_stat = 'mean'){
   
   expand_cts <- process_output %>%
     uncount(pt_ct)
@@ -156,17 +161,35 @@ prc_ms_exp_at <- function(process_output){
                                stat_type == 'Event A Only' ~ paste0('Event Name: ', event_a_name),
                                stat_type == 'Event B Only' ~ paste0('Event Name: ', event_b_name),
                                stat_type == 'Both Events' ~ 'Event Name: Both'),
-           prop_event = stat_ct / total_pts) %>%
-    group_by(time_start, time_increment, stat_type) %>%
-    mutate(allsite_mean = mean(prop_event),
-           dist_mean = prop_event - allsite_mean,
-           tooltip = paste0(tooltip, 
-                            '\nDist. from Mean: ', round(dist_mean, 3),
+           prop_event = stat_ct / total_pts)
+  
+  if(dist_from_stat == 'mean'){
+    plot_dat <- stat_labs %>%
+      group_by(time_start, time_increment, stat_type) %>%
+      mutate(allsite_mean = mean(prop_event),
+             dist_col = prop_event - allsite_mean,
+             tooltip = paste0(tooltip, 
+                            '\nDist. from Mean: ', round(dist_col, 3),
                             '\nRaw Proportion: ', round(prop_event, 3),
                             '\nAvg No. Event A: ', round(eventa_mean, 3),
                             '\nAvg No. Event B: ', round(eventb_mean, 3)))
+    
+    title_str <- 'All-Site Mean'
+  }else if(dist_from_stat == 'median'){
+    plot_dat <- stat_labs %>%
+      group_by(time_start, time_increment, stat_type) %>%
+      mutate(allsite_median = median(prop_event),
+             dist_col = prop_event - allsite_median,
+             tooltip = paste0(tooltip, 
+                              '\nDist. from Median: ', round(dist_col, 3),
+                              '\nRaw Proportion: ', round(prop_event, 3),
+                              '\nAvg No. Event A: ', round(eventa_mean, 3),
+                              '\nAvg No. Event B: ', round(eventb_mean, 3)))
+    
+    title_str <- 'All-Site Median'
+  }else(cli::cli_abort('Invalid dist_from_stat: please choose either `mean` or `median`'))
   
-  g <- ggplot(stat_labs, aes(x = time_start, y = dist_mean, color = site,
+  g <- ggplot(plot_dat, aes(x = time_start, y = dist_col, color = site,
                              group = site, text = tooltip)) +
     geom_line() +
     geom_hline(yintercept = 0, linetype = 'dotted', 
@@ -174,9 +197,9 @@ prc_ms_exp_at <- function(process_output){
     facet_wrap(~stat_type, ncol = 2) +
     scale_color_ssdqa() +
     theme_minimal() +
-    labs(y = 'Distance from Mean',
+    labs(y = 'Distance',
          x = '',
-         title = 'Distance from All-Site Mean Proportion of Patients with Each Event')
+         title = paste0('Distance from ', title_str,' Proportion of Patients with Each Event'))
   
   ggplotly(g, tooltip = 'text')
   
@@ -187,47 +210,27 @@ prc_ms_exp_at <- function(process_output){
 #'
 
 prc_ss_anom_nt <- function(process_output,
-                           bin_limit = 20,
                            facet = NULL){
   
-  var_ct <- process_output %>%
-    select(concept1, concept2) %>% 
-    pivot_longer(cols = c('concept1', 'concept2')) %>%
-    distinct(value) %>% summarise(n()) %>% pull()
   
-  if(var_ct > 20){cli::cli_alert_warning('Output has been limited to top 20 variables to improve visibility on axes.')}
+  dat_to_plot <- process_output %>%
+    mutate(tooltip = paste0('Jaccard Index: ', round(jaccard_index, 3),
+                            '\nEvent A: ', concept2,
+                            '\nEvent B: ', concept1,
+                            '\nCo-Occurrence: ', cocount))
   
-  vars <- process_output %>%
-    select(concept1, concept2, concept1_ct, concept2_ct) %>% 
-    pivot_longer(cols = c('concept1', 'concept2')) %>% 
-    rename(concept1 = concept1_ct, concept2 = concept2_ct) %>% 
-    pivot_longer(cols = c(concept1, concept2), 
-                 names_to = 'name2', values_to = 'value2') %>% 
-    filter(name == name2) %>% 
-    distinct(value, value2) %>% 
-    arrange(desc(value2)) %>% slice(1:20) %>% pull(value)
-  
-  plot <- process_output %>%
-    filter(concept1 %in% vars & concept2 %in% vars) %>%
-    mutate(jaccard_index = round(jaccard_index, 3)) %>%
-    ggplot(aes(x = as.character(concept1), y = as.character(concept2), 
-               fill = jaccard_index)) + 
-    geom_tile_interactive(aes(tooltip = paste0('concept1 = ',concept1, '; n= ',concept1_ct,'\n','concept2 = ',concept2,'; n= ',concept2_ct,
-                                               '\n', 'co-occurrence = ', cocount,
-                                               '\n','jaccard sim = ',jaccard_index
-                                               #'\n', 'mean = ',var_jaccard_mean,'\n','sd = ', var_jaccard_sd
-    ))) + 
-    scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
-    facet_wrap((facet)) +
-    labs(title = 'Co-Occurrence of Event Counts',
-         x = 'variable1',
-         y = 'variable2') +
+  grph <- ggplot(dat_to_plot, aes(x = fu_bin, y = jaccard_index, fill = fu_bin,
+                                  tooltip = tooltip)) +
+    geom_col_interactive(show.legend = FALSE) +
+    scale_fill_ssdqa() +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) 
+    labs(x = 'Length of F/U',
+         y = 'Jaccard Similarity Index',
+         title = 'Co-Occurrence of Events per Years of F/U')
   
-  p <- girafe(ggobj=plot,
-              width=10,
-              height=10)
+  p <- girafe(ggobj=grph)
+  
+  return(p)
 }
 
 
@@ -239,7 +242,7 @@ prc_ms_anom_nt <- function(process_output){
   comparison_col = 'jaccard_index'
   
   dat_to_plot <- process_output %>%
-    mutate(text=paste("Event Count Pair: ",bin_pair,
+    mutate(text=paste("Years of F/U: ",fu_bin,
                       "\nSite: ",site,
                       "\nJaccard Index: ",round(!!sym(comparison_col),2),
                       "\nMean Index:",round(mean_val,2),
@@ -250,13 +253,13 @@ prc_ms_anom_nt <- function(process_output){
   
   check_n_grp <- dat_to_plot %>% 
     ungroup() %>%
-    distinct(bin_pair)
+    distinct(fu_bin)
   
   
   #mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
   
   plt<-ggplot(dat_to_plot,
-              aes(x=site, y=bin_pair, text=text, color=!!sym(comparison_col)))+
+              aes(x=site, y=fu_bin, text=text, color=!!sym(comparison_col)))+
     geom_point_interactive(aes(size=mean_val,shape=anomaly_yn, tooltip = text))+
     geom_point_interactive(data = dat_to_plot %>% filter(anomaly_yn == 'not outlier'), 
                            aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
@@ -266,10 +269,10 @@ prc_ms_anom_nt <- function(process_output){
     theme_minimal() +
     theme(axis.text.x = element_text(angle=60),
           axis.text.y = element_text(size = 5)) +
-    labs(y = "Event Count Pair",
+    labs(y = "Years of F/U",
          size="",
-         title=paste0('Anomalous Variables per Event Count Pair by Site'),
-         subtitle = 'Dot size is the mean Jaccard index per pair') +
+         title=paste0('Anomalous Event Co-Occurrence per Years of F/U by Site'),
+         subtitle = 'Dot size is the mean Jaccard index per F/U group') +
     guides(color = guide_colorbar(title = 'Jaccard Index'),
            shape = guide_legend(title = 'Anomaly'),
            size = 'none')

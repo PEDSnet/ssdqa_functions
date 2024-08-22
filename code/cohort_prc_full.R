@@ -5,6 +5,7 @@ prc_process <- function(cohort,
                         anomaly_or_exploratory='exploratory',
                         age_groups = NULL,
                         intermediate_tbl = FALSE,
+                        fu_breaks = c(0, 1, 3, 8, 11, 15, 25, 50, 100),
                         p_value = 0.9,
                         time = FALSE,
                         time_span = c('2012-01-01', '2020-01-01'),
@@ -42,28 +43,35 @@ prc_process <- function(cohort,
     if(multi_or_single_site == 'single' & anomaly_or_exploratory == 'anomaly'){
       
       prc_tbl <- compute_prc_ntanom(cohort = cohort_prep,
+                                    site_col = site_col,
                                     grouped_list = grouped_list,
                                     event_csv = prc_event_file,
-                                    target_col = 'bin_col')
+                                    grp_breaks = fu_breaks
+                                    #target_col = 'bin_col'
+                                    ) %>%
+        separate_wider_delim(cols = grp, delim = "_", names = c(site_col, 'fu_bin'))
       
     }else if(multi_or_single_site == 'multi' & anomaly_or_exploratory == 'anomaly'){
       
       prc_tbl_jacc <- compute_prc_ntanom(cohort = cohort_prep,
+                                         site_col = site_col,
                                          grouped_list = grouped_list,
                                          event_csv = prc_event_file,
-                                         target_col = 'bin_col') %>%
-        mutate(bin_pair = paste0(concept2, ' & ', concept1))
+                                         grp_breaks = fu_breaks
+                                         #target_col = 'bin_col'
+                                         ) %>%
+        separate_wider_delim(cols = grp, delim = "_", names = c('site', 'fu_bin'))
       
-      prc_tbl_int <- compute_dist_anomalies(df_tbl = prc_tbl_jacc %>% rename('site' = grp),
-                                            grp_vars = c('bin_pair'), 
+      prc_tbl_int <- compute_dist_anomalies(df_tbl = prc_tbl_jacc,
+                                            grp_vars = c('fu_bin'), 
                                             var_col = 'jaccard_index',
-                                            denom_cols = c('bin_pair')) 
+                                            denom_cols = c('fu_bin')) 
       
       prc_tbl <- detect_outliers(df_tbl = prc_tbl_int,
                                  tail_input = 'both',
                                  p_input = p_value,
                                  column_analysis = 'jaccard_index',
-                                 column_variable = 'bin_pair')
+                                 column_variable = 'fu_bin')
       
     }else{
       
