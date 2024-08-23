@@ -241,43 +241,118 @@ prc_ms_anom_nt <- function(process_output){
   
   comparison_col = 'jaccard_index'
   
-  dat_to_plot <- process_output %>%
-    mutate(text=paste("Years of F/U: ",fu_bin,
-                      "\nSite: ",site,
-                      "\nJaccard Index: ",round(!!sym(comparison_col),2),
-                      "\nMean Index:",round(mean_val,2),
-                      '\nSD: ', round(sd_val,2),
-                      "\nMedian Index: ",round(median_val,2),
-                      "\nMAD: ", round(mad_val,2))) %>%
+  check_n <- process_output %>%
     filter(anomaly_yn != 'no outlier in group')
   
-  check_n_grp <- dat_to_plot %>% 
-    ungroup() %>%
-    distinct(fu_bin)
+  if(nrow(check_n) > 0){
+    
+    dat_to_plot <- process_output %>%
+      mutate(text=paste("Years of F/U: ",fu_bin,
+                        "\nSite: ",site,
+                        "\nJaccard Index: ",round(!!sym(comparison_col),2),
+                        "\nCo-Occurrence: ",cocount,
+                        "\nMean Index:",round(mean_val,2),
+                        '\nSD: ', round(sd_val,2),
+                        "\nMedian Index: ",round(median_val,2),
+                        "\nMAD: ", round(mad_val,2))) %>%
+      filter(anomaly_yn != 'no outlier in group')
   
+    #mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
+    
+    plt<-ggplot(dat_to_plot,
+                aes(x=site, y=fu_bin, text=text, color=!!sym(comparison_col)))+
+      geom_point_interactive(aes(size=mean_val,shape=anomaly_yn, tooltip = text))+
+      geom_point_interactive(data = dat_to_plot %>% filter(anomaly_yn == 'not outlier'), 
+                             aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
+      scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
+      scale_shape_manual(values=c(19,8))+
+      scale_y_discrete(labels = label_wrap_gen()) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle=60),
+            axis.text.y = element_text(size = 5)) +
+      labs(y = "Years of F/U",
+           size="",
+           title=paste0('Anomalous Event Co-Occurrence per Years of F/U by Site'),
+           subtitle = 'Dot size is the mean Jaccard index per F/U group') +
+      guides(color = guide_colorbar(title = 'Jaccard Index'),
+             shape = guide_legend(title = 'Anomaly'),
+             size = 'none')
+    
+    girafe(ggobj = plt)
   
-  #mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
-  
-  plt<-ggplot(dat_to_plot,
-              aes(x=site, y=fu_bin, text=text, color=!!sym(comparison_col)))+
-    geom_point_interactive(aes(size=mean_val,shape=anomaly_yn, tooltip = text))+
-    geom_point_interactive(data = dat_to_plot %>% filter(anomaly_yn == 'not outlier'), 
-                           aes(size=mean_val,shape=anomaly_yn, tooltip = text), shape = 1, color = 'black')+
-    scale_color_ssdqa(palette = 'diverging', discrete = FALSE) +
-    scale_shape_manual(values=c(19,8))+
-    scale_y_discrete(labels = label_wrap_gen()) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle=60),
-          axis.text.y = element_text(size = 5)) +
-    labs(y = "Years of F/U",
-         size="",
-         title=paste0('Anomalous Event Co-Occurrence per Years of F/U by Site'),
-         subtitle = 'Dot size is the mean Jaccard index per F/U group') +
-    guides(color = guide_colorbar(title = 'Jaccard Index'),
-           shape = guide_legend(title = 'Anomaly'),
-           size = 'none')
-  
-  girafe(ggobj = plt)
+  }else{
+    
+    dat_to_plot <- process_output %>%
+      mutate(text=paste("Years of F/U: ",fu_bin,
+                        "\nSite: ",site,
+                        "\nJaccard Index: ",round(!!sym(comparison_col),2),
+                        "\nCo-Occurrence: ",cocount,
+                        "\nMean Index:",round(mean_val,2),
+                        '\nSD: ', round(sd_val,2),
+                        "\nMedian Index: ",round(median_val,2),
+                        "\nMAD: ", round(mad_val,2)))
+    
+    plt <- ggplot(dat_to_plot, aes(x = site, y = fu_bin, fill = jaccard_index,
+                                   tooltip = text)) +
+      geom_tile_interactive() +
+      theme_minimal() +
+      scale_fill_ssdqa(discrete = FALSE, palette = 'diverging')
+    
+    #' potential site anom identifiers:
+    #' - average distance from mean/median across groups (average vs standard deviation)
+    #'     - here would need to find distance from mean for all points, sqaure the distances
+    #'       and average them, then take the square root of that average
+    #' - try trinetx scoring method (will have to see how it performs for the tiny groups)
+    #' - make a table of these or make a dot plot? dot plot would be mean at 0, outlying sites could
+    #'   be 1/2 SDs away from mean?
+    
+    # Test Site Score using SD Computation
+    test_site_score <- process_output %>%
+      mutate(dist_mean = (!!sym(comparison_col) - mean_val)^2) %>%
+      group_by(site) %>%
+      summarise(n_grp = n(),
+                dist_mean_sum = sum(dist_mean),
+                overall_sd = sqrt(dist_mean_sum / n_grp)) %>%
+      mutate(tooltip = paste0('Site: ', site,
+                              '\nStandard Deviation: ', round(overall_sd, 3)))
+    
+    ylim_max <- test_site_score %>% filter(overall_sd == max(overall_sd)) %>% pull(overall_sd) + 1
+    ylim_min <- test_site_score %>% filter(overall_sd == min(overall_sd)) %>% pull(overall_sd) - 1
+    
+    g2 <- ggplot(test_site_score, aes(y = overall_sd, x = site, color = site,
+                                      tooltip = tooltip)) +
+      geom_point_interactive(show.legend = FALSE) +
+      theme_minimal() +
+      scale_color_ssdqa() +
+      geom_hline(yintercept = 0, linetype = 'solid') +
+      geom_hline(yintercept = 1, linetype = 'dotted', color = 'gray', linewidth = 1) +
+      geom_hline(yintercept = -1, linetype = 'dotted', color = 'gray', linewidth = 1) +
+      ylim(ylim_min, ylim_max) +
+      labs(title = 'Average Standard Deviation per Site')
+    
+    
+    # Test Site Score using TriNetX anomaly detection
+    
+    test_site_score2 <- trinetx_anom_detect(dat = process_output,
+                                            var_col = comparison_col,
+                                            grp_vars = c('fu_bin')) %>%
+      mutate(tooltip = paste0('Site: ', site,
+                              '\nSite Anomaly Score: ', round(site_score, 3)))
+    
+    g3 <- ggplot(test_site_score2, aes(y = site_score, x = site, color = site,
+                                       tooltip = tooltip)) +
+      geom_point_interactive(show.legend = FALSE) +
+      theme_minimal() +
+      scale_color_ssdqa() +
+      labs(title = 'Site Outlier Score (TriNetX Method)')
+    
+    opt <- list(girafe(ggobj = plt),
+                girafe(ggobj = g2),
+                girafe(ggobj = g3))
+    
+    return(opt)
+    
+  }
   
   
 }

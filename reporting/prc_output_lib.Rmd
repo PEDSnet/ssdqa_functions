@@ -104,6 +104,25 @@ ms_anom_nt
 
 ```
 
+### Small N Anomaly Test
+
+Sometimes a user might provide data that doesn't pass the rules established to move on to a hotspots outlier detection computation. We still want them to have a visualization, so these are some options. The data is the same as above, but only groups that did not have any outliers are included to simulate a small sample.
+
+The heatmap shows a distribution of the raw Jaccard index values for each site and F/U period pair. Then there are two options for dot plots (can also be converted to tables) that demonstrate which sites differ from the rest. 
+
+One uses the same anomaly detection method used for the TriNetX work (based on IQR) and plots the site outlier scores. The other uses a standard deviation computation to find, on average, how much the site differs from the mean. 
+
+```{r ms_anom_nt2}
+
+ms_anom_nt <- prc_ms_anom_nt(process_output = get_results('prc_ms_anom_nt') %>%
+                               filter(anomaly_yn == 'no outlier in group'))
+
+ms_anom_nt[[1]]
+ms_anom_nt[[2]]
+ms_anom_nt[[3]]
+
+```
+
 ## Single Site, Exploratory, Across Time
 
 This line graph represents the proportion of patients that fall into each event category across the user-specified time period.
