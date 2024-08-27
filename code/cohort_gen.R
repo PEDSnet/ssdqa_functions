@@ -177,7 +177,7 @@ prepare_cohort <- function(cohort_tbl,
   
   stnd <- 
     ct %>% 
-    mutate(fu = round((end_date - start_date + 1)/365.25,3)) #%>% 
+    mutate(fu = as.numeric(round((end_date - start_date + 1)/365.25,3))) #%>% 
     #select(site, person_id, start_date, end_date, fu) #%>% 
     #add_site()
   
