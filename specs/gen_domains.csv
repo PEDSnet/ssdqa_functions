@@ -8,7 +8,7 @@ all_anthro,measurement_anthro,measurement_source_concept_id,measurement_concept_
 all_vitals,measurement_vitals,measurement_source_concept_id,measurement_concept_id,measurement_date,
 outpatient_visits,visit_occurrence,visit_source_concept_id,visit_concept_id,visit_start_date,"visit_concept_id == 9202"
 inpatient_visits,visit_occurrence,visit_source_concept_id,visit_concept_id,visit_start_date,"visit_concept_id == 9201"
-emergency_visits,visit_occurrence,visit_source_concept_id,visit_concept_id,visit_start_date,"visit_concept_id == 9202"
+emergency_visits,visit_occurrence,visit_source_concept_id,visit_concept_id,visit_start_date,"visit_concept_id == 9203"
 other_visits,visit_occurrence,visit_source_concept_id,visit_concept_id,visit_start_date,"!(visit_concept_id %in% c(9201, 9203, 9202))"
 prescription_medications,drug_exposure,drug_source_concept_id,drug_concept_id,drug_exposure_start_date,"drug_type_concept_id == 38000177"
 procedures,procedure_occurrence,procedure_source_concept_id,procedure_concept_id,procedure_date,

@@ -18,7 +18,7 @@
 
 compare_cohort_def <- function(base_cohort,
                                alt_cohorts,
-                               pt_level_tbl = FALSE,
+                               #pt_level_tbl = FALSE,
                                person_tbl = cdm_tbl('person'),
                                visit_tbl = cdm_tbl('visit_occurrence'),
                                provider_tbl = cdm_tbl('provider'),
@@ -70,9 +70,6 @@ compare_cohort_def <- function(base_cohort,
   
   ## Combine cohorts with labels, prep for analysis
   cohort_combo <- dplyr::union(bc_flag, def_flag_final)
-  
-  cohort_totals <- cohort_combo %>% group_by(site, cohort_id) %>%
-    summarise(cohort_total_pt = n())
   
   cohort_prep <- prepare_cohort(cohort_combo) %>% copy_to_new(df = .)
   
@@ -130,32 +127,9 @@ compare_cohort_def <- function(base_cohort,
                             .f = left_join) %>%
     mutate(across(where(is.numeric), ~replace_na(.,0)))
   
-  ## Output patient level data if requested
-  if(pt_level_tbl){
-    ssc_pt_level_tbl <<- fact_list_final
-  }
+  ## Output patient level data, will be summarized later
+  return(fact_list_final)
   
-  
-  ## Summarise patient level data into medians (ppy vars) and proportions (demographic & outcome vars)
-  find_medians <- fact_list_final %>% select(site, cohort_id, where(is.numeric)) %>% 
-    select(-person_id) %>% group_by(site, cohort_id) %>% 
-    summarise(across(where(is.numeric), median)) %>% rename_with(~str_c("median_", .), .cols = is.numeric)
-  
-  find_props <- fact_list_final %>% select(site, cohort_id, where(is.logical)) %>%
-    mutate(across(where(is.logical), ~as.numeric(.))) %>% 
-    mutate(across(where(is.numeric), ~replace_na(.,0))) %>%
-    group_by(site, cohort_id) %>%
-    summarise(across(where(is.numeric), ~sum(.))) %>%
-    left_join(cohort_totals) %>%
-    group_by(site, cohort_id) %>%
-    summarise(across(where(is.numeric), ~(./cohort_total_pt))) %>%
-    rename_with(~str_c("prop_", .), .cols = is.numeric) %>%
-    select(-prop_cohort_total_pt) %>%
-    left_join(cohort_totals)
-  
-  summ_tbl <- find_medians %>% left_join(find_props) %>% distinct()
-  
-  return(summ_tbl)
 }
 
 
@@ -294,7 +268,8 @@ compute_domains_ssc <- function(cohort,
              domain,
              fact_ppy) %>%
       pivot_wider(names_from=domain,
-                  values_from=fact_ppy) %>% 
+                  values_from=fact_ppy,
+                  names_glue = "{domain}_ppy") %>% 
       #right_join(cohort) %>%
       #relocate(person_id) %>%
       compute_new(indexes=list('person_id'))
@@ -346,6 +321,16 @@ find_specialty_visits <- function(cohort,
 }
 
 
+#' Find presence of outcomes in cohort definitions
+#'
+#' @param cohort 
+#' @param domain_tbl 
+#' @param outcome_concepts 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 find_outcomes_ssc <- function(cohort,
                               domain_tbl,
                               outcome_concepts){
@@ -382,82 +367,126 @@ find_outcomes_ssc <- function(cohort,
   
 }
 
+
+
+
 #' Compute definition level summary
 #'
-#' @param flag_tbl table with patient-level definition based flags output 
-#'                 by `format_cohort_output`
-#' @param pt_summ_tbl table with patient-level fact based flags output 
-#'                    by `compute_patient_summary`
-#' @param cohort_string the name of the cohort within the study, 
-#'                      defaults to `config('cohort')`
-#' @param study_string the name of the study, defaults to `config('cohort')`
-#'
-#' @return one dataframe with summarized facts based on site, definition, and attribute
-#'         
-#'         fu, visits_yr, and age_cohort_entry are summarized by median;
-#'         all other attributes are summed
-#'         
-#'         `prop_of_inc` where definition is `inclusion_def` will always equal 0
+#' @param cohort_def_output 
+#' 
+#' @return
+#' 
 #' 
 
-compute_definition_summary <- function(flag_tbl,
-                                       pt_summ_tbl,
-                                       cohort_string = config('cohort'),
-                                       study_string = config('cohort')){
-  # Pivot tables
-  flag_new <- flag_tbl %>%
-    pivot_longer(cols = c(inclusion_def, def_1, def_2),
-                 names_to = 'definition',
-                 values_to = 'flag') %>%
-    filter(flag != 0)
+compute_cohort_summaries <- function(cohort_def_output){
   
-  total_cohort <- flag_new %>%
-    group_by(site, definition) %>%
-    summarise(def_pts = n())
+  ## Get patient totals
+  cohort_totals <- cohort_def_output %>% group_by(site, cohort_id) %>%
+    summarise(cohort_total_pt = n())
   
-  pt_summ_new <- pt_summ_tbl %>%
-    pivot_longer(cols = c(fu:visits_yr),
-                 names_to = 'attribute',
-                 values_to = 'value') %>%
-    mutate(value = as.numeric(value))
+  ## Summarise patient level data into medians (ppy vars) and proportions (demographic & outcome vars)
+  find_medians <- cohort_def_output %>% select(site, cohort_id, where(is.numeric)) %>% 
+    select(-person_id) %>% group_by(site, cohort_id) %>% 
+    summarise(across(where(is.numeric), median)) %>% rename_with(~str_c("median_", .), .cols = is.numeric)
   
-  # Find inclusion criteria counts
-  base_cohort_cts <- flag_new %>%
-    filter(definition == 'inclusion_def') %>%
-    left_join(pt_summ_new, multiple = 'all') %>%
-    left_join(total_cohort) %>%
-    group_by(site, definition, attribute) %>%
-    reframe(base_ct = case_when(attribute != 'fu' & attribute != 'visits_yr' & 
-                                   attribute != 'age_cohort_entry' ~ sum(value, na.rm = TRUE),
-                                attribute == 'fu' | attribute == 'visits_yr' |
-                                  attribute == 'age_cohort_entry' ~ median(value, na.rm = TRUE)),
-            base_value = case_when(attribute != 'fu' & attribute != 'visits_yr' & 
-                                   attribute != 'age_cohort_entry' ~ (sum(value, na.rm = TRUE)/def_pts),
-                                   TRUE ~ base_ct)) %>%
-    distinct() %>%
-    select(-definition)
+  find_props <- cohort_def_output %>% select(site, cohort_id, where(is.logical)) %>%
+    mutate(across(where(is.logical), ~as.numeric(.))) %>% 
+    mutate(across(where(is.numeric), ~replace_na(.,0))) %>%
+    group_by(site, cohort_id) %>%
+    summarise(across(where(is.numeric), ~sum(.))) %>%
+    left_join(cohort_totals) %>%
+    group_by(site, cohort_id) %>%
+    summarise(across(where(is.numeric), ~(./cohort_total_pt))) %>%
+    rename_with(~str_c("prop_", .), .cols = is.numeric) %>%
+    select(-prop_cohort_total_pt) %>%
+    left_join(cohort_totals)
   
-  # Compute full summary
-  full_summ <- flag_new %>%
-    left_join(pt_summ_new, multiple = 'all') %>%
-    left_join(total_cohort, multiple = 'all') %>%
-    group_by(site, definition, attribute, def_pts) %>%
-    reframe(def_ct = case_when(attribute != 'fu' & attribute != 'visits_yr' & 
-                                       attribute != 'age_cohort_entry' ~ sum(value, na.rm = TRUE),
-                                 attribute == 'fu' | attribute == 'visits_yr' |
-                                   attribute == 'age_cohort_entry' ~ median(value, na.rm = TRUE)),
-            def_value = case_when(attribute != 'fu' & attribute != 'visits_yr' & 
-                                   attribute != 'age_cohort_entry' ~ sum(value, na.rm = TRUE)/def_pts,
-                                TRUE ~ def_ct)) %>%
-    distinct() %>%
-    left_join(base_cohort_cts, multiple = 'all') %>%
-    mutate(pct_change = case_when(attribute != 'fu' & attribute != 'visits_yr' & 
-                                     attribute != 'age_cohort_entry' ~ round((def_value - base_value) / base_value, 2),
-                                   TRUE ~ round((def_ct - base_ct) / base_ct, 2)),
-           study = study_string,
-           cohort = cohort_string) 
+  summ_tbl <- find_medians %>% left_join(find_props) %>% distinct()
   
-  return(full_summ)
+  ## Find overlap between cohorts
+  cht_overlap <- cohort_def_output %>%
+    select(site, person_id, cohort_id) %>%
+    pivot_wider(names_from = cohort_id,
+                values_from = cohort_id) %>%
+    unite('cohort_group', base_cohort:last_col(), na.rm = TRUE,
+          sep = "&") %>%
+    group_by(site, cohort_group) %>%
+    summarise(group_ct = n()) %>%
+    ungroup()
+  
+  otpt <- list('summary_values' = summ_tbl,
+               'cohort_overlap' = cht_overlap)
+  
+  return(otpt)
   
 }
 
+
+
+
+compare_cohort_smd <- function(cohort_def_output){
+  
+  prep_tbl <- cohort_def_output %>%
+    select(-c(start_date, end_date)) %>%
+    mutate(across(where(is.logical), ~replace_na(.,FALSE)))
+  
+  var_vec <- names(prep_tbl)[!names(prep_tbl) %in% c('site', 'person_id', 'cohort_id')]
+  
+  alt_cht_list <- prep_tbl %>% filter(grepl('alt', cohort_id)) %>%
+    distinct(cohort_id) %>%
+    pull()
+  
+  smd_list <- list()
+  
+  for(i in alt_cht_list){
+  
+    smd_tbl <- prep_tbl %>%
+      filter(cohort_id %in% c('base_cohort', i)) %>%
+      summarize_at(
+        .vars = vars(var_vec),
+        .funs = list(smd = ~ smd(., g = cohort_id)$estimate)
+      )
+    
+    smd_list[[i]] <- smd_tbl
+    
+  }
+  
+  smd_reduce <- bind_rows(smd_list, .id = 'cohort_id') %>%
+    pivot_longer(cols = !cohort_id,
+                 names_to = 'cohort_characteristic',
+                 values_to = 'smd_vs_baseline') %>%
+    cross_join(distinct(cohort_def_output, site)) %>%
+    mutate(cohort_characteristic = str_remove(cohort_characteristic, '_smd'))
+  
+}
+
+
+compare_cohort_mse <- function(cohort_def_output){
+  
+  summ_cht <- compute_cohort_summaries(cohort_def_output = cohort_def_output)
+  
+  gold_std <- summ_cht[[1]] %>%
+    filter(cohort_id == 'base_cohort') %>%
+    select(-c(cohort_id, cohort_total_pt)) %>%
+    pivot_longer(cols = !site,
+                 names_to = 'cohort_char',
+                 values_to = 'gold_standard')
+  
+  alt_comp <- summ_cht[[1]] %>%
+    filter(cohort_id != 'base_cohort') %>%
+    select(-c(cohort_total_pt)) %>%
+    pivot_longer(cols = !c(site, cohort_id),
+                 names_to = 'cohort_char') %>%
+    pivot_wider(names_from = cohort_id,
+                values_from = value)
+  
+  comp_df <- gold_std %>%
+    left_join(alt_comp) %>%
+    mutate(across(matches("alt"), ~ (. - gold_standard)^2, .names = "{col}_dif")) %>%
+    pivot_longer(cols = matches('_dif'),
+                 names_to = 'cohort_id') %>%
+    mutate(cohort_id = str_remove(cohort_id, '_dif')) %>%
+    group_by(cohort_id, cohort_char) %>% mutate(n_grp = n()) %>%
+    group_by(site, cohort_id, cohort_char) %>%
+    summarise(mse = value / n_grp)
+}
