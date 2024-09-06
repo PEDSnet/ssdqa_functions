@@ -1,0 +1,97 @@
+---
+title: "Sensitivity to Selection Criteria Output Library"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, 
+  output_file = paste0('ssc_output_lib_', format(Sys.time(), '%Y%m%d'), '.html') )}) 
+---
+
+```{r setup, include=FALSE}
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- '..'
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION=1)
+tryCatch(source('../site/run.R'),
+         error = function (e) message(e)) # May not be able to make db connection
+
+# Set to "local" to read data from ../results, or another value to read from db
+data_source <- if_else(config('execution_mode') == 'distribution', 'local', 'not_local')
+
+require(tidyr)
+require(knitr)
+require(kableExtra)
+require(stringr)
+require(tibble)
+require(ggplot2)
+require(qicharts2)
+require(UpSetR)
+
+get_results <- function(tbl_name) {
+  if (data_source == 'local') {
+    rslt <- read_csv(paste0('../results/', tbl_name, '.csv'))
+  }
+  else {
+    rslt <- results_tbl(tbl_name) %>% collect()
+  }
+rslt
+}
+
+prettify_kable <- function(data) {
+  data %>% kable(digits = 4, format.args = list(big.mark = ',')) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(1, bold = T, border_right = T)
+}
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+```
+
+## Single Site, Exploratory, No Time
+
+```{r ss_exp_nt, fig.width=9}
+
+ss_exp <- ssc_ss_exp_nt(summary_output = get_results('ssc_ss_exp_nt_summary'),
+              cohort_overlap = get_results('ssc_ss_exp_nt_overlap'),
+              alt_cohort_filter = c('alt_cohort_three_tnfi','alt_cohort_three_visit_2015'))
+
+ss_exp[[1]]
+
+ss_exp[[2]]
+
+```
+
+## Multi Site, Exploratory, No Time
+
+```{r ms_exp_nt, fig.width=9}
+
+ms_exp <- ssc_ms_exp_nt(process_output = get_results('ssc_ms_exp_nt_summary'))
+
+ms_exp[[1]]
+
+ms_exp[[2]]
+
+```
+
+## Single Site, Anomaly, No Time
+
+```{r ss_anom_nt, fig.height=7}
+
+ssc_ss_anom_nt(process_output = get_results('ssc_ss_anom_nt'))
+
+```
+
+## Multi Site, Anomaly, No Time
+
+```{r ms_anom_nt}
+
+grph <- ssc_ms_anom_nt(process_output = get_results('ssc_ms_anom_nt'))
+
+grph
+
+#ggsave(filename = paste0(base_dir, '/results/ssc_ms_anom_nt_pcori.png'), plot = grph)
+
+```

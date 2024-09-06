@@ -18,11 +18,11 @@
 
 compare_cohort_def <- function(base_cohort,
                                alt_cohorts,
-                               #pt_level_tbl = FALSE,
+                               multi_or_single_site,
                                person_tbl = cdm_tbl('person'),
                                visit_tbl = cdm_tbl('visit_occurrence'),
                                provider_tbl = cdm_tbl('provider'),
-                               grouped_list,
+                               #grouped_list,
                                black_codes = c('8516'),
                                white_codes = c('8527'),
                                asian_codes = c('8515'),
@@ -36,8 +36,7 @@ compare_cohort_def <- function(base_cohort,
                                domain_defs = read_codeset('gen_domains', 'ccccc'),
                                domain_select = c('inpatient_visits', 'outpatient_visits', 'emergency_visits',
                                                  'other_visits', 'all_px', 'prescription_medications',
-                                                 'all_conds'),
-                               cohort_string = config('cohort')){
+                                                 'all_conds')){
   
   ## Filter to necessary domains
   domain_defs <- domain_defs %>% filter(label %in% domain_select)
@@ -49,9 +48,12 @@ compare_cohort_def <- function(base_cohort,
   
   def_flag_list <- list()
   
-  num_seq <- seq(1:length(alt_cohorts))
+  name_test <- names(alt_cohorts)
   
-  names(alt_cohorts) <- num_seq
+  if(is.null(name_test)){
+    num_seq <- seq(1:length(alt_cohorts))
+    names(alt_cohorts) <- num_seq
+  }
     
   for(i in 1:length(alt_cohorts)){
     
@@ -71,14 +73,22 @@ compare_cohort_def <- function(base_cohort,
   ## Combine cohorts with labels, prep for analysis
   cohort_combo <- dplyr::union(bc_flag, def_flag_final)
   
-  cohort_prep <- prepare_cohort(cohort_combo) %>% copy_to_new(df = .)
+  # Add site check
+  site_filter <- check_site_type(cohort = cohort_combo,
+                                 multi_or_single_site = multi_or_single_site)
+  cohort_filter <- site_filter$cohort
+  grouped_list <- site_filter$grouped_list
+  site_col <- site_filter$grouped_list
+  
+  cohort_prep <- prepare_cohort(cohort_filter) %>% copy_to_new(df = .)
   
   
   fact_list <- list()
   
   ## Domain summaries
   domain_summary <- compute_domains_ssc(cohort = cohort_prep,
-                                        grouped_list = c('person_id','start_date','end_date',
+                                        site_col = site_col,
+                                        grouped_list = c(site_col, 'person_id','start_date','end_date',
                                                          'fu', 'cohort_id'),
                                         domain_tbl = domain_defs)
   
@@ -86,6 +96,7 @@ compare_cohort_def <- function(base_cohort,
   
   ## Demographic summaries
   demo_summary <- compute_demographic_summary(cohort_tbl = cohort_prep,
+                                              site_col = site_col,
                                               person_tbl = person_tbl,
                                               visit_tbl = visit_tbl,
                                               black_codes = black_codes,
@@ -103,29 +114,32 @@ compare_cohort_def <- function(base_cohort,
   if(!is.null(specialty_concepts)){
     
     spec_visits <- find_specialty_visits(cohort = cohort_prep,
+                                         site_col = site_col,
                                          specialty_concepts = specialty_concepts,
-                                         grouped_list = c('person_id','start_date','end_date',
+                                         grouped_list = c(site_col, 'person_id','start_date','end_date',
                                                           'fu', 'cohort_id'),
                                          provider_tbl = provider_tbl,
                                          visit_tbl = visit_tbl)
     
-    fact_list[['spec']] <- spec_visits %>% collect() %>% select(-visit_occurrence_id) %>% distinct()
+    fact_list[['spec']] <- spec_visits %>% collect() %>% distinct()
   }
   
   ## Outcome summaries
   if(!is.null(outcome_concepts)){
     
     outcome_cts <- find_outcomes_ssc(cohort = cohort_prep,
+                                     site_col = site_col,
                                      domain_tbl = domain_defs,
                                      outcome_concepts = outcome_concepts)
     
-    fact_list[['outcome']] <- outcome_cts
+    fact_list[['outcome']] <- outcome_cts 
     
   }
   
   fact_list_final <- reduce(.x = fact_list,
                             .f = left_join) %>%
-    mutate(across(where(is.numeric), ~replace_na(.,0)))
+    mutate(across(where(is.numeric), ~replace_na(.,0))) %>%
+    mutate(across(where(is.logical), ~replace_na(.,FALSE)))
   
   ## Output patient level data, will be summarized later
   return(fact_list_final)
@@ -163,6 +177,7 @@ compare_cohort_def <- function(base_cohort,
 #'         
 
 compute_demographic_summary <- function(cohort_tbl,
+                                        site_col,
                                         person_tbl = cdm_tbl('person'),
                                         visit_tbl = cdm_tbl('visit_occurrence'),
                                         cohort_string = config('cohort'),
@@ -194,13 +209,13 @@ compute_demographic_summary <- function(cohort_tbl,
                                 TRUE ~ FALSE),
            female = case_when(gender_concept_id %in% female_codes ~ TRUE,
                               TRUE ~ FALSE)) %>%
-    select(site, person_id, start_date, end_date, fu, cohort_id, age_cohort_entry:female) %>%
+    select(site_col, person_id, start_date, end_date, fu, cohort_id, age_cohort_entry:female) %>%
     collect()
   
   age_first_visit <- person_tbl %>%
     inner_join(cohort_tbl) %>%
     inner_join(select(visit_tbl, site, person_id, visit_start_date)) %>%
-    group_by(site, person_id, cohort_id, birth_date) %>%
+    group_by(!!sym(site_col), person_id, cohort_id, birth_date) %>%
     summarise(min_visit = min(visit_start_date)) %>%
     mutate(age_first_visit = round((min_visit - birth_date) / 365.25, 2)) %>%
     select(-c(min_visit, birth_date)) %>%
@@ -225,6 +240,7 @@ compute_demographic_summary <- function(cohort_tbl,
 #'
 #' @examples
 compute_domains_ssc <- function(cohort,
+                                site_col,
                                 grouped_list,
                                 domain_tbl) {
   
@@ -279,7 +295,7 @@ compute_domains_ssc <- function(cohort,
   
   domain_results_left_join <- 
     reduce(.x=domain_results,
-           .f=left_join) %>% right_join(cohort)
+           .f=left_join) %>% right_join(select(cohort, site_col, person_id, cohort_id))
 }
 
 
@@ -296,6 +312,7 @@ compute_domains_ssc <- function(cohort,
 #'
 #' @examples
 find_specialty_visits <- function(cohort,
+                                  site_col,
                                   specialty_concepts,
                                   grouped_list,
                                   provider_tbl = cdm_tbl('provider'),
@@ -305,15 +322,17 @@ find_specialty_visits <- function(cohort,
     inner_join(cohort) %>%
     inner_join(provider_tbl, by = c('site', 'provider_id')) %>%
     inner_join(specialty_concepts, by = c('specialty_concept_id' = 'concept_id')) %>%
-    select(site, person_id, start_date, end_date, fu, cohort_id, visit_occurrence_id)
+    select(all_of(grouped_list), cohort_id, visit_occurrence_id)
   
-  domain_tbl <- tibble('domain' = 'specialty_visits',
-                       'date_field' = 'visit_start_date',
-                       'default_tbl' = 'visit_occurrence',
-                       'field_name' = NA,
+  domain_tbl <- tibble('label' = 'specialty_visits',
+                       'domain_tbl' = 'visit_occurrence',
+                       'source_col' = 'visit_source_concept_id',
+                       'concept_col' = 'visit_concept_id',
+                       'date_col' = 'visit_start_date',
                        'filter_logic' = NA)
   
   spec_visit_ppy <- compute_domains_ssc(cohort = spec_visits,
+                                        site_col = site_col,
                                         grouped_list = grouped_list,
                                         domain_tbl = domain_tbl)
   
@@ -332,6 +351,7 @@ find_specialty_visits <- function(cohort,
 #'
 #' @examples
 find_outcomes_ssc <- function(cohort,
+                              site_col,
                               domain_tbl,
                               outcome_concepts){
   
@@ -347,9 +367,10 @@ find_outcomes_ssc <- function(cohort,
     colnm <- domain_info$concept_col
     
     outcome_present <- cdm_tbl(domain_info$domain_tbl) %>%
+      inner_join(cohort) %>% 
       rename('join_col' = colnm) %>%
       inner_join(outcome_concepts, by = c('join_col' = 'concept_id')) %>%
-      distinct(site, person_id, variable) %>% collect() %>%
+      distinct(!!sym(site_col), person_id, variable) %>% collect() %>%
       mutate(has_outcome = TRUE)
     
     
@@ -384,30 +405,39 @@ compute_cohort_summaries <- function(cohort_def_output){
   cohort_totals <- cohort_def_output %>% group_by(site, cohort_id) %>%
     summarise(cohort_total_pt = n())
   
-  ## Summarise patient level data into medians (ppy vars) and proportions (demographic & outcome vars)
-  find_medians <- cohort_def_output %>% select(site, cohort_id, where(is.numeric)) %>% 
-    select(-person_id) %>% group_by(site, cohort_id) %>% 
-    summarise(across(where(is.numeric), median)) %>% rename_with(~str_c("median_", .), .cols = is.numeric)
+  ## Flip table
+  cohort_flip <- cohort_def_output %>%
+    pivot_longer(cols = !c(site, person_id, start_date, end_date, cohort_id),
+                 names_to = 'cohort_characteristic',
+                 values_to = 'fact_value') %>%
+    apply_cohort_labels()
   
-  find_props <- cohort_def_output %>% select(site, cohort_id, where(is.logical)) %>%
-    mutate(across(where(is.logical), ~as.numeric(.))) %>% 
-    mutate(across(where(is.numeric), ~replace_na(.,0))) %>%
-    group_by(site, cohort_id) %>%
-    summarise(across(where(is.numeric), ~sum(.))) %>%
-    left_join(cohort_totals) %>%
-    group_by(site, cohort_id) %>%
-    summarise(across(where(is.numeric), ~(./cohort_total_pt))) %>%
-    rename_with(~str_c("prop_", .), .cols = is.numeric) %>%
-    select(-prop_cohort_total_pt) %>%
+  ## Summarise patient level data into medians (ppy vars) and proportions (demographic & outcome vars)
+  find_medians <- cohort_flip %>% 
+    filter(fact_group %in% c('Cohort Details', 'Utilization', 'Clinical Facts')) %>%
+    select(-person_id) %>% group_by(site, cohort_id, cohort_characteristic, fact_group) %>% 
+    summarise(fact_summary = median(fact_value)) %>% 
+    mutate(cohort_characteristic = paste0('median_', cohort_characteristic)) %>%
     left_join(cohort_totals)
   
-  summ_tbl <- find_medians %>% left_join(find_props) %>% distinct()
+  find_props <- cohort_flip %>% 
+    filter(fact_group %in% c('Demographics', 'Outcomes')) %>%
+    group_by(site, cohort_id, cohort_characteristic, fact_group) %>%
+    summarise(fact_summary = sum(fact_value)) %>%
+    left_join(cohort_totals) %>%
+    group_by(site, cohort_id, cohort_characteristic, fact_group) %>%
+    summarise(fact_summary = (fact_summary/cohort_total_pt)) %>%
+    mutate(cohort_characteristic = paste0('prop_', cohort_characteristic)) %>%
+    left_join(cohort_totals)
+  
+  summ_tbl <- find_medians %>% union(find_props) %>% distinct()
   
   ## Find overlap between cohorts
   cht_overlap <- cohort_def_output %>%
     select(site, person_id, cohort_id) %>%
     pivot_wider(names_from = cohort_id,
                 values_from = cohort_id) %>%
+    relocate(base_cohort, .after = person_id) %>%
     unite('cohort_group', base_cohort:last_col(), na.rm = TRUE,
           sep = "&") %>%
     group_by(site, cohort_group) %>%
@@ -456,7 +486,8 @@ compare_cohort_smd <- function(cohort_def_output){
                  names_to = 'cohort_characteristic',
                  values_to = 'smd_vs_baseline') %>%
     cross_join(distinct(cohort_def_output, site)) %>%
-    mutate(cohort_characteristic = str_remove(cohort_characteristic, '_smd'))
+    mutate(cohort_characteristic = str_remove(cohort_characteristic, '_smd')) %>%
+    apply_cohort_labels()
   
 }
 
@@ -466,19 +497,19 @@ compare_cohort_mse <- function(cohort_def_output){
   summ_cht <- compute_cohort_summaries(cohort_def_output = cohort_def_output)
   
   gold_std <- summ_cht[[1]] %>%
+    ungroup() %>%
     filter(cohort_id == 'base_cohort') %>%
     select(-c(cohort_id, cohort_total_pt)) %>%
-    pivot_longer(cols = !site,
-                 names_to = 'cohort_char',
-                 values_to = 'gold_standard')
+    rename('gold_standard' = fact_summary)
   
   alt_comp <- summ_cht[[1]] %>%
+    ungroup() %>%
     filter(cohort_id != 'base_cohort') %>%
     select(-c(cohort_total_pt)) %>%
-    pivot_longer(cols = !c(site, cohort_id),
-                 names_to = 'cohort_char') %>%
+    # pivot_longer(cols = !c(site, cohort_id),
+    #              names_to = 'cohort_characteristic') %>%
     pivot_wider(names_from = cohort_id,
-                values_from = value)
+                values_from = fact_summary)
   
   comp_df <- gold_std %>%
     left_join(alt_comp) %>%
@@ -486,7 +517,21 @@ compare_cohort_mse <- function(cohort_def_output){
     pivot_longer(cols = matches('_dif'),
                  names_to = 'cohort_id') %>%
     mutate(cohort_id = str_remove(cohort_id, '_dif')) %>%
-    group_by(cohort_id, cohort_char) %>% mutate(n_grp = n()) %>%
-    group_by(site, cohort_id, cohort_char) %>%
+    group_by(cohort_id, cohort_characteristic, fact_group) %>% mutate(n_grp = n()) %>%
+    group_by(site, cohort_id, cohort_characteristic, fact_group) %>%
     summarise(mse = value / n_grp)
+}
+
+
+
+apply_cohort_labels <- function(df){
+  
+  df %>%
+    mutate(fact_group = case_when(grepl('fu|age', cohort_characteristic) ~ 'Cohort Details',
+                                  grepl('visit', cohort_characteristic) ~ 'Utilization',
+                                  cohort_characteristic %in% c('white', 'unknown_race', 'mixed_race', 'hispanic', 'female',
+                                                               'black', 'asian', 'other_race') ~ 'Demographics',
+                                  grepl('ppy', cohort_characteristic) ~ 'Clinical Facts',
+                                  TRUE ~ 'Outcomes'))
+  
 }
