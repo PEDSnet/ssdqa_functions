@@ -115,7 +115,7 @@ One uses the same anomaly detection method used for the TriNetX work (based on I
 ```{r ms_anom_nt2}
 
 ms_anom_nt <- prc_ms_anom_nt(process_output = get_results('prc_ms_anom_nt') %>%
-                               filter(anomaly_yn == 'no outlier in group'))
+                               mutate(anomaly_yn = 'no outlier in group'))
 
 ms_anom_nt[[1]]
 ms_anom_nt[[2]]
