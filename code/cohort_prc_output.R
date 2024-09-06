@@ -217,7 +217,8 @@ prc_ss_anom_nt <- function(process_output,
     mutate(tooltip = paste0('Jaccard Index: ', round(jaccard_index, 3),
                             '\nEvent A: ', concept2,
                             '\nEvent B: ', concept1,
-                            '\nCo-Occurrence: ', cocount))
+                            '\nPatients w/ Both: ', cocount,
+                            '\nPatients w/ Either: ', concept_count_union))
   
   grph <- ggplot(dat_to_plot, aes(x = fu_bin, y = jaccard_index, fill = fu_bin,
                                   tooltip = tooltip)) +
@@ -250,11 +251,13 @@ prc_ms_anom_nt <- function(process_output){
       mutate(text=paste("Years of F/U: ",fu_bin,
                         "\nSite: ",site,
                         "\nJaccard Index: ",round(!!sym(comparison_col),2),
-                        "\nCo-Occurrence: ",cocount,
+                        "\nPatients w/ Both: ",cocount,
+                        "\nPatients w/ Either: ",concept_count_union,
                         "\nMean Index:",round(mean_val,2),
-                        '\nSD: ', round(sd_val,2),
-                        "\nMedian Index: ",round(median_val,2),
-                        "\nMAD: ", round(mad_val,2))) %>%
+                        #'\nSD: ', round(sd_val,2),
+                        "\nMedian Index: ",round(median_val,2)
+                        #"\nMAD: ", round(mad_val,2)
+             )) %>%
       filter(anomaly_yn != 'no outlier in group')
   
     #mid<-(max(dat_to_plot[[comparison_col]],na.rm=TRUE)+min(dat_to_plot[[comparison_col]],na.rm=TRUE))/2
@@ -286,11 +289,13 @@ prc_ms_anom_nt <- function(process_output){
       mutate(text=paste("Years of F/U: ",fu_bin,
                         "\nSite: ",site,
                         "\nJaccard Index: ",round(!!sym(comparison_col),2),
-                        "\nCo-Occurrence: ",cocount,
+                        "\nPatients w/ Both: ",cocount,
+                        "\nPatients w/ Either: ",concept_count_union,
                         "\nMean Index:",round(mean_val,2),
-                        '\nSD: ', round(sd_val,2),
-                        "\nMedian Index: ",round(median_val,2),
-                        "\nMAD: ", round(mad_val,2)))
+                        #'\nSD: ', round(sd_val,2),
+                        "\nMedian Index: ",round(median_val,2)
+                        #"\nMAD: ", round(mad_val,2)
+      )) 
     
     plt <- ggplot(dat_to_plot, aes(x = site, y = fu_bin, fill = jaccard_index,
                                    tooltip = text)) +
@@ -325,9 +330,9 @@ prc_ms_anom_nt <- function(process_output){
       theme_minimal() +
       scale_color_ssdqa() +
       geom_hline(yintercept = 0, linetype = 'solid') +
-      geom_hline(yintercept = 1, linetype = 'dotted', color = 'gray', linewidth = 1) +
-      geom_hline(yintercept = -1, linetype = 'dotted', color = 'gray', linewidth = 1) +
-      ylim(ylim_min, ylim_max) +
+      #geom_hline(yintercept = 1, linetype = 'dotted', color = 'gray', linewidth = 1) +
+      #geom_hline(yintercept = -1, linetype = 'dotted', color = 'gray', linewidth = 1) +
+      #ylim(ylim_min, ylim_max) +
       labs(title = 'Average Standard Deviation per Site')
     
     
