@@ -271,9 +271,9 @@ prc_ms_anom_nt <- function(process_output){
       scale_shape_manual(values=c(19,8))+
       scale_y_discrete(labels = label_wrap_gen()) +
       theme_minimal() +
-      theme(axis.text.x = element_text(angle=60),
-            axis.text.y = element_text(size = 5)) +
+      theme(axis.text.x = element_text(angle=60, hjust = 1)) +
       labs(y = "Years of F/U",
+           x = 'Site',
            size="",
            title=paste0('Anomalous Event Co-Occurrence per Years of F/U by Site'),
            subtitle = 'Dot size is the mean Jaccard index per F/U group') +

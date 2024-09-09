@@ -363,7 +363,7 @@ pes_ms_anom_nt <- function(process_output){
     scale_shape_manual(values=c(19,8))+
     #scale_y_discrete(labels = function(x) str_wrap(x, width = text_wrapping_char)) +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle=60)) +
+    theme(axis.text.x = element_text(angle=60, hjust = 1)) +
     labs(y = "Threshold Cutoff",
          size="",
          title=paste0('Anomalous Propotion Patients per \nThreshold Cutoff by Site'),
