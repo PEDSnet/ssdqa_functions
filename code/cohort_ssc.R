@@ -516,10 +516,37 @@ compare_cohort_mse <- function(cohort_def_output){
     mutate(across(matches("alt"), ~ (. - gold_standard)^2, .names = "{col}_dif")) %>%
     pivot_longer(cols = matches('_dif'),
                  names_to = 'cohort_id') %>%
-    mutate(cohort_id = str_remove(cohort_id, '_dif')) %>%
-    group_by(cohort_id, cohort_characteristic, fact_group) %>% mutate(n_grp = n()) %>%
-    group_by(site, cohort_id, cohort_characteristic, fact_group) %>%
-    summarise(mse = value / n_grp)
+    mutate(cohort_id = str_remove(cohort_id, '_dif'))
+  
+  site_level_grpd_mse <- comp_df %>%
+    group_by(site, cohort_id, fact_group) %>%
+    summarise(mse_sum = sum(value)) %>%
+    group_by(cohort_id, fact_group) %>%
+    mutate(n_grp = n()) %>%
+    group_by(site, cohort_id, fact_group) %>%
+    summarise(mse = mse_sum / n_grp)
+  
+  site_level_mse <- comp_df %>%
+    group_by(site, cohort_id) %>%
+    summarise(mse_sum = sum(value)) %>%
+    group_by(cohort_id) %>%
+    mutate(n_grp = n()) %>%
+    group_by(site, cohort_id) %>%
+    summarise(mse = mse_sum / n_grp)
+  
+  var_level_mse <- comp_df %>%
+    group_by(cohort_id, cohort_characteristic, fact_group) %>%
+    summarise(mse_sum = sum(value)) %>%
+    group_by(cohort_id) %>%
+    mutate(n_grp = n()) %>%
+    group_by(cohort_id, cohort_characteristic, fact_group) %>%
+    summarise(mse = mse_sum / n_grp)
+  
+  opt <- list('site_level' = site_level_mse,
+              'site_level_grpd' = site_level_grpd_mse,
+              'var_level' = var_level_mse)
+  
+  return(opt)
 }
 
 

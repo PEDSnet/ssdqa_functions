@@ -27,6 +27,7 @@ ssc_ss_exp_nt <- function(summary_output,
               empty.intersections = TRUE,
               main.bar.color = ssdqa_colors_standard[8],
               sets.bar.color = ssdqa_colors_standard[6],
+              text.scale = 1.7,
               matrix.color = ssdqa_colors_standard[6])
   
   
@@ -103,7 +104,7 @@ ssc_ss_anom_nt <- function(process_output){
     theme(panel.spacing = unit(0, 'lines'), 
           strip.background = element_rect(),
           strip.placement = "outside") +
-    labs(title = 'Standardized Mean Deviation versus Base Cohort',
+    labs(title = 'Standardized Mean Difference versus Base Cohort',
          x = '',
          y = 'Cohort Characteristic',
          fill = 'SMD')

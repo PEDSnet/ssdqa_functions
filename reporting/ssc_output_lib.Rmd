@@ -29,6 +29,7 @@ require(tibble)
 require(ggplot2)
 require(qicharts2)
 require(UpSetR)
+require(patchwork)
 
 get_results <- function(tbl_name) {
   if (data_source == 'local') {
@@ -47,6 +48,9 @@ prettify_kable <- function(data) {
 }
 
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+site_anon <- tibble('site' = c('cchmc', 'chop', 'colorado', 'lurie', 'nationwide', 'nemours', 'seattle', 'stanford'),
+                    'site_anon' = c('site 2', 'site 5', 'site 4', 'site 3', 'site 7', 'site 1', 'site 6', 'site 8'))
 
 ```
 
@@ -86,12 +90,107 @@ ssc_ss_anom_nt(process_output = get_results('ssc_ss_anom_nt'))
 
 ## Multi Site, Anomaly, No Time
 
+### Site Level
+
 ```{r ms_anom_nt}
 
-grph <- ssc_ms_anom_nt(process_output = get_results('ssc_ms_anom_nt'))
+dat_to_plot <- get_results('ssc_ms_anom_nt_site') %>%
+  mutate(cohort_id = str_remove(cohort_id, 'alt_cohort_'),
+         cohort_id = paste0('Alternate Cohort: ', cohort_id))
 
-grph
+site_level <- ggplot(dat_to_plot %>% mutate(tooltip = paste0('Site: ', site,
+                                                             '\nMSE: ', round(mse, 4))) %>%
+                       inner_join(site_anon) %>% mutate(site = site_anon), 
+                     aes(y = cohort_id, x = site, fill = mse, tooltip = tooltip)) +
+  geom_tile_interactive() +
+  scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
+  theme_minimal() +
+  scale_y_discrete(labels = label_wrap_gen()) +
+  labs(y = 'Alternate Cohort Definition',
+       x = 'Site',
+       fill = 'MSE')
+
+girafe(ggobj = site_level)
 
 #ggsave(filename = paste0(base_dir, '/results/ssc_ms_anom_nt_pcori.png'), plot = grph)
+
+```
+
+### Site + Fact Type Level
+```{r ms_anom_nt2}
+
+site_level_grpd1 <- ggplot(get_results('ssc_ms_anom_nt_site_grpd') %>% mutate(tooltip = paste0('Site: ', site,
+                                                                           '\nMSE: ', round(mse, 4))) %>%
+                            mutate(fact_type = case_when(fact_group %in% c('Outcomes', 'Demographics') ~ 'Proportion',
+                                                         TRUE ~ 'Medians'),
+                                   cohort_id = str_remove(cohort_id, 'alt_cohort_'),
+                                   cohort_id = paste0('Alternate Cohort: ', cohort_id)) %>% filter(fact_type == 'Medians') %>%
+                       inner_join(site_anon) %>% mutate(site = site_anon), 
+                          aes(y = fact_group, x = site, fill = mse, tooltip = tooltip)) +
+  geom_tile_interactive() +
+  facet_wrap(~cohort_id, labeller = label_wrap_gen()) +
+  scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(angle = 90, hjust = 0.5),
+        axis.text.x = element_text(angle = 60, hjust = 1)) +
+  labs(y = 'Fact Type')
+
+site_level_grpd2 <- ggplot(get_results('ssc_ms_anom_nt_site_grpd') %>% mutate(tooltip = paste0('Site: ', site,
+                                                                            '\nMSE: ', round(mse, 4))) %>%
+                             mutate(fact_type = case_when(fact_group %in% c('Outcomes', 'Demographics') ~ 'Proportion',
+                                                          TRUE ~ 'Medians'),
+                                    cohort_id = str_remove(cohort_id, 'alt_cohort_'),
+                                   cohort_id = paste0('Alternate Cohort: ', cohort_id)) %>% filter(fact_type == 'Proportion') %>%
+                       inner_join(site_anon) %>% mutate(site = site_anon), 
+                           aes(y = fact_group, x = site, fill = mse, tooltip = tooltip)) +
+  geom_tile() +
+  facet_wrap(~cohort_id, labeller = label_wrap_gen()) +
+  scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(angle = 90, hjust = 0.5),
+        axis.text.x = element_text(angle = 60, hjust = 1)) +
+  labs(y = '')
+
+site_level_grpd1 + site_level_grpd2
+
+
+```
+
+### Fact Type Level
+```{r ms_anom_nt3, fig.width = 10}
+
+dat_to_plot <- get_results('ssc_ms_anom_nt_fact') %>% 
+  mutate(tooltip = paste0('Variable: ', cohort_characteristic,
+                          '\nMSE: ', round(mse, 4))) %>%
+  mutate(fact_type = case_when(fact_group %in% c('Outcomes', 'Demographics') ~ 'Proportion',
+                               TRUE ~ 'Medians'),
+         cohort_characteristic = str_remove(cohort_characteristic, 'median_|prop_'),
+           cohort_characteristic = str_remove(cohort_characteristic, '_ppy'),
+           cohort_characteristic = str_replace_all(cohort_characteristic, '_', ' '),
+           cohort_characteristic = case_when(cohort_characteristic == 'fu' ~ 'follow-up',
+                                             TRUE ~ cohort_characteristic),
+           cohort_id = str_remove(cohort_id, 'alt_cohort_'),
+           cohort_id = paste0('Alternate Cohort: ', cohort_id))
+
+var_level1 <- ggplot(dat_to_plot  %>% filter(fact_type == 'Proportion'), 
+                    aes(x = cohort_id, y = cohort_characteristic, fill = mse, tooltip = tooltip)) +
+  geom_tile() +
+  scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
+  scale_x_discrete(labels = label_wrap_gen()) +
+  theme_minimal() +
+  labs(y = '',
+       x = '')
+
+var_level2 <- ggplot(dat_to_plot %>% filter(fact_type == 'Medians'), 
+                     aes(x = cohort_id, y = cohort_characteristic, fill = mse, tooltip = tooltip)) +
+  geom_tile() +
+  scale_fill_ssdqa(palette = 'diverging', discrete = FALSE) +
+  theme_minimal() +
+  scale_x_discrete(labels = label_wrap_gen()) +
+  labs(y = 'Fact',
+       x = '')
+
+var_level2 + var_level1
+
 
 ```
